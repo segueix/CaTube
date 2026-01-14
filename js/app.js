@@ -2,6 +2,8 @@
 
 // Elements del DOM
 let sidebar, menuBtn, videosGrid, homePage, watchPage, loading;
+let heroSection, heroTitle, heroDescription, heroImage, heroDuration, heroButton, heroEyebrow;
+let pageTitle;
 let apiModal, apiKeyInput, apiStatus, settingsBtn;
 let currentVideoId = null;
 let useYouTubeAPI = false;
@@ -60,6 +62,14 @@ function initElements() {
     apiKeyInput = document.getElementById('apiKeyInput');
     apiStatus = document.getElementById('apiStatus');
     settingsBtn = document.getElementById('settingsBtn');
+    heroSection = document.getElementById('heroSection');
+    heroTitle = document.getElementById('heroTitle');
+    heroDescription = document.getElementById('heroDescription');
+    heroImage = document.getElementById('heroImage');
+    heroDuration = document.getElementById('heroDuration');
+    heroButton = document.getElementById('heroButton');
+    heroEyebrow = document.getElementById('heroEyebrow');
+    pageTitle = document.getElementById('pageTitle');
 }
 
 // Inicialitzar event listeners
@@ -114,6 +124,19 @@ function initEventListeners() {
     // Botó configuració
     if (settingsBtn) {
         settingsBtn.addEventListener('click', showApiModal);
+    }
+
+    if (heroButton) {
+        heroButton.addEventListener('click', () => {
+            const videoId = heroSection?.dataset.videoId;
+            const source = heroSection?.dataset.source;
+            if (!videoId) return;
+            if (source === 'api') {
+                showVideoFromAPI(videoId);
+            } else {
+                showVideo(videoId);
+            }
+        });
     }
 
     // Tancar sidebar en mòbil quan es clica fora
@@ -561,6 +584,59 @@ function hideLoading() {
     loading.classList.remove('active');
 }
 
+function setPageTitle(title) {
+    if (pageTitle) {
+        pageTitle.textContent = title;
+    }
+}
+
+function getNewestVideoFromList(videos) {
+    if (!Array.isArray(videos) || videos.length === 0) return null;
+
+    return videos.reduce((latest, video) => {
+        const dateValue = video.publishedAt || video.uploadDate || video.snippet?.publishedAt;
+        const videoDate = dateValue ? new Date(dateValue) : null;
+        if (!videoDate || Number.isNaN(videoDate.getTime())) return latest;
+        if (!latest || videoDate > latest.date) {
+            return { video, date: videoDate };
+        }
+        return latest;
+    }, null);
+}
+
+function updateHero(video, source = 'static') {
+    if (!heroSection || !video) {
+        if (heroSection) {
+            heroSection.classList.add('hidden');
+        }
+        return;
+    }
+
+    const title = video.title || video.snippet?.title || 'Vídeo destacat';
+    const description = video.description || video.snippet?.description || '';
+    const thumbnail = video.thumbnail || video.snippet?.thumbnails?.high?.url || '';
+    const duration = video.duration || video.contentDetails?.duration || '';
+
+    heroSection.classList.remove('hidden');
+    heroSection.dataset.videoId = video.id;
+    heroSection.dataset.source = source;
+    heroTitle.textContent = title;
+    heroDescription.textContent = description ? description.substring(0, 140) + (description.length > 140 ? '...' : '') : '';
+    heroImage.src = thumbnail;
+    heroImage.alt = title;
+    if (duration) {
+        heroDuration.textContent = duration;
+        heroDuration.classList.remove('hidden');
+    } else {
+        heroDuration.textContent = '';
+        heroDuration.classList.add('hidden');
+    }
+
+    if (heroEyebrow) {
+        heroEyebrow.textContent = source === 'api' ? 'Destacat del moment' : 'Destacat de la setmana';
+    }
+}
+
 // Carregar categories
 function loadCategories() {
     if (!CONFIG.features.categories) return;
@@ -598,7 +674,7 @@ function loadCategories() {
 // Carregar vídeos populars des de l'API
 async function loadVideosFromAPI() {
     showLoading();
-    document.querySelector('.page-title').textContent = 'Recomanats per a tu';
+    setPageTitle('Recomanats per a tu');
 
     const result = await YouTubeAPI.getPopularVideos(CONFIG.layout.videosPerPage);
 
@@ -616,7 +692,7 @@ async function loadVideosFromAPI() {
 // Carregar vídeos en tendència
 async function loadTrendingVideos() {
     showLoading();
-    document.querySelector('.page-title').textContent = 'Tendències';
+    setPageTitle('Tendències');
 
     const result = await YouTubeAPI.getPopularVideos(24);
 
@@ -632,13 +708,14 @@ async function loadTrendingVideos() {
 // Cercar vídeos
 async function searchVideos(query) {
     showLoading();
-    document.querySelector('.page-title').textContent = `Resultats per: "${query}"`;
+    setPageTitle(`Resultats per: "${query}"`);
     showHome();
 
     const result = await YouTubeAPI.searchVideos(query, CONFIG.layout.videosPerPage);
 
     if (result.error) {
         hideLoading();
+        updateHero(null);
         // Mostrar missatge d'error
         videosGrid.innerHTML = `
             <div class="search-error">
@@ -649,6 +726,21 @@ async function searchVideos(query) {
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
+        return;
+    }
+
+    if (result.items.length === 0) {
+        updateHero(null);
+        videosGrid.innerHTML = `
+            <div class="search-error">
+                <i data-lucide="video-off"></i>
+                <p>No s'han trobat vídeos per aquesta cerca.</p>
+            </div>
+        `;
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+        hideLoading();
         return;
     }
 
@@ -687,7 +779,7 @@ async function fetchVideoDetails(videoIds) {
 async function loadVideosByCategory(categoryId) {
     showLoading();
     const category = CONFIG.categories.find(c => c.id == categoryId);
-    document.querySelector('.page-title').textContent = category ? category.name : 'Categoria';
+    setPageTitle(category ? category.name : 'Categoria');
     showHome();
 
     const result = await YouTubeAPI.getVideosByCategory(categoryId, CONFIG.layout.videosPerPage);
@@ -699,6 +791,8 @@ async function loadVideosByCategory(categoryId) {
             const videoIds = searchResult.items.map(v => v.id).join(',');
             const details = await fetchVideoDetails(videoIds);
             renderVideos(details.length > 0 ? details : searchResult.items);
+        } else {
+            updateHero(null);
         }
         hideLoading();
         return;
@@ -725,6 +819,9 @@ function renderVideos(videos) {
         }
     });
 
+    const newest = getNewestVideoFromList(videos);
+    updateHero(newest?.video, 'api');
+
     videosGrid.innerHTML = videos.map(video => createVideoCardAPI(video)).join('');
 
     // Event listeners
@@ -743,6 +840,9 @@ function renderVideos(videos) {
 
 // Renderitzar resultats de cerca (sense estadístiques)
 function renderSearchResults(videos) {
+    const newest = getNewestVideoFromList(videos);
+    updateHero(newest?.video, 'api');
+
     videosGrid.innerHTML = videos.map(video => `
         <div class="video-card" data-video-id="${video.id}">
             <div class="video-thumbnail">
@@ -966,6 +1066,10 @@ async function loadRelatedVideosFromAPI(videoId) {
 
 // Carregar vídeos estàtics
 function loadVideos() {
+    setPageTitle('Recomanats per a tu');
+    const newest = getNewestVideoFromList(VIDEOS);
+    updateHero(newest?.video, 'static');
+
     videosGrid.innerHTML = VIDEOS.map(video => createVideoCard(video)).join('');
 
     const videoCards = document.querySelectorAll('.video-card');
@@ -984,6 +1088,10 @@ function loadVideos() {
 // Carregar vídeos per categoria (estàtic)
 function loadVideosByCategoryStatic(categoryId) {
     const videos = getVideosByCategory(categoryId);
+    const category = CONFIG.categories.find(c => c.id === categoryId);
+    setPageTitle(category ? category.name : 'Categoria');
+    const newest = getNewestVideoFromList(videos);
+    updateHero(newest?.video, 'static');
     videosGrid.innerHTML = videos.map(video => createVideoCard(video)).join('');
 
     const videoCards = document.querySelectorAll('.video-card');
@@ -1405,7 +1513,7 @@ function removeUserVideo(videoId) {
 async function loadVideosByCategoryWithUser(categoryId) {
     showLoading();
     const category = CONFIG.categories.find(c => c.id === categoryId);
-    document.querySelector('.page-title').textContent = category ? category.name : 'Categoria';
+    setPageTitle(category ? category.name : 'Categoria');
     showHome();
 
     // Combinar vídeos de l'usuari i vídeos de canals etiquetats
@@ -1438,6 +1546,7 @@ async function loadVideosByCategoryWithUser(categoryId) {
     if (categoryVideos.length > 0) {
         renderUserVideos(categoryVideos);
     } else {
+        updateHero(null);
         videosGrid.innerHTML = `
             <div class="empty-category">
                 <i data-lucide="video-off"></i>
@@ -1455,6 +1564,14 @@ async function loadVideosByCategoryWithUser(categoryId) {
 
 // Renderitzar vídeos de l'usuari
 function renderUserVideos(videos) {
+    const newest = getNewestVideoFromList(videos);
+    if (newest?.video) {
+        const source = newest.video.source === 'user' || newest.video.source === 'api' ? 'api' : 'static';
+        updateHero(newest.video, source);
+    } else {
+        updateHero(null);
+    }
+
     videosGrid.innerHTML = videos.map(video => `
         <div class="video-card" data-video-id="${video.id}">
             <div class="video-thumbnail">

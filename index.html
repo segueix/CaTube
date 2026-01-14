@@ -6,7 +6,7 @@
     <meta name="description" content="Plataforma de vídeos personalitzable">
     <meta name="theme-color" content="#FF0000">
     
-    <title>MyTube</title>
+    <title>iuTube</title>
     
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
@@ -29,7 +29,7 @@
             </button>
             <div class="logo">
                 <i data-lucide="video" class="logo-icon"></i>
-                <span class="logo-text">MyTube</span>
+                <span class="logo-text">iuTube</span>
             </div>
         </div>
         
@@ -92,7 +92,21 @@
     <main class="main-content" id="mainContent">
         <!-- Home Page -->
         <div class="page" id="homePage">
-            <h1 class="page-title">Recomanats per a tu</h1>
+            <h1 class="page-title" id="pageTitle">Recomanats per a tu</h1>
+            <section class="hero" id="heroSection">
+                <div class="hero-content">
+                    <span class="hero-eyebrow" id="heroEyebrow">Destacat de la setmana</span>
+                    <h2 class="hero-title" id="heroTitle"></h2>
+                    <p class="hero-description" id="heroDescription"></p>
+                    <div class="hero-actions">
+                        <button class="hero-button" id="heroButton">Veure ara</button>
+                    </div>
+                </div>
+                <div class="hero-thumbnail">
+                    <img id="heroImage" alt="Vídeo destacat">
+                    <span class="hero-duration" id="heroDuration"></span>
+                </div>
+            </section>
             <div class="videos-grid" id="videosGrid"></div>
         </div>
 
