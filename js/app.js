@@ -154,17 +154,14 @@ function initApiModal() {
                 content.classList.remove('active');
             });
             document.getElementById(`tab-${tabId}`).classList.add('active');
-            // Carregar canals si és la pestanya de canals
+            // Carregar canals i etiquetes si és la pestanya de canals
             if (tabId === 'channels') {
                 loadChannelsList();
+                loadTaggableChannelsList();
             }
             // Carregar vídeos si és la pestanya de vídeos
             if (tabId === 'videos') {
                 loadUserVideosList();
-            }
-            // Carregar canals etiquetables si és la pestanya de tags
-            if (tabId === 'tags') {
-                loadTaggableChannelsList();
             }
             // Reinicialitzar icons
             if (typeof lucide !== 'undefined') {
@@ -375,7 +372,10 @@ function exportChannels() {
         version: '1.0',
         exportDate: new Date().toISOString(),
         appName: 'iuTube',
-        channels: channels
+        channels: channels.map(channel => ({
+            ...channel,
+            tags: channelTags[channel.id] || []
+        }))
     };
 
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
@@ -431,11 +431,17 @@ function importChannels(file) {
                 } else {
                     skipped++;
                 }
+
+                if (Array.isArray(channel.tags) && channel.tags.length > 0) {
+                    channelTags[channel.id] = channel.tags;
+                }
             });
 
             // Guardar
             YouTubeAPI.saveUserChannels();
+            saveChannelTags();
             loadChannelsList();
+            loadTaggableChannelsList();
 
             if (imported > 0) {
                 showImportStatus(`${imported} canals importats${skipped > 0 ? `, ${skipped} omesos (duplicats)` : ''}`, 'success');
@@ -524,6 +530,8 @@ function loadChannelsList() {
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
     }
+
+    loadTaggableChannelsList();
 }
 
 // Mostrar/amagar modal

@@ -157,10 +157,6 @@
                     <i data-lucide="plus-circle"></i>
                     Afegir Vídeo
                 </button>
-                <button class="tab-btn" data-tab="tags">
-                    <i data-lucide="tags"></i>
-                    Etiquetar
-                </button>
                 <button class="tab-btn" data-tab="api">
                     <i data-lucide="key"></i>
                     API
@@ -207,23 +203,6 @@
                         <i data-lucide="plus"></i>
                         Afegir vídeo
                     </button>
-                </div>
-            </div>
-
-            <!-- Tab: Etiquetar Canals -->
-            <div class="tab-content" id="tab-tags">
-                <div class="modal-body">
-                    <p class="modal-description">
-                        Assigna categories als canals. Els vídeos d'aquests canals apareixeran a les categories corresponents del sidebar. Pots assignar múltiples categories a cada canal.
-                    </p>
-
-                    <div class="tag-status" id="tagStatus"></div>
-
-                    <!-- Llista de canals per etiquetar -->
-                    <div class="channels-section">
-                        <h3 class="section-title">Canals</h3>
-                        <div class="taggable-channels-list" id="taggableChannelsList"></div>
-                    </div>
                 </div>
             </div>
 
@@ -280,6 +259,15 @@
                     <div class="channels-section">
                         <h3 class="section-title">Els meus canals</h3>
                         <div class="channels-list" id="userChannelsList"></div>
+                    </div>
+
+                    <div class="channels-section">
+                        <h3 class="section-title">Etiquetar canals</h3>
+                        <p class="modal-description">
+                            Assigna categories als canals. Els vídeos d'aquests canals apareixeran a les categories corresponents del sidebar. Pots assignar múltiples categories a cada canal.
+                        </p>
+                        <div class="tag-status" id="tagStatus"></div>
+                        <div class="taggable-channels-list" id="taggableChannelsList"></div>
                     </div>
 
                     <!-- Exportar/Importar -->
