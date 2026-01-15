@@ -1,32 +1,57 @@
+// Configuració: La teva URL de Google Sheets (Publicat com a CSV)
+const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSlB5oWUFyPtQu6U21l2sWRlnWPndhsVA-YvcB_3c9Eby80XKVgmnPdWNpwzcxSqMutkqV6RyJLjsMe/pub?output=csv';
+
 const fs = require('fs');
 const https = require('https');
 
-// Configuració
+// La clau API es llegeix dels Secrets de GitHub per seguretat
 const API_KEY = process.env.YOUTUBE_API_KEY;
-const CHANNELS_FILE = 'js/channels-ca.json';
 const OUTPUT_FILE = 'feed.json';
 
-// Funció fetch bàsica
-const fetchJson = (url) => {
+/**
+ * Funció auxiliar per descarregar dades d'una URL
+ */
+const fetchData = (url) => {
     return new Promise((resolve, reject) => {
         https.get(url, (res) => {
             let data = '';
             res.on('data', (chunk) => data += chunk);
-            res.on('end', () => {
-                try {
-                    resolve(JSON.parse(data));
-                } catch (e) {
-                    resolve({});
-                }
-            });
-        }).on('error', (e) => resolve({}));
+            res.on('end', () => resolve(data));
+        }).on('error', (e) => reject(e));
     });
 };
 
-// Funció per convertir durada (PT1M30S) a segons
+/**
+ * Converteix el contingut CSV en una llista d'objectes (canals)
+ */
+function parseCSV(csvText) {
+    const lines = csvText.split('\n').filter(line => line.trim() !== '');
+    if (lines.length < 2) return [];
+
+    // Detectem les capçaleres de la primera fila
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const idIdx = headers.indexOf('id');
+    const nameIdx = headers.indexOf('name');
+    const catIdx = headers.indexOf('category');
+
+    return lines.slice(1).map(line => {
+        const values = line.split(',');
+        return {
+            id: values[idIdx]?.trim(),
+            name: values[nameIdx]?.trim(),
+            // Separem les categories per ";" i creem una llista neta
+            categories: values[catIdx] ? values[catIdx].split(';').map(c => c.trim()) : []
+        };
+    }).filter(c => c.id); // Només canals que tinguin ID/Nom d'usuari
+}
+
+/**
+ * Converteix la durada ISO 8601 de YouTube (ex: PT1M30S) a segons
+ */
 function parseDuration(duration) {
     if (!duration) return 0;
     const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+    if (!match) return 0;
     const hours = (parseInt(match[1]) || 0);
     const minutes = (parseInt(match[2]) || 0);
     const seconds = (parseInt(match[3]) || 0);
@@ -35,113 +60,109 @@ function parseDuration(duration) {
 
 async function main() {
     try {
-        const channelsRaw = fs.readFileSync(CHANNELS_FILE, 'utf8');
-        // AFEGIM .channels PER ACCEDIR A LA LLISTA CORRECTAMENT
-        const channels = JSON.parse(channelsRaw).channels;
+        console.log("--- Iniciant actualització des de Google Sheets ---");
         
-        console.log(`Iniciant càrrega intel·ligent per a ${channels.length} canals...`);
-        const startTime = Date.now();
+        // 1. Descarreguem la llista de canals de l'Excel
+        const csvContent = await fetchData(SHEET_CSV_URL);
+        const channels = parseCSV(csvContent);
+        console.log(`S'han trobat ${channels.length} canals al full de càlcul.`);
 
-        // PAS 1: OBTENIR LA ID DE LA LLISTA D'UPLOADS (Sigui per ID o per Handle)
+        if (channels.length === 0) throw new Error("No s'han trobat canals per processar.");
+
+        // 2. Obtenim els vídeos recents de cada canal
         const playlistRequests = channels.map(async (channel) => {
             let uploadPlaylistId = '';
 
-            // CAS A: És un Handle (@Nom)
+            // Si l'ID comença amb @, busquem la seva Playlist d'uploads
             if (channel.id.startsWith('@')) {
-                const handleUrl = `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&forHandle=${encodeURIComponent(channel.id)}&key=${API_KEY}`;
-                const handleData = await fetchJson(handleUrl);
-                
-                if (handleData.items && handleData.items.length > 0) {
-                    uploadPlaylistId = handleData.items[0].contentDetails.relatedPlaylists.uploads;
-                } else {
-                    console.warn(`⚠️ No s'ha trobat el canal: ${channel.id}`);
-                    return null;
+                const hUrl = `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&forHandle=${encodeURIComponent(channel.id)}&key=${API_KEY}`;
+                const hRes = await fetchData(hUrl);
+                const hData = JSON.parse(hRes);
+                if (hData.items?.length > 0) {
+                    uploadPlaylistId = hData.items[0].contentDetails.relatedPlaylists.uploads;
                 }
             } 
-            // CAS B: Ja és una ID antiga (UC...)
+            // Si és una ID estàndard de YouTube (UC...)
             else if (channel.id.startsWith('UC')) {
                 uploadPlaylistId = channel.id.replace('UC', 'UU');
             }
-            // CAS C: Alguna cosa rara
-            else {
-                console.warn(`⚠️ ID desconeguda: ${channel.id}`);
+
+            if (!uploadPlaylistId) {
+                console.warn(`⚠️ No es pot carregar el canal: ${channel.id}`);
                 return null;
             }
 
-            // Ara que tenim la Playlist ID, demanem els vídeos
-            const videosUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadPlaylistId}&maxResults=5&key=${API_KEY}`;
-            const videosData = await fetchJson(videosUrl);
-
+            // Demanem els darrers 5 vídeos
+            const vUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadPlaylistId}&maxResults=5&key=${API_KEY}`;
+            const vRes = await fetchData(vUrl);
+            const vData = JSON.parse(vRes);
+            
             return {
-                data: videosData,
-                channelId: channel.id // Guardem l'original (encara que sigui @nom)
+                items: vData.items || [],
+                channelInfo: channel
             };
         });
 
-        // Esperem totes les peticions
         const results = await Promise.all(playlistRequests);
-        
         let allVideos = [];
-        let videoIdsToCheck = [];
+        let videoIdsForDetails = [];
 
-        // Pre-processament per recollir IDs i mirar durada
-        results.forEach(result => {
-            if (result && result.data && result.data.items) {
-                result.data.items.forEach(item => {
-                    allVideos.push({
+        // Combinem tots els vídeos en una sola llista
+        results.forEach(res => {
+            if (res?.items) {
+                res.items.forEach(item => {
+                    const video = {
                         id: item.snippet.resourceId.videoId,
                         title: item.snippet.title,
-                        thumbnail: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url,
+                        thumbnail: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.high?.url,
                         channelTitle: item.snippet.channelTitle,
                         publishedAt: item.snippet.publishedAt,
-                        channelId: result.channelId
-                    });
-                    videoIdsToCheck.push(item.snippet.resourceId.videoId);
+                        // Guardem les categories que hem tret de l'Excel
+                        categories: res.channelInfo.categories 
+                    };
+                    allVideos.push(video);
+                    videoIdsForDetails.push(video.id);
                 });
             }
         });
 
-        // PAS 2: FILTRAR SHORTS (Mirar durada)
-        if (videoIdsToCheck.length > 0) {
-            // YouTube només deixa demanar 50 IDs de cop, fem paquets
-            const chunkSize = 50;
-            let videoDetails = [];
+        // 3. Filtre de Shorts (Obtenim la durada de cada vídeo)
+        if (videoIdsForDetails.length > 0) {
+            console.log("Filtrant Shorts i vídeos curts...");
+            const durationMap = {};
             
-            for (let i = 0; i < videoIdsToCheck.length; i += chunkSize) {
-                const chunk = videoIdsToCheck.slice(i, i + chunkSize);
-                const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${chunk.join(',')}&key=${API_KEY}`;
-                const detailsData = await fetchJson(detailsUrl);
-                if (detailsData.items) {
-                    videoDetails = videoDetails.concat(detailsData.items);
+            // YouTube permet demanar fins a 50 IDs per cada crida
+            for (let i = 0; i < videoIdsForDetails.length; i += 50) {
+                const chunk = videoIdsForDetails.slice(i, i + 50);
+                const dUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${chunk.join(',')}&key=${API_KEY}`;
+                const dRes = await fetchData(dUrl);
+                const dData = JSON.parse(dRes);
+                
+                if (dData.items) {
+                    dData.items.forEach(v => {
+                        const seconds = parseDuration(v.contentDetails.duration);
+                        durationMap[v.id] = (seconds <= 60); // true si és un Short
+                    });
                 }
             }
 
-            // Creem un diccionari { "VIDEO_ID": "SHORT/NORMAL" }
-            const durationMap = {};
-            videoDetails.forEach(v => {
-                const seconds = parseDuration(v.contentDetails.duration);
-                durationMap[v.id] = (seconds <= 60) ? true : false; // true = és Short
-            });
-
-            // Afegim la info al llistat final
-            allVideos = allVideos.map(video => ({
-                ...video,
-                isShort: durationMap[video.id] || false
+            // Apliquem la marca de Short a cada vídeo
+            allVideos = allVideos.map(v => ({
+                ...v,
+                isShort: durationMap[v.id] || false
             }));
         }
 
-        // Ordenem per data
+        // 4. Ordenem per data (més recents primer) i guardem
         allVideos.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
-
-        // Guardem
-        const finalData = JSON.stringify(allVideos.slice(0, 100), null, 2);
-        fs.writeFileSync(OUTPUT_FILE, finalData);
         
-        const duration = (Date.now() - startTime) / 1000;
-        console.log(`Fet! Processat en ${duration} segons. Canals amb @nom acceptats.`);
+        // Limitem a 100 vídeos per no fer el fitxer massa pesat
+        fs.writeFileSync(OUTPUT_FILE, JSON.stringify(allVideos.slice(0, 100), null, 2));
+        
+        console.log(`✅ Fet! El fitxer ${OUTPUT_FILE} s'ha actualitzat correctament.`);
 
     } catch (error) {
-        console.error('Error fatal:', error);
+        console.error("❌ Error en el procés:", error);
         process.exit(1);
     }
 }
