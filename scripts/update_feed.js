@@ -9,8 +9,7 @@ const API_KEY = process.env.YOUTUBE_API_KEY;
 const OUTPUT_FILE = 'feed.json';
 
 /**
- * Funció per descarregar dades que sap seguir redireccions (301, 302)
- * i s'identifica com un navegador real.
+ * Funció per descarregar dades que sap seguir TOTES les redireccions (301, 302, 307, 308)
  */
 const fetchData = (url) => {
     return new Promise((resolve, reject) => {
@@ -21,9 +20,9 @@ const fetchData = (url) => {
         };
 
         https.get(url, options, (res) => {
-            // Si Google ens redirigeix, tornem a cridar la funció amb la nova adreça
-            if (res.statusCode === 301 || res.statusCode === 302) {
-                console.log(`Seguint redirecció cap a: ${res.headers.location}`);
+            // Si el codi és 3xx (redirecció) i hi ha una nova ubicació, la seguim
+            if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                console.log(`Redirecció detectada (${res.statusCode}). Seguint cap a: ${res.headers.location}`);
                 return fetchData(res.headers.location).then(resolve).catch(reject);
             }
 
@@ -42,13 +41,14 @@ const fetchData = (url) => {
  * Converteix el contingut CSV en una llista d'objectes (canals)
  */
 function parseCSV(csvText) {
-    const cleanText = csvText.replace(/^\uFEFF/, '');
+    const cleanText = csvText.replace(/^\uFEFF/, ''); // Elimina BOM si n'hi ha
     const lines = cleanText.split(/\r?\n/).filter(line => line.trim() !== '');
     
     if (lines.length < 2) return [];
 
     let separator = ',';
     const firstLine = lines[0];
+    // Detectem si el separador és coma o punt i coma
     if (firstLine.includes(';') && (firstLine.split(';').length > firstLine.split(',').length)) {
         separator = ';';
     }
@@ -73,6 +73,9 @@ function parseCSV(csvText) {
     }).filter(c => c.id && c.id !== ''); 
 }
 
+/**
+ * Converteix durada ISO 8601 a segons
+ */
 function parseDuration(duration) {
     if (!duration) return 0;
     const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
@@ -89,12 +92,13 @@ async function main() {
         
         const csvContent = await fetchData(SHEET_CSV_URL);
         const channels = parseCSV(csvContent);
-        console.log(`✅ S'han trobat ${channels.length} canals vàlids al full de càlcul.`);
-
+        
         if (channels.length === 0) {
-            console.log("Mostra del contingut rebut:", csvContent.substring(0, 100));
+            console.log("Dades rebudes (primeres 100 lletres):", csvContent.substring(0, 100));
             throw new Error("No s'han trobat canals vàlids. Revisa el format de l'Excel.");
         }
+
+        console.log(`✅ S'han trobat ${channels.length} canals vàlids.`);
 
         const playlistRequests = channels.map(async (channel) => {
             let uploadPlaylistId = '';
