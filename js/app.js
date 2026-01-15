@@ -845,8 +845,9 @@ function renderSearchResults(videos) {
 
     videosGrid.innerHTML = videos.map(video => `
         <div class="video-card" data-video-id="${video.id}">
-            <div class="video-thumbnail">
+            <div class="video-thumbnail${video.isShort ? ' is-short' : ''}">
                 <img src="${video.thumbnail}" alt="${escapeHtml(video.title)}" loading="lazy">
+                ${video.isShort ? '<span class="video-short-badge">SHORT</span>' : ''}
             </div>
             <div class="video-details">
                 <div class="video-info-container">
@@ -879,8 +880,9 @@ function renderSearchResults(videos) {
 function createVideoCardAPI(video) {
     return `
         <div class="video-card" data-video-id="${video.id}">
-            <div class="video-thumbnail">
+            <div class="video-thumbnail${video.isShort ? ' is-short' : ''}">
                 <img src="${video.thumbnail}" alt="${escapeHtml(video.title)}" loading="lazy">
+                ${video.isShort ? '<span class="video-short-badge">SHORT</span>' : ''}
                 ${video.duration ? `<span class="video-duration">${video.duration}</span>` : ''}
             </div>
             <div class="video-details">

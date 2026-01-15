@@ -831,6 +831,7 @@ const YouTubeAPI = {
             channelTitle: item.snippet.channelTitle,
             publishedAt: item.snippet.publishedAt,
             duration: this.parseDuration(item.contentDetails?.duration),
+            isShort: this.isShortVideo(item.contentDetails?.duration),
             viewCount: parseInt(item.statistics?.viewCount || 0),
             likeCount: parseInt(item.statistics?.likeCount || 0),
             commentCount: parseInt(item.statistics?.commentCount || 0)
@@ -848,6 +849,7 @@ const YouTubeAPI = {
             channelTitle: item.snippet.channelTitle,
             publishedAt: item.snippet.publishedAt,
             duration: this.parseDuration(item.contentDetails?.duration),
+            isShort: this.isShortVideo(item.contentDetails?.duration),
             viewCount: parseInt(item.statistics?.viewCount || 0),
             likeCount: parseInt(item.statistics?.likeCount || 0),
             commentCount: parseInt(item.statistics?.commentCount || 0),
@@ -882,6 +884,27 @@ const YouTubeAPI = {
                 publishedAt: comment.publishedAt
             };
         });
+    },
+
+    // Comprovar si un vídeo és Short (<= 60 segons)
+    isShortVideo(isoDuration) {
+        const seconds = this.parseDurationSeconds(isoDuration);
+        if (seconds === null) return false;
+        return seconds <= 60;
+    },
+
+    // Parsejar duració ISO 8601 a segons
+    parseDurationSeconds(isoDuration) {
+        if (!isoDuration) return null;
+
+        const match = isoDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+        if (!match) return null;
+
+        const hours = parseInt(match[1] || 0);
+        const minutes = parseInt(match[2] || 0);
+        const seconds = parseInt(match[3] || 0);
+
+        return (hours * 3600) + (minutes * 60) + seconds;
     },
 
     // Parsejar duració ISO 8601 a format llegible

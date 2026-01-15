@@ -6,6 +6,18 @@ const API_KEY = process.env.YOUTUBE_API_KEY;
 const CHANNELS_FILE = 'js/channels-ca.json';
 const OUTPUT_FILE = 'feed.json';
 
+const parseDurationSeconds = (isoDuration) => {
+    if (!isoDuration) return null;
+    const match = isoDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+    if (!match) return null;
+
+    const hours = parseInt(match[1] || 0, 10);
+    const minutes = parseInt(match[2] || 0, 10);
+    const seconds = parseInt(match[3] || 0, 10);
+
+    return hours * 3600 + minutes * 60 + seconds;
+};
+
 // Funció fetch millorada
 const fetchJson = (url) => {
     return new Promise((resolve, reject) => {
@@ -63,6 +75,29 @@ async function main() {
                 }));
                 allVideos = allVideos.concat(videos);
             }
+        });
+
+        const durationById = new Map();
+        for (let i = 0; i < allVideos.length; i += 50) {
+            const batch = allVideos.slice(i, i + 50);
+            const ids = batch.map(video => video.id).join(',');
+            const url = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${ids}&key=${API_KEY}`;
+            const data = await fetchJson(url);
+
+            if (data.items) {
+                data.items.forEach(item => {
+                    const seconds = parseDurationSeconds(item.contentDetails?.duration);
+                    durationById.set(item.id, seconds);
+                });
+            }
+        }
+
+        allVideos = allVideos.map(video => {
+            const durationSeconds = durationById.get(video.id);
+            return {
+                ...video,
+                isShort: durationSeconds !== null && durationSeconds <= 60
+            };
         });
 
         // Ordenem per data
