@@ -40,7 +40,12 @@ jobs:
           git config --global user.name 'Actualitzador Automàtic'
           git config --global user.email 'actions@github.com'
           git add data/channels.json
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Actualització automàtica de canals" && git push)
+          # Si hi ha canvis, fem commit, baixem actualitzacions remotes i pugem
+          if ! git diff --quiet || ! git diff --staged --quiet; then
+            git commit -m "Actualització automàtica de canals"
+            git pull --rebase origin claude-improvements-v2
+            git push
+          fi
 
       # --- PAS 2: PUBLICAR WEB ---
       - name: Injectar API Key
