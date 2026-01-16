@@ -28,12 +28,12 @@ jobs:
 
       - name: Commit i push si hi ha canvis
         run: |
-          if git status --porcelain | grep -q "feed.json"; then
+          if git status --porcelain | grep -qE "feed.json|feed_updates.js"; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add feed.json
+            git add feed.json feed_updates.js
             git commit -m "Actualitza feed"
             git push
           else
-            echo "No hi ha canvis a feed.json"
+            echo "No hi ha canvis a feed.json ni feed_updates.js"
           fi
