@@ -1,6 +1,6 @@
 // Service Worker per PWA
 
-const CACHE_NAME = 'mytube-v1';
+const CACHE_NAME = 'mytube-v2';
 const urlsToCache = [
     './',                // <--- Canviat '/' per './'
     './index.html',      // <--- Canviat '/index.html' per './index.html'
