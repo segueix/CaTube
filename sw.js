@@ -41,6 +41,11 @@ self.addEventListener('activate', (event) => {
 
 // Fetch
 self.addEventListener('fetch', (event) => {
+    // IGNORAR peticions que no siguin http o https (com extensions de Chrome)
+    if (!event.request.url.startsWith('http')) {
+        return;
+    }
+
     event.respondWith(
         caches.match(event.request)
             .then((response) => {
