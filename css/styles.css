@@ -1482,3 +1482,224 @@ body.sidebar-collapsed .main-content {
     border: 1px solid rgba(62, 166, 255, 0.3);
     color: #3ea6ff;
 }
+
+/* ==================== VÍDEO DESTACAT DEL MOMENT ==================== */
+
+.featured-video-section {
+    margin-bottom: 32px;
+    padding: 20px;
+    border-radius: 16px;
+    background-color: rgba(255, 255, 255, 0.05);
+    transition: background-color 0.3s ease;
+}
+
+.featured-video-section .featured-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.featured-video-section .featured-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.featured-video-section .featured-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.featured-video-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: center;
+}
+
+.featured-video-thumbnail {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.featured-video-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+}
+
+.featured-video-thumbnail:hover img {
+    transform: scale(1.03);
+}
+
+.featured-video-thumbnail .video-duration {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+}
+
+.featured-video-thumbnail .play-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.featured-video-thumbnail:hover .play-overlay {
+    opacity: 1;
+}
+
+.featured-video-thumbnail .play-overlay svg {
+    width: 28px;
+    height: 28px;
+    color: white;
+    margin-left: 4px;
+}
+
+.featured-video-info {
+    padding: 8px 0;
+}
+
+.featured-video-info .video-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.featured-video-info .video-channel {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    margin-bottom: 8px;
+}
+
+.featured-video-info .video-stats {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.featured-video-info .video-description {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    margin-top: 12px;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Colors per secció - Inici */
+.featured-video-section.section-home {
+    background: linear-gradient(135deg, rgba(100, 100, 100, 0.15) 0%, rgba(60, 60, 60, 0.1) 100%);
+}
+.featured-video-section.section-home .featured-badge {
+    background-color: rgba(150, 150, 150, 0.3);
+    color: #e0e0e0;
+}
+
+/* Colors per secció - Tendències */
+.featured-video-section.section-trending {
+    background: linear-gradient(135deg, rgba(255, 82, 82, 0.15) 0%, rgba(255, 107, 107, 0.08) 100%);
+}
+.featured-video-section.section-trending .featured-badge {
+    background-color: rgba(255, 82, 82, 0.3);
+    color: #ff8a8a;
+}
+
+/* Colors per secció - Societat */
+.featured-video-section.section-societat {
+    background: linear-gradient(135deg, rgba(66, 165, 245, 0.15) 0%, rgba(100, 181, 246, 0.08) 100%);
+}
+.featured-video-section.section-societat .featured-badge {
+    background-color: rgba(66, 165, 245, 0.3);
+    color: #90caf9;
+}
+
+/* Colors per secció - Cultura */
+.featured-video-section.section-cultura {
+    background: linear-gradient(135deg, rgba(171, 71, 188, 0.15) 0%, rgba(186, 104, 200, 0.08) 100%);
+}
+.featured-video-section.section-cultura .featured-badge {
+    background-color: rgba(171, 71, 188, 0.3);
+    color: #ce93d8;
+}
+
+/* Colors per secció - Humor */
+.featured-video-section.section-humor {
+    background: linear-gradient(135deg, rgba(255, 183, 77, 0.15) 0%, rgba(255, 202, 40, 0.08) 100%);
+}
+.featured-video-section.section-humor .featured-badge {
+    background-color: rgba(255, 183, 77, 0.3);
+    color: #ffcc80;
+}
+
+/* Colors per secció - Gaming */
+.featured-video-section.section-gaming {
+    background: linear-gradient(135deg, rgba(102, 187, 106, 0.15) 0%, rgba(129, 199, 132, 0.08) 100%);
+}
+.featured-video-section.section-gaming .featured-badge {
+    background-color: rgba(102, 187, 106, 0.3);
+    color: #a5d6a7;
+}
+
+/* Colors per secció - Vida */
+.featured-video-section.section-vida {
+    background: linear-gradient(135deg, rgba(240, 98, 146, 0.15) 0%, rgba(244, 143, 177, 0.08) 100%);
+}
+.featured-video-section.section-vida .featured-badge {
+    background-color: rgba(240, 98, 146, 0.3);
+    color: #f48fb1;
+}
+
+/* Responsive per vídeo destacat */
+@media (max-width: 900px) {
+    .featured-video-container {
+        grid-template-columns: 1fr;
+    }
+
+    .featured-video-info .video-title {
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 600px) {
+    .featured-video-section {
+        padding: 16px;
+        margin-bottom: 24px;
+    }
+
+    .featured-video-info .video-title {
+        font-size: 16px;
+    }
+
+    .featured-video-info .video-description {
+        display: none;
+    }
+}

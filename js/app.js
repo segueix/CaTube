@@ -597,11 +597,21 @@ async function loadVideosFromAPI() {
     if (result.error) {
         console.error('Error:', result.error);
         hideLoading();
+        hideFeaturedVideo();
         loadVideos(); // Fallback a dades estàtiques
         return;
     }
 
-    renderVideos(result.items);
+    // Mostrar el primer vídeo com a destacat
+    if (result.items.length > 0) {
+        showFeaturedVideo(result.items[0], 'home');
+        // Renderitzar la resta de vídeos (excloent el destacat)
+        renderVideos(result.items.slice(1));
+    } else {
+        hideFeaturedVideo();
+        renderVideos(result.items);
+    }
+
     hideLoading();
 }
 
@@ -614,10 +624,19 @@ async function loadTrendingVideos() {
 
     if (result.error) {
         hideLoading();
+        hideFeaturedVideo();
         return;
     }
 
-    renderVideos(result.items);
+    // Mostrar el primer vídeo com a destacat
+    if (result.items.length > 0) {
+        showFeaturedVideo(result.items[0], 'trending');
+        renderVideos(result.items.slice(1));
+    } else {
+        hideFeaturedVideo();
+        renderVideos(result.items);
+    }
+
     hideLoading();
 }
 
@@ -626,6 +645,7 @@ async function searchVideos(query) {
     showLoading();
     document.querySelector('.page-title').textContent = `Resultats per: "${query}"`;
     showHome();
+    hideFeaturedVideo(); // Amagar el vídeo destacat en cerques
 
     const result = await YouTubeAPI.searchVideos(query, CONFIG.layout.videosPerPage);
 
@@ -1026,6 +1046,7 @@ function showHome() {
     watchPage.classList.add('hidden');
     currentVideoId = null;
     window.scrollTo(0, 0);
+    // Nota: El vídeo destacat es gestiona a les funcions de càrrega
 }
 
 // Mostrar vídeo (estàtic)
@@ -1436,8 +1457,16 @@ async function loadVideosByCategoryWithUser(categoryId) {
     });
 
     if (categoryVideos.length > 0) {
-        renderUserVideos(categoryVideos);
+        // Mostrar el primer vídeo com a destacat amb el color de la categoria
+        showFeaturedVideo(categoryVideos[0], categoryId);
+        // Renderitzar la resta de vídeos
+        if (categoryVideos.length > 1) {
+            renderUserVideos(categoryVideos.slice(1));
+        } else {
+            videosGrid.innerHTML = '';
+        }
     } else {
+        hideFeaturedVideo();
         videosGrid.innerHTML = `
             <div class="empty-category">
                 <i data-lucide="video-off"></i>
@@ -1487,6 +1516,83 @@ function renderUserVideos(videos) {
 
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
+    }
+}
+
+// ==================== VÍDEO DESTACAT DEL MOMENT ====================
+
+// Secció actual per al vídeo destacat
+let currentSection = 'home';
+
+// Noms de les seccions per al badge
+const sectionNames = {
+    'home': 'Inici',
+    'trending': 'Tendències',
+    'societat': 'Societat',
+    'cultura': 'Cultura',
+    'humor': 'Humor',
+    'gaming': 'Gaming',
+    'vida': 'Vida'
+};
+
+// Mostrar vídeo destacat
+function showFeaturedVideo(video, section = 'home') {
+    const featuredSection = document.getElementById('featuredVideoSection');
+    const featuredContainer = document.getElementById('featuredVideoContainer');
+    const featuredBadge = document.getElementById('featuredBadge');
+
+    if (!featuredSection || !featuredContainer || !video) {
+        if (featuredSection) featuredSection.style.display = 'none';
+        return;
+    }
+
+    currentSection = section;
+
+    // Actualitzar classe de color
+    featuredSection.className = `featured-video-section section-${section}`;
+    featuredSection.style.display = 'block';
+
+    // Actualitzar badge
+    featuredBadge.textContent = sectionNames[section] || section;
+
+    // Renderitzar contingut
+    featuredContainer.innerHTML = `
+        <div class="featured-video-thumbnail" data-video-id="${video.id}">
+            <img src="${video.thumbnail}" alt="${escapeHtml(video.title)}" loading="lazy">
+            ${video.duration ? `<span class="video-duration">${video.duration}</span>` : ''}
+            <div class="play-overlay">
+                <i data-lucide="play"></i>
+            </div>
+        </div>
+        <div class="featured-video-info">
+            <h3 class="video-title">${escapeHtml(video.title)}</h3>
+            <div class="video-channel">${escapeHtml(video.channelTitle || '')}</div>
+            <div class="video-stats">
+                ${video.viewCount ? `<i data-lucide="eye" style="width: 14px; height: 14px;"></i><span>${formatViews(video.viewCount)} visualitzacions</span><span>•</span>` : ''}
+                <span>${video.publishedAt ? formatDate(video.publishedAt) : ''}</span>
+            </div>
+            ${video.description ? `<p class="video-description">${escapeHtml(video.description.substring(0, 200))}${video.description.length > 200 ? '...' : ''}</p>` : ''}
+        </div>
+    `;
+
+    // Event listener per reproduir el vídeo
+    const thumbnail = featuredContainer.querySelector('.featured-video-thumbnail');
+    if (thumbnail) {
+        thumbnail.addEventListener('click', () => {
+            showVideoFromAPI(video.id);
+        });
+    }
+
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+}
+
+// Amagar vídeo destacat
+function hideFeaturedVideo() {
+    const featuredSection = document.getElementById('featuredVideoSection');
+    if (featuredSection) {
+        featuredSection.style.display = 'none';
     }
 }
 
