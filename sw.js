@@ -2,13 +2,14 @@
 
 const CACHE_NAME = 'mytube-v1';
 const urlsToCache = [
-    '/',
-    '/index.html',
-    '/css/styles.css',
-    '/js/app.js',
-    '/js/config.js',
-    '/js/data.js',
-    '/manifest.json'
+    './',                // <--- Canviat '/' per './'
+    './index.html',      // <--- Canviat '/index.html' per './index.html'
+    './css/styles.css',  // <--- Etc...
+    './js/app.js',
+    './js/config.js',
+    './js/data.js',
+    './js/youtube.js',   // <--- Afegeix també aquest que faltava a la llista original!
+    './manifest.json'
 ];
 
 // Instal·lació
