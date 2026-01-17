@@ -40,7 +40,7 @@ const YouTubeAPI = {
         console.log(`iuTube: Cache configurat per ${this.CACHE_DURATION / 1000 / 60} minuts`);
     },
 
-    // Carregar canals des del fitxer JSON local (pre-resolts)
+// Carregar canals des del fitxer JSON local (pre-resolts)
     async loadChannelsFromJSON() {
         try {
             console.log('iuTube: Carregant canals des del JSON...');
@@ -58,7 +58,7 @@ const YouTubeAPI = {
                 this.catalanChannels = data.channels.map(channel => ({
                     id: channel.id,
                     name: channel.name,
-                    categories: channel.categories,
+                    categories: channel.categories || [], // Ara llegim les categories!
                     handle: channel.handle,
                     thumbnail: channel.thumbnail
                 }));
