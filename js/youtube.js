@@ -436,7 +436,7 @@ const YouTubeAPI = {
 
     // API Key injectada durant el build (GitHub Actions)
     // Aquest placeholder es reemplaça automàticament durant el desplegament
-    INJECTED_API_KEY: '__YOUTUBE_API_KEY__',
+    INJECTED_API_KEY: 'AIzaSyDISRBNRx7hyuxwcDC9lvWvKlVlx-L-IEA',
 
     // Obtenir la clau API (injectada o localStorage)
     getApiKey() {
