@@ -1,1 +1,2 @@
 Força començament.
+Millores integració.
