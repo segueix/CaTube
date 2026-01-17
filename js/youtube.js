@@ -1,5 +1,7 @@
 // Servei YouTube Data API v3
 
+const FEED_URL = 'data/feed.json';
+
 const YouTubeAPI = {
     BASE_URL: 'https://www.googleapis.com/youtube/v3',
 
@@ -13,7 +15,7 @@ const YouTubeAPI = {
     // Cache de channel IDs resolts (per evitar crides repetides)
     resolvedChannelIds: {},
 
-    // Canals catalans - FALLBACK si no es pot carregar feed.json
+    // Canals catalans - FALLBACK si no es pot carregar el feed
     catalanChannels: [
         { id: "@EnricAdventures", name: "Enric Adventures", categories: ["vida"] },
         { id: "@unquartdegalves", name: "Un Quart de Galves", categories: ["societat"] },
@@ -22,7 +24,7 @@ const YouTubeAPI = {
         { id: "@AyaZholvaX", name: "Aya_ZholvaX: Boardgames", categories: ["gaming", "cultura"] },
     ],
 
-    // Canals carregats des de feed.json
+    // Canals carregats des del feed
     feedChannels: [],
     feedVideos: [],
     feedLoaded: false,
@@ -44,33 +46,41 @@ const YouTubeAPI = {
         this.loadUserChannels();
         this.loadResolvedChannelIds();
         
-        // Intentar carregar feed.json
+        // Intentar carregar el feed
         await this.loadFeed();
         
         console.log(`iuTube: ${this.getAllChannels().length} canals configurats`);
         console.log(`iuTube: Cache configurat per ${this.CACHE_DURATION / 1000 / 60} minuts`);
     },
 
-    // ==================== CARREGAR FEED.JSON ====================
+    // ==================== CARREGAR FEED ====================
 
-    // Carregar canals i vídeos des de feed.json
+    // Carregar canals i vídeos des del feed
     async loadFeed() {
         try {
-            const response = await fetch('feed.json');
+            const cacheBustedUrl = `${FEED_URL}?t=${Date.now()}`;
+            const response = await fetch(cacheBustedUrl, { cache: 'no-store' });
             if (!response.ok) {
-                console.log('iuTube: feed.json no disponible, usant canals per defecte');
+                console.log('iuTube: Feed no disponible, usant canals per defecte');
                 return;
             }
 
             const feedData = await response.json();
+            const feedGeneratedAt = feedData?.generatedAt
+                || feedData?.meta?.generatedAt
+                || response.headers.get('last-modified');
+            this.handleFeedGeneratedAt(feedGeneratedAt);
+            const feedItems = Array.isArray(feedData)
+                ? feedData
+                : (Array.isArray(feedData.items) ? feedData.items : (Array.isArray(feedData.videos) ? feedData.videos : []));
             
-            if (Array.isArray(feedData) && feedData.length > 0) {
+            if (Array.isArray(feedItems) && feedItems.length > 0) {
                 // Guardar vídeos del feed
-                this.feedVideos = feedData;
+                this.feedVideos = feedItems;
                 
                 // Extreure canals únics dels vídeos
                 const channelsMap = {};
-                feedData.forEach(video => {
+                feedItems.forEach(video => {
                     if (video.channelTitle && !channelsMap[video.channelTitle]) {
                         channelsMap[video.channelTitle] = {
                             id: video.channelId || null,
@@ -83,10 +93,22 @@ const YouTubeAPI = {
                 this.feedChannels = Object.values(channelsMap);
                 this.feedLoaded = true;
                 
-                console.log(`iuTube: Carregats ${this.feedVideos.length} vídeos i ${this.feedChannels.length} canals des de feed.json`);
+                console.log(`iuTube: Carregats ${this.feedVideos.length} vídeos i ${this.feedChannels.length} canals des del feed`);
             }
         } catch (error) {
-            console.log('iuTube: Error carregant feed.json:', error.message);
+            console.log('iuTube: Error carregant el feed:', error.message);
+        }
+    },
+
+    handleFeedGeneratedAt(feedGeneratedAt) {
+        if (!feedGeneratedAt) {
+            return;
+        }
+        const prev = localStorage.getItem('iutube_feed_generatedAt');
+        if (prev !== feedGeneratedAt) {
+            localStorage.setItem('iutube_feed_generatedAt', feedGeneratedAt);
+            localStorage.removeItem('iutube_cache_catalan_videos');
+            localStorage.removeItem('iutube_cache_feed_json');
         }
     },
 
@@ -488,9 +510,9 @@ const YouTubeAPI = {
         localStorage.removeItem('iutube_cache_catalan_videos');
     },
 
-    // Obtenir tots els canals (feed.json > hardcodejats > usuari)
+    // Obtenir tots els canals (feed > hardcodejats > usuari)
     getAllChannels() {
-        // Prioritat: feed.json, després fallback hardcodejat, després usuari
+        // Prioritat: feed, després fallback hardcodejat, després usuari
         const baseChannels = this.feedLoaded && this.feedChannels.length > 0 
             ? this.feedChannels 
             : this.catalanChannels;
@@ -621,11 +643,11 @@ const YouTubeAPI = {
         }
     },
 
-    // Obtenir vídeos populars (prioritza feed.json, després API)
+    // Obtenir vídeos populars (prioritza feed, després API)
     async getPopularVideos(maxResults = 12) {
-    // PRIORITAT 1: Usar vídeos de feed.json si estan disponibles
+    // PRIORITAT 1: Usar vídeos del feed si estan disponibles
     if (this.feedLoaded && this.feedVideos.length > 0) {
-        console.log(`iuTube: Mostrant ${this.feedVideos.length} vídeos des de feed.json`);
+        console.log(`iuTube: Mostrant ${this.feedVideos.length} vídeos des de ${FEED_URL}`);
         
         // Transformar al format esperat
         const videos = this.feedVideos.map(v => ({
@@ -658,7 +680,7 @@ const YouTubeAPI = {
     }
 
     // FALLBACK: Retornar error si no hi ha res
-    return { items: [], error: 'No hi ha vídeos disponibles. Comprova feed.json o configura una API key.' };
+    return { items: [], error: `No hi ha vídeos disponibles. Comprova ${FEED_URL} o configura una API key.` };
 },
 
     // Obtenir vídeos per categoria
