@@ -1,2 +1,2 @@
 Aplicació per descobrir Youtubers
-Canvis millor integració
+Canvis millor integració  
