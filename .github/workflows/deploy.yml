@@ -48,11 +48,6 @@ jobs:
           fi
 
       # --- PAS 2: PUBLICAR WEB ---
-      - name: Injectar API Key
-        run: |
-          # Si el secret està buit, això fallarà silenciosament. Assegura't del secret!
-          sed -i "s|__YOUTUBE_API_KEY__|${{ secrets.YOUTUBE_API_KEY }}|g" js/youtube.js
-
       - name: Setup Pages
         uses: actions/configure-pages@v4
 

@@ -28,7 +28,7 @@ jobs:
 
       - name: Run generator
         env:
-          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY_SERVER }}
           VIDEOS_PER_CHANNEL: "5"
           CONCURRENCY: "10"
         run: |
