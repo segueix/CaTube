@@ -39,6 +39,18 @@ const fetchData = (url) => {
     });
 };
 
+const fetchYouTubeData = async (url) => {
+    const response = await fetch(url);
+
+    if (!response.ok) {
+        const body = await response.text().catch(() => '');
+        throw new Error(`YouTube API HTTP ${response.status} Body: ${body.slice(0, 1200)}`);
+    }
+
+    const data = await response.json();
+    return data;
+};
+
 /**
  * Converteix el contingut CSV en una llista d'objectes (canals)
  */
@@ -111,8 +123,7 @@ async function main() {
             let uploadPlaylistId = '';
             if (channel.id.startsWith('@')) {
                 const hUrl = `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&forHandle=${encodeURIComponent(channel.id)}&key=${API_KEY}`;
-                const hRes = await fetchData(hUrl);
-                const hData = JSON.parse(hRes);
+                const hData = await fetchYouTubeData(hUrl);
                 if (hData.items?.length > 0) uploadPlaylistId = hData.items[0].contentDetails.relatedPlaylists.uploads;
             } else if (channel.id.startsWith('UC')) {
                 uploadPlaylistId = channel.id.replace('UC', 'UU');
@@ -121,8 +132,7 @@ async function main() {
             if (!uploadPlaylistId) return null;
 
             const vUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadPlaylistId}&maxResults=5&key=${API_KEY}`;
-            const vRes = await fetchData(vUrl);
-            const vData = JSON.parse(vRes);
+            const vData = await fetchYouTubeData(vUrl);
             return { items: vData.items || [], channelInfo: channel };
         });
 
@@ -154,8 +164,7 @@ async function main() {
             for (let i = 0; i < videoIdsForDetails.length; i += 50) {
                 const chunk = videoIdsForDetails.slice(i, i + 50);
                 const dUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${chunk.join(',')}&key=${API_KEY}`;
-                const dRes = await fetchData(dUrl);
-                const dData = JSON.parse(dRes);
+                const dData = await fetchYouTubeData(dUrl);
                 if (dData.items) {
                     dData.items.forEach(v => {
                         durationMap[v.id] = parseDuration(v.contentDetails.duration) <= 60;
