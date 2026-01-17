@@ -1,6 +1,6 @@
 // Service Worker per PWA
 
-const CACHE_NAME = 'mytube-v1';
+const CACHE_NAME = 'mytube-v7';
 const urlsToCache = [
     '/',
     '/index.html',
@@ -8,6 +8,7 @@ const urlsToCache = [
     '/js/app.js',
     '/js/config.js',
     '/js/data.js',
+    '/js/youtube.js',
     '/manifest.json'
 ];
 
@@ -40,30 +41,43 @@ self.addEventListener('activate', (event) => {
 
 // Fetch
 self.addEventListener('fetch', (event) => {
-    event.respondWith(
-        caches.match(event.request)
-            .then((response) => {
-                // Retornar cache si existeix, sinó fer petició
-                if (response) {
-                    return response;
-                }
-                
-                return fetch(event.request).then((response) => {
-                    // No cachear si no és una resposta vàlida
-                    if (!response || response.status !== 200 || response.type !== 'basic') {
-                        return response;
-                    }
-                    
-                    // Clonar la resposta
-                    const responseToCache = response.clone();
-                    
-                    caches.open(CACHE_NAME)
-                        .then((cache) => {
-                            cache.put(event.request, responseToCache);
-                        });
-                    
-                    return response;
-                });
-            })
-    );
+    const { request } = event;
+    const url = new URL(request.url);
+    const isHome = request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html';
+    const isStaticAsset = url.pathname.endsWith('.js') || url.pathname.endsWith('.css');
+    const isFeed = url.pathname.endsWith('/data/feed.json');
+
+    if (isHome || isStaticAsset || isFeed) {
+        event.respondWith(networkFirst(request));
+        return;
+    }
+
+    event.respondWith(cacheFirst(request));
 });
+
+async function networkFirst(request) {
+    try {
+        const response = await fetch(request);
+        if (response && response.status === 200 && response.type === 'basic') {
+            const cache = await caches.open(CACHE_NAME);
+            cache.put(request, response.clone());
+        }
+        return response;
+    } catch (error) {
+        const cached = await caches.match(request);
+        return cached || Response.error();
+    }
+}
+
+async function cacheFirst(request) {
+    const cached = await caches.match(request);
+    if (cached) {
+        return cached;
+    }
+    const response = await fetch(request);
+    if (response && response.status === 200 && response.type === 'basic') {
+        const cache = await caches.open(CACHE_NAME);
+        cache.put(request, response.clone());
+    }
+    return response;
+}

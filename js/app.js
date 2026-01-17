@@ -78,9 +78,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Inicialitzar YouTubeAPI (carregar canals catalans)
     await YouTubeAPI.init();
 
-    // Carregar vídeos (prioritza feed.json)
+    // Carregar vídeos (prioritza feed)
     if (YouTubeAPI.feedLoaded && YouTubeAPI.feedVideos.length > 0) {
-        // Tenim feed.json, no cal API key per veure vídeos
+        // Tenim feed, no cal API key per veure vídeos
         useYouTubeAPI = true;
         loadVideosFromAPI();
     } else if (YouTubeAPI.hasApiKey()) {
