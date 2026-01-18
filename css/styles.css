@@ -356,6 +356,9 @@ body.sidebar-collapsed .main-content {
 }
 
 .hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     margin-top: 8px;
 }
 
@@ -372,6 +375,14 @@ body.sidebar-collapsed .main-content {
 
 .hero-button:hover {
     background-color: #e5e5e5;
+}
+
+.hero-channel {
+    margin-left: auto;
+    text-align: right;
+    font-size: 30px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
 }
 
 .hero-thumbnail {
@@ -1380,4 +1391,27 @@ body.sidebar-collapsed .main-content {
 [data-category="Gaming"] {
     background-color: #e84393;
     color: #ffffff;
+}
+
+@media (max-width: 768px) {
+    .hero-eyebrow {
+        font-size: 10px;
+    }
+
+    .hero-title {
+        font-size: 22px;
+    }
+
+    .hero-description {
+        font-size: 12px;
+    }
+
+    .hero-duration {
+        font-size: 10px;
+    }
+
+    .hero-channel {
+        font-size: 16px;
+        text-align: left;
+    }
 }

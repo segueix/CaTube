@@ -2,7 +2,7 @@
 
 // Elements del DOM
 let sidebar, menuBtn, videosGrid, homePage, watchPage, loading;
-let heroSection, heroTitle, heroDescription, heroImage, heroDuration, heroButton, heroEyebrow;
+let heroSection, heroTitle, heroDescription, heroImage, heroDuration, heroButton, heroEyebrow, heroChannel;
 let pageTitle;
 let backgroundModal, backgroundBtn, backgroundOptions;
 let currentVideoId = null;
@@ -92,6 +92,7 @@ function initElements() {
     heroDuration = document.getElementById('heroDuration');
     heroButton = document.getElementById('heroButton');
     heroEyebrow = document.getElementById('heroEyebrow');
+    heroChannel = document.getElementById('heroChannel');
     pageTitle = document.getElementById('pageTitle');
 }
 
@@ -323,6 +324,14 @@ function updateHero(video, source = 'static') {
 
     if (heroEyebrow) {
         heroEyebrow.textContent = source === 'api' ? 'Destacat del moment' : 'Destacat de la setmana';
+    }
+
+    if (heroChannel) {
+        const channelName = video.channelTitle
+            || (typeof getChannelById === 'function' ? getChannelById(video.channelId)?.name : '')
+            || '';
+        heroChannel.textContent = channelName;
+        heroChannel.classList.toggle('hidden', !channelName);
     }
 }
 
