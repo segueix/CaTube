@@ -325,7 +325,7 @@ body.sidebar-collapsed .main-content {
     padding: 28px;
     border-radius: 16px;
     margin-bottom: 32px;
-    background: linear-gradient(90deg, #000000 0%, rgba(0, 0, 0, 0.7) 55%, rgba(0, 0, 0, 0.35) 100%);
+    background: linear-gradient(90deg, #1b1b1b 0%, rgba(27, 27, 27, 0.7) 55%, rgba(27, 27, 27, 0.35) 100%);
     align-items: center;
 }
 
