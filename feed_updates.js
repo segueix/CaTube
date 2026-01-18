@@ -14,8 +14,8 @@ window.FEED_UPDATES = [
     "duration": "PT46M22S",
     "durationSeconds": 2782,
     "isShort": false,
-    "viewCount": 228,
-    "likeCount": 53,
+    "viewCount": 241,
+    "likeCount": 62,
     "commentCount": 16
   },
   {
@@ -52,7 +52,7 @@ window.FEED_UPDATES = [
     "durationSeconds": 1931,
     "isShort": false,
     "viewCount": 1022,
-    "likeCount": 214,
+    "likeCount": 216,
     "commentCount": 52
   },
   {
@@ -88,7 +88,7 @@ window.FEED_UPDATES = [
     "duration": "PT33M52S",
     "durationSeconds": 2032,
     "isShort": false,
-    "viewCount": 1262,
+    "viewCount": 1263,
     "likeCount": 183,
     "commentCount": 45
   },
@@ -125,8 +125,8 @@ window.FEED_UPDATES = [
     "duration": "PT1H6M17S",
     "durationSeconds": 3977,
     "isShort": false,
-    "viewCount": 61097,
-    "likeCount": 1341,
+    "viewCount": 61164,
+    "likeCount": 1342,
     "commentCount": 77
   },
   {
@@ -179,7 +179,7 @@ window.FEED_UPDATES = [
     "duration": "PT17M59S",
     "durationSeconds": 1079,
     "isShort": false,
-    "viewCount": 13310,
+    "viewCount": 13314,
     "likeCount": 1090,
     "commentCount": 115
   },
@@ -271,7 +271,7 @@ window.FEED_UPDATES = [
     "duration": "PT15M40S",
     "durationSeconds": 940,
     "isShort": false,
-    "viewCount": 14130,
+    "viewCount": 14136,
     "likeCount": 1182,
     "commentCount": 158
   },
@@ -308,7 +308,7 @@ window.FEED_UPDATES = [
     "duration": "PT13M51S",
     "durationSeconds": 831,
     "isShort": false,
-    "viewCount": 14312,
+    "viewCount": 14313,
     "likeCount": 1309,
     "commentCount": 184
   },
@@ -326,7 +326,7 @@ window.FEED_UPDATES = [
     "duration": "PT13M46S",
     "durationSeconds": 826,
     "isShort": false,
-    "viewCount": 14122,
+    "viewCount": 14123,
     "likeCount": 1358,
     "commentCount": 153
   },
@@ -455,7 +455,7 @@ window.FEED_UPDATES = [
     "duration": "PT19M21S",
     "durationSeconds": 1161,
     "isShort": false,
-    "viewCount": 14385,
+    "viewCount": 14388,
     "likeCount": 1249,
     "commentCount": 121
   },
