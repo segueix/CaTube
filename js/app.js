@@ -136,6 +136,25 @@ function initEventListeners() {
         });
     });
 
+    const brandLink = document.querySelector('.brand');
+    if (brandLink) {
+        brandLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            navItems.forEach(nav => nav.classList.remove('active'));
+            const homeNav = document.querySelector('.nav-item[data-page="home"]');
+            if (homeNav) {
+                homeNav.classList.add('active');
+            }
+            history.pushState({}, '', window.location.pathname);
+            showHome();
+            if (useYouTubeAPI) {
+                loadVideosFromAPI();
+            } else {
+                loadVideos();
+            }
+        });
+    }
+
     // Cerca
     const searchForm = document.getElementById('searchForm');
     if (searchForm) {
