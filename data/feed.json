@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-01-18T02:24:44.922Z",
+  "generatedAt": "2026-01-18T04:09:11.715Z",
   "videos": [
     {
       "id": "Zw-EL0TJK4c",
@@ -15,9 +15,9 @@
       "duration": "PT46M22S",
       "durationSeconds": 2782,
       "isShort": false,
-      "viewCount": 163,
-      "likeCount": 40,
-      "commentCount": 14
+      "viewCount": 198,
+      "likeCount": 45,
+      "commentCount": 15
     },
     {
       "id": "din1pM12Alg",
@@ -126,7 +126,7 @@
       "duration": "PT1H6M17S",
       "durationSeconds": 3977,
       "isShort": false,
-      "viewCount": 60970,
+      "viewCount": 61080,
       "likeCount": 1340,
       "commentCount": 77
     },
@@ -162,7 +162,7 @@
       "duration": "PT1M12S",
       "durationSeconds": 72,
       "isShort": true,
-      "viewCount": 2883,
+      "viewCount": 2903,
       "likeCount": 79,
       "commentCount": 3
     },
@@ -217,7 +217,7 @@
       "duration": "PT1M9S",
       "durationSeconds": 69,
       "isShort": true,
-      "viewCount": 4649,
+      "viewCount": 4650,
       "likeCount": 137,
       "commentCount": 3
     },
@@ -272,7 +272,7 @@
       "duration": "PT15M40S",
       "durationSeconds": 940,
       "isShort": false,
-      "viewCount": 14094,
+      "viewCount": 14130,
       "likeCount": 1182,
       "commentCount": 158
     },
@@ -309,7 +309,7 @@
       "duration": "PT13M51S",
       "durationSeconds": 831,
       "isShort": false,
-      "viewCount": 14282,
+      "viewCount": 14308,
       "likeCount": 1309,
       "commentCount": 184
     },
@@ -327,7 +327,7 @@
       "duration": "PT13M46S",
       "durationSeconds": 826,
       "isShort": false,
-      "viewCount": 14116,
+      "viewCount": 14122,
       "likeCount": 1358,
       "commentCount": 153
     },
@@ -382,7 +382,7 @@
       "duration": "PT17M20S",
       "durationSeconds": 1040,
       "isShort": false,
-      "viewCount": 15376,
+      "viewCount": 15384,
       "likeCount": 1312,
       "commentCount": 147
     },
@@ -511,7 +511,7 @@
       "duration": "PT2H4M43S",
       "durationSeconds": 7483,
       "isShort": false,
-      "viewCount": 14656,
+      "viewCount": 14660,
       "likeCount": 976,
       "commentCount": 56
     },
@@ -583,7 +583,7 @@
       "duration": "PT18M13S",
       "durationSeconds": 1093,
       "isShort": false,
-      "viewCount": 15974,
+      "viewCount": 15987,
       "likeCount": 1342,
       "commentCount": 177
     },
@@ -695,7 +695,7 @@
       "duration": "PT1M33S",
       "durationSeconds": 93,
       "isShort": true,
-      "viewCount": 2552,
+      "viewCount": 2551,
       "likeCount": 59,
       "commentCount": 1
     },
@@ -713,7 +713,7 @@
       "duration": "PT1M15S",
       "durationSeconds": 75,
       "isShort": true,
-      "viewCount": 2709,
+      "viewCount": 2713,
       "likeCount": 47,
       "commentCount": 0
     },
@@ -731,7 +731,7 @@
       "duration": "PT1H11M54S",
       "durationSeconds": 4314,
       "isShort": false,
-      "viewCount": 90644,
+      "viewCount": 90671,
       "likeCount": 1912,
       "commentCount": 108
     },
@@ -805,7 +805,7 @@
       "duration": "PT9M19S",
       "durationSeconds": 559,
       "isShort": false,
-      "viewCount": 24,
+      "viewCount": 25,
       "likeCount": 4,
       "commentCount": 0
     },
@@ -1173,7 +1173,7 @@
       "duration": "PT39M26S",
       "durationSeconds": 2366,
       "isShort": false,
-      "viewCount": 1743,
+      "viewCount": 1744,
       "likeCount": 77,
       "commentCount": 19
     },
