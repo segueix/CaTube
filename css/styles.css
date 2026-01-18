@@ -327,9 +327,9 @@ body.sidebar-collapsed .main-content {
     margin-bottom: 32px;
     background: linear-gradient(
         90deg,
-        color-mix(in srgb, var(--color-background), black 25%) 0%,
+        color-mix(in srgb, var(--color-background), black 40%) 0%,
         var(--color-background) 55%,
-        color-mix(in srgb, var(--color-background), transparent 80%) 100%
+        color-mix(in srgb, var(--color-background), transparent 60%) 100%
     );
     align-items: center;
 }
