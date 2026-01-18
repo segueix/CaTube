@@ -749,55 +749,102 @@ async function showVideoFromAPI(videoId) {
         </div>
     `;
 
-    // Obtenir detalls del vídeo
-    const videoResult = await YouTubeAPI.getVideoDetails(videoId);
-
-    if (videoResult.video) {
-        const video = videoResult.video;
-
-        // 1. Actualitzar estadístiques principals
-        document.getElementById('videoTitle').textContent = video.title;
+    // 1. Renderitzat immediat des del catxé si està disponible
+    const cachedVideo = cachedAPIVideos.find(video => video.id === videoId);
+    if (cachedVideo) {
+        document.getElementById('videoTitle').textContent = cachedVideo.title || '';
         document.getElementById('videoViews').innerHTML = `
             <i data-lucide="eye"></i>
-            ${formatViews(video.viewCount)} visualitzacions
+            ${formatViews(cachedVideo.viewCount || 0)} visualitzacions
         `;
-        document.getElementById('videoDate').textContent = formatDate(video.publishedAt);
+        document.getElementById('videoDate').textContent = cachedVideo.publishedAt
+            ? formatDate(cachedVideo.publishedAt)
+            : '';
 
-        // 2. Mostrar Likes
         const likeCountElement = document.getElementById('videoLikes');
         if (likeCountElement) {
-            likeCountElement.textContent = formatViews(video.likeCount);
+            likeCountElement.textContent = formatViews(cachedVideo.likeCount || 0);
         }
 
-        // 3. AMAGAR el botó de Dislike (No m'agrada)
-        // Busquem el botó que conté la icona thumbs-down
-        const dislikeIcon = document.querySelector('.action-btn i[data-lucide="thumbs-down"]');
-        if (dislikeIcon) {
-            const dislikeBtn = dislikeIcon.closest('button');
-            if (dislikeBtn) dislikeBtn.style.display = 'none';
-        }
-
-        // Obtenir informació del canal
-        const channelResult = await YouTubeAPI.getChannelDetails(video.channelId);
-
-        if (channelResult.channel) {
-            const channel = channelResult.channel;
-            const channelInfo = document.getElementById('channelInfo');
-            const channelUrl = `https://www.youtube.com/channel/${channel.id}`;
+        const channelInfo = document.getElementById('channelInfo');
+        if (channelInfo) {
+            const cachedChannelTitle = cachedVideo.channelTitle || '';
             channelInfo.innerHTML = `
                 <div class="channel-header">
-                    <img src="${channel.thumbnail}" alt="${escapeHtml(channel.title)}" class="channel-avatar-large">
+                    <img src="" alt="${escapeHtml(cachedChannelTitle)}" class="channel-avatar-large">
                     <div class="channel-details">
-                        <div class="channel-name-large">${escapeHtml(channel.title)}</div>
-                        <div class="channel-subscribers">${formatViews(channel.subscriberCount)} subscriptors</div>
+                        <div class="channel-name-large">${escapeHtml(cachedChannelTitle)}</div>
+                        <div class="channel-subscribers"></div>
                     </div>
-                    <a href="${channelUrl}" target="_blank" rel="noopener noreferrer" class="subscribe-btn" style="text-decoration: none; display: flex; align-items: center; justify-content: center; background-color: #cc0000; color: white;">
+                    <a href="https://www.youtube.com/channel/${cachedVideo.channelId || ''}" target="_blank" rel="noopener noreferrer" class="subscribe-btn" style="text-decoration: none; display: flex; align-items: center; justify-content: center; background-color: #cc0000; color: white;">
                         Canal Youtube
                     </a>
                 </div>
-                <div class="video-description">${escapeHtml(video.description).substring(0, 500)}${video.description.length > 500 ? '...' : ''}</div>
+                <div class="video-description"></div>
             `;
         }
+    }
+
+    // AMAGAR el botó de Dislike (No m'agrada) fins i tot en mode fallback
+    const dislikeIcon = document.querySelector('.action-btn i[data-lucide="thumbs-down"]');
+    if (dislikeIcon) {
+        const dislikeBtn = dislikeIcon.closest('button');
+        if (dislikeBtn) dislikeBtn.style.display = 'none';
+    }
+
+    // 2. Enriquiment progressiu via API
+    try {
+        const videoResult = await YouTubeAPI.getVideoDetails(videoId);
+
+        if (videoResult.video) {
+            const video = videoResult.video;
+
+            // 1. Actualitzar estadístiques principals
+            document.getElementById('videoTitle').textContent = video.title;
+            document.getElementById('videoViews').innerHTML = `
+                <i data-lucide="eye"></i>
+                ${formatViews(video.viewCount)} visualitzacions
+            `;
+            document.getElementById('videoDate').textContent = formatDate(video.publishedAt);
+
+            // 2. Mostrar Likes
+            const likeCountElement = document.getElementById('videoLikes');
+            if (likeCountElement) {
+                likeCountElement.textContent = formatViews(video.likeCount);
+            }
+
+            // 3. AMAGAR el botó de Dislike (No m'agrada)
+            // Busquem el botó que conté la icona thumbs-down
+            const dislikeIcon = document.querySelector('.action-btn i[data-lucide="thumbs-down"]');
+            if (dislikeIcon) {
+                const dislikeBtn = dislikeIcon.closest('button');
+                if (dislikeBtn) dislikeBtn.style.display = 'none';
+            }
+
+            // Obtenir informació del canal
+            const channelResult = await YouTubeAPI.getChannelDetails(video.channelId);
+
+            if (channelResult.channel) {
+                const channel = channelResult.channel;
+                const channelInfo = document.getElementById('channelInfo');
+                const channelUrl = `https://www.youtube.com/channel/${channel.id}`;
+                channelInfo.innerHTML = `
+                    <div class="channel-header">
+                        <img src="${channel.thumbnail}" alt="${escapeHtml(channel.title)}" class="channel-avatar-large">
+                        <div class="channel-details">
+                            <div class="channel-name-large">${escapeHtml(channel.title)}</div>
+                            <div class="channel-subscribers">${formatViews(channel.subscriberCount)} subscriptors</div>
+                        </div>
+                        <a href="${channelUrl}" target="_blank" rel="noopener noreferrer" class="subscribe-btn" style="text-decoration: none; display: flex; align-items: center; justify-content: center; background-color: #cc0000; color: white;">
+                            Canal Youtube
+                        </a>
+                    </div>
+                    <div class="video-description">${escapeHtml(video.description).substring(0, 500)}${video.description.length > 500 ? '...' : ''}</div>
+                `;
+            }
+        }
+    } catch (error) {
+        console.warn("L'API ha fallat, però almenys es veu la info bàsica", error);
     }
 
     // Carregar comentaris
