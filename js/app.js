@@ -14,12 +14,12 @@ let currentFeedRenderer = null;
 
 const BACKGROUND_STORAGE_KEY = 'catube_background_color';
 const BACKGROUND_COLORS = [
-    '#0f0f0f',
-    '#1b1b1b',
-    '#112131',
-    '#1a2a1f',
-    '#2c1f14',
-    '#2b1b2f'
+    '#333333',
+    '#3d3d3d',
+    '#224262',
+    '#33533d',
+    '#5a3f29',
+    '#513359'
 ];
 
 // Cache de canals carregats de l'API
