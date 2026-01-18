@@ -1222,6 +1222,21 @@ body.sidebar-collapsed .main-content {
     transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 
+.background-option::after {
+    content: "✓";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: 700;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.55);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
 .background-option:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
@@ -1230,6 +1245,10 @@ body.sidebar-collapsed .main-content {
 .background-option.is-active {
     border-color: var(--color-primary);
     box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.25);
+}
+
+.background-option.is-active::after {
+    opacity: 1;
 }
 
 .background-option:focus-visible {
