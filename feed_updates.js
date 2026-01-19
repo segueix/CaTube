@@ -14,9 +14,9 @@ window.FEED_UPDATES = [
     "duration": "PT18M12S",
     "durationSeconds": 1092,
     "isShort": false,
-    "viewCount": 9393,
-    "likeCount": 1010,
-    "commentCount": 126
+    "viewCount": 9467,
+    "likeCount": 1020,
+    "commentCount": 127
   },
   {
     "id": "Zw-EL0TJK4c",
@@ -32,8 +32,8 @@ window.FEED_UPDATES = [
     "duration": "PT46M22S",
     "durationSeconds": 2782,
     "isShort": false,
-    "viewCount": 919,
-    "likeCount": 183,
+    "viewCount": 923,
+    "likeCount": 184,
     "commentCount": 43
   },
   {
@@ -143,8 +143,8 @@ window.FEED_UPDATES = [
     "duration": "PT1H6M17S",
     "durationSeconds": 3977,
     "isShort": false,
-    "viewCount": 63898,
-    "likeCount": 1368,
+    "viewCount": 63914,
+    "likeCount": 1369,
     "commentCount": 77
   },
   {
@@ -197,7 +197,7 @@ window.FEED_UPDATES = [
     "duration": "PT17M59S",
     "durationSeconds": 1079,
     "isShort": false,
-    "viewCount": 13853,
+    "viewCount": 13854,
     "likeCount": 1105,
     "commentCount": 117
   },
@@ -234,7 +234,7 @@ window.FEED_UPDATES = [
     "duration": "PT1M9S",
     "durationSeconds": 69,
     "isShort": true,
-    "viewCount": 4710,
+    "viewCount": 4711,
     "likeCount": 138,
     "commentCount": 3
   },
@@ -344,7 +344,7 @@ window.FEED_UPDATES = [
     "duration": "PT13M46S",
     "durationSeconds": 826,
     "isShort": false,
-    "viewCount": 14231,
+    "viewCount": 14232,
     "likeCount": 1367,
     "commentCount": 153
   },
@@ -363,7 +363,7 @@ window.FEED_UPDATES = [
     "duration": "PT10M48S",
     "durationSeconds": 648,
     "isShort": false,
-    "viewCount": 16,
+    "viewCount": 17,
     "likeCount": 1,
     "commentCount": 0
   },
@@ -953,7 +953,7 @@ window.FEED_UPDATES = [
     "duration": "PT51S",
     "durationSeconds": 51,
     "isShort": true,
-    "viewCount": 4064,
+    "viewCount": 4062,
     "likeCount": 76,
     "commentCount": 0
   },
@@ -1026,7 +1026,7 @@ window.FEED_UPDATES = [
     "duration": "PT12M",
     "durationSeconds": 720,
     "isShort": false,
-    "viewCount": 281,
+    "viewCount": 282,
     "likeCount": 31,
     "commentCount": 3
   },
