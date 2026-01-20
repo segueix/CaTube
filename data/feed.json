@@ -1,6 +1,42 @@
 {
-  "generatedAt": "2026-01-20T14:37:52.038Z",
+  "generatedAt": "2026-01-20T15:37:59.241Z",
   "videos": [
+    {
+      "id": "n9GlWSujeWY",
+      "title": "Visca els carrils bici i les bicis. Dia 51 de La Volta al Món a Peu",
+      "thumbnail": "https://i.ytimg.com/vi/n9GlWSujeWY/mqdefault.jpg",
+      "channelId": "UCDawX1bxeC4-hZiGnkqevbw",
+      "channelTitle": "Enric Adventures",
+      "publishedAt": "2026-01-20T15:00:00Z",
+      "categories": [
+        "vida"
+      ],
+      "sourceChannelId": "@EnricAdventures",
+      "duration": "PT14M20S",
+      "durationSeconds": 860,
+      "isShort": false,
+      "viewCount": 512,
+      "likeCount": 104,
+      "commentCount": 14
+    },
+    {
+      "id": "mi720wF4MtQ",
+      "title": "A la vida s'ha de fer una mica de tot. #català #podcast #humor #lasotana",
+      "thumbnail": "https://i.ytimg.com/vi/mi720wF4MtQ/mqdefault.jpg",
+      "channelId": "UCNSmn5NLUDrV_paFZl--7qw",
+      "channelTitle": "La Sotana",
+      "publishedAt": "2026-01-20T14:38:19Z",
+      "categories": [
+        "humor"
+      ],
+      "sourceChannelId": "@LaSotana",
+      "duration": "PT42S",
+      "durationSeconds": 42,
+      "isShort": true,
+      "viewCount": 254,
+      "likeCount": 8,
+      "commentCount": 0
+    },
     {
       "id": "02p-IAgSNFY",
       "title": "El més històric i terrorífic debut. #català #podcast #humor #lasotana",
@@ -15,9 +51,9 @@
       "duration": "PT39S",
       "durationSeconds": 39,
       "isShort": true,
-      "viewCount": 1326,
-      "likeCount": 39,
-      "commentCount": 1
+      "viewCount": 1553,
+      "likeCount": 48,
+      "commentCount": 2
     },
     {
       "id": "QZ89DSgXj6M",
@@ -34,7 +70,7 @@
       "duration": "PT12M",
       "durationSeconds": 720,
       "isShort": false,
-      "viewCount": 4,
+      "viewCount": 6,
       "likeCount": 0,
       "commentCount": 0
     },
@@ -53,7 +89,7 @@
       "duration": "PT1H39M27S",
       "durationSeconds": 5967,
       "isShort": false,
-      "viewCount": 23,
+      "viewCount": 24,
       "likeCount": 4,
       "commentCount": 0
     },
@@ -71,9 +107,9 @@
       "duration": "PT38M43S",
       "durationSeconds": 2323,
       "isShort": false,
-      "viewCount": 1065,
-      "likeCount": 238,
-      "commentCount": 43
+      "viewCount": 1182,
+      "likeCount": 242,
+      "commentCount": 45
     },
     {
       "id": "9Pthe4kKb_Q",
@@ -108,9 +144,9 @@
       "duration": "PT15M21S",
       "durationSeconds": 921,
       "isShort": false,
-      "viewCount": 9882,
-      "likeCount": 1102,
-      "commentCount": 120
+      "viewCount": 10011,
+      "likeCount": 1114,
+      "commentCount": 121
     },
     {
       "id": "STZqF2Oq0hM",
@@ -145,8 +181,8 @@
       "duration": "PT18M12S",
       "durationSeconds": 1092,
       "isShort": false,
-      "viewCount": 13013,
-      "likeCount": 1236,
+      "viewCount": 13054,
+      "likeCount": 1240,
       "commentCount": 144
     },
     {
@@ -163,8 +199,8 @@
       "duration": "PT46M22S",
       "durationSeconds": 2782,
       "isShort": false,
-      "viewCount": 1180,
-      "likeCount": 226,
+      "viewCount": 1182,
+      "likeCount": 227,
       "commentCount": 69
     },
     {
@@ -200,7 +236,7 @@
       "duration": "PT32M11S",
       "durationSeconds": 1931,
       "isShort": false,
-      "viewCount": 1081,
+      "viewCount": 1083,
       "likeCount": 223,
       "commentCount": 52
     },
@@ -237,7 +273,7 @@
       "duration": "PT33M52S",
       "durationSeconds": 2032,
       "isShort": false,
-      "viewCount": 1312,
+      "viewCount": 1311,
       "likeCount": 188,
       "commentCount": 45
     },
@@ -274,8 +310,8 @@
       "duration": "PT1H6M17S",
       "durationSeconds": 3977,
       "isShort": false,
-      "viewCount": 67059,
-      "likeCount": 1391,
+      "viewCount": 67283,
+      "likeCount": 1394,
       "commentCount": 78
     },
     {
@@ -310,8 +346,8 @@
       "duration": "PT1M12S",
       "durationSeconds": 72,
       "isShort": true,
-      "viewCount": 3184,
-      "likeCount": 82,
+      "viewCount": 3216,
+      "likeCount": 83,
       "commentCount": 3
     },
     {
@@ -328,8 +364,8 @@
       "duration": "PT17M59S",
       "durationSeconds": 1079,
       "isShort": false,
-      "viewCount": 14173,
-      "likeCount": 1133,
+      "viewCount": 14200,
+      "likeCount": 1134,
       "commentCount": 119
     },
     {
@@ -365,8 +401,8 @@
       "duration": "PT1M9S",
       "durationSeconds": 69,
       "isShort": true,
-      "viewCount": 4826,
-      "likeCount": 139,
+      "viewCount": 4846,
+      "likeCount": 140,
       "commentCount": 3
     },
     {
@@ -420,7 +456,7 @@
       "duration": "PT15M40S",
       "durationSeconds": 940,
       "isShort": false,
-      "viewCount": 14665,
+      "viewCount": 14664,
       "likeCount": 1206,
       "commentCount": 158
     },
@@ -457,7 +493,7 @@
       "duration": "PT13M51S",
       "durationSeconds": 831,
       "isShort": false,
-      "viewCount": 14570,
+      "viewCount": 14578,
       "likeCount": 1332,
       "commentCount": 185
     },
@@ -475,7 +511,7 @@
       "duration": "PT13M46S",
       "durationSeconds": 826,
       "isShort": false,
-      "viewCount": 14318,
+      "viewCount": 14314,
       "likeCount": 1376,
       "commentCount": 153
     },
@@ -530,7 +566,7 @@
       "duration": "PT17M20S",
       "durationSeconds": 1040,
       "isShort": false,
-      "viewCount": 15538,
+      "viewCount": 15539,
       "likeCount": 1327,
       "commentCount": 147
     },
@@ -664,24 +700,6 @@
       "commentCount": 56
     },
     {
-      "id": "r8PJm11a3H0",
-      "title": "1000 km! Dia 36 de La Volta al Món a Peu",
-      "thumbnail": "https://i.ytimg.com/vi/r8PJm11a3H0/mqdefault.jpg",
-      "channelId": "UCDawX1bxeC4-hZiGnkqevbw",
-      "channelTitle": "Enric Adventures",
-      "publishedAt": "2026-01-05T17:24:16Z",
-      "categories": [
-        "vida"
-      ],
-      "sourceChannelId": "@EnricAdventures",
-      "duration": "PT18M58S",
-      "durationSeconds": 1138,
-      "isShort": false,
-      "viewCount": 15170,
-      "likeCount": 1437,
-      "commentCount": 160
-    },
-    {
       "id": "2R1wNIWWZvc",
       "title": "Trump segresta Maduro de manera espectacular (Informatiu especial) /2026 01 04",
       "thumbnail": "https://i.ytimg.com/vi/2R1wNIWWZvc/mqdefault.jpg",
@@ -771,8 +789,8 @@
       "duration": "PT37M38S",
       "durationSeconds": 2258,
       "isShort": false,
-      "viewCount": 590,
-      "likeCount": 41,
+      "viewCount": 591,
+      "likeCount": 42,
       "commentCount": 9
     },
     {
@@ -789,8 +807,8 @@
       "duration": "PT1M33S",
       "durationSeconds": 93,
       "isShort": true,
-      "viewCount": 2625,
-      "likeCount": 62,
+      "viewCount": 2638,
+      "likeCount": 63,
       "commentCount": 1
     },
     {
@@ -807,7 +825,7 @@
       "duration": "PT1M15S",
       "durationSeconds": 75,
       "isShort": true,
-      "viewCount": 2779,
+      "viewCount": 2783,
       "likeCount": 47,
       "commentCount": 0
     },
@@ -843,7 +861,7 @@
       "duration": "PT40S",
       "durationSeconds": 40,
       "isShort": true,
-      "viewCount": 4925,
+      "viewCount": 4931,
       "likeCount": 72,
       "commentCount": 3
     },
@@ -861,7 +879,7 @@
       "duration": "PT1M14S",
       "durationSeconds": 74,
       "isShort": true,
-      "viewCount": 4031,
+      "viewCount": 4027,
       "likeCount": 67,
       "commentCount": 1
     },
@@ -976,24 +994,6 @@
       "viewCount": 134,
       "likeCount": 7,
       "commentCount": 2
-    },
-    {
-      "id": "QitfD8Cr6Mc",
-      "title": "Si tens antecedents penals però no els tens tots... Et busquem! A què esperes? #català #podcast",
-      "thumbnail": "https://i.ytimg.com/vi/QitfD8Cr6Mc/mqdefault.jpg",
-      "channelId": "UCNSmn5NLUDrV_paFZl--7qw",
-      "channelTitle": "La Sotana",
-      "publishedAt": "2025-12-18T10:57:42Z",
-      "categories": [
-        "humor"
-      ],
-      "sourceChannelId": "@LaSotana",
-      "duration": "PT51S",
-      "durationSeconds": 51,
-      "isShort": true,
-      "viewCount": 4099,
-      "likeCount": 76,
-      "commentCount": 0
     },
     {
       "id": "w-_h2C_ka3c",
