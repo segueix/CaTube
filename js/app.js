@@ -659,6 +659,76 @@ function closeShortModal() {
     document.body.classList.remove('no-scroll');
 }
 
+function getLikedVideoIds() {
+    const stored = localStorage.getItem('user_liked_videos');
+    if (!stored) {
+        return [];
+    }
+    try {
+        const parsed = JSON.parse(stored);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        console.warn('No es pot llegir user_liked_videos', error);
+        return [];
+    }
+}
+
+function setLikedVideoIds(ids) {
+    localStorage.setItem('user_liked_videos', JSON.stringify(ids));
+}
+
+const HEART_TOGGLE_SVG = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" aria-hidden="true" focusable="false">
+        <path d="M128 224s-96-54-96-118c0-36 28-58 56-58 24 0 40 18 40 18s16-18 40-18c28 0 56 22 56 58 0 64-96 118-96 118z"></path>
+    </svg>
+`;
+
+function setupLikeBadge(videoId) {
+    const likeBadge = document.getElementById('likeToggle');
+    if (!likeBadge) {
+        return;
+    }
+
+    const normalizedId = String(videoId);
+
+    likeBadge.setAttribute('role', 'button');
+    likeBadge.dataset.videoId = normalizedId;
+
+    const likedIds = getLikedVideoIds();
+    const isLiked = likedIds.includes(normalizedId);
+    likeBadge.classList.toggle('liked', isLiked);
+    likeBadge.setAttribute('aria-pressed', isLiked ? 'true' : 'false');
+
+    if (likeBadge._likeHandler) {
+        likeBadge.removeEventListener('click', likeBadge._likeHandler);
+        likeBadge.removeEventListener('keydown', likeBadge._likeHandler);
+    }
+
+    likeBadge._likeHandler = (event) => {
+        if (event.type === 'keydown' && event.key !== 'Enter' && event.key !== ' ') {
+            return;
+        }
+        if (event.type === 'keydown') {
+            event.preventDefault();
+        }
+
+        const ids = getLikedVideoIds();
+        const wasLiked = ids.includes(normalizedId);
+        const nextIds = wasLiked
+            ? ids.filter(id => id !== normalizedId)
+            : [...ids, normalizedId];
+        setLikedVideoIds(nextIds);
+
+        const isNowLiked = !wasLiked;
+        likeBadge.classList.toggle('liked', isNowLiked);
+        likeBadge.setAttribute('aria-pressed', isNowLiked ? 'true' : 'false');
+
+    };
+
+    likeBadge.addEventListener('click', likeBadge._likeHandler);
+    likeBadge.addEventListener('keydown', likeBadge._likeHandler);
+}
+
 // Renderitzar resultats de cerca (sense estadístiques)
 function renderSearchResults(videos) {
     const newest = getNewestVideoFromList(videos);
@@ -749,40 +819,84 @@ async function showVideoFromAPI(videoId) {
         </div>
     `;
 
-    // Obtenir detalls del vídeo
-    const videoResult = await YouTubeAPI.getVideoDetails(videoId);
+    // 1. Renderitzat immediat des del catxé si està disponible
+    const cachedVideo = cachedAPIVideos.find(video => video.id === videoId);
+    if (cachedVideo) {
+        document.getElementById('videoTitle').textContent = cachedVideo.title || '';
+        document.getElementById('videoDate').textContent = cachedVideo.publishedAt
+            ? formatDate(cachedVideo.publishedAt)
+            : '';
+        document.getElementById('videoViews').textContent = `${formatViews(cachedVideo.viewCount || 0)} visualitzacions`;
 
-    if (videoResult.video) {
-        const video = videoResult.video;
-
-        document.getElementById('videoTitle').textContent = video.title;
-        document.getElementById('videoViews').innerHTML = `
-            <i data-lucide="eye"></i>
-            ${formatViews(video.viewCount)} visualitzacions
-        `;
-        document.getElementById('videoDate').textContent = formatDate(video.publishedAt);
-        document.getElementById('videoLikes').textContent = formatViews(video.likeCount);
-
-        // Obtenir informació del canal
-        const channelResult = await YouTubeAPI.getChannelDetails(video.channelId);
-
-        if (channelResult.channel) {
-            const channel = channelResult.channel;
-            const channelInfo = document.getElementById('channelInfo');
+        const channelInfo = document.getElementById('channelInfo');
+        if (channelInfo) {
+            const cachedChannelTitle = cachedVideo.channelTitle || '';
             channelInfo.innerHTML = `
                 <div class="channel-header">
-                    <img src="${channel.thumbnail}" alt="${escapeHtml(channel.title)}" class="channel-avatar-large">
-                    <div class="channel-details">
-                        <div class="channel-name-large">${escapeHtml(channel.title)}</div>
-                        <div class="channel-subscribers">${formatViews(channel.subscriberCount)} subscriptors</div>
+                    <div class="channel-meta">
+                        <div class="channel-name-large">${escapeHtml(cachedChannelTitle)}</div>
+                        <a href="https://www.youtube.com/channel/${cachedVideo.channelId || ''}" target="_blank" rel="noopener noreferrer" class="subscribe-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; background-color: #cc0000; color: white;">
+                            Canal Youtube
+                        </a>
                     </div>
-                    ${CONFIG.features.subscriptions ? `
-                        <button class="subscribe-btn">Subscriu-te</button>
-                    ` : ''}
+                    <div class="channel-actions">
+                        <button class="info-badge" id="likeToggle" type="button" aria-pressed="false" aria-label="M'agrada">
+                            ${HEART_TOGGLE_SVG}
+                        </button>
+                        <button class="icon-btn-ghost" id="shareBtn" aria-label="Compartir">
+                            <i data-lucide="share-2"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="video-description">${escapeHtml(video.description).substring(0, 500)}${video.description.length > 500 ? '...' : ''}</div>
+                <div class="video-description"></div>
             `;
+            setupLikeBadge(videoId);
         }
+    }
+
+    // 2. Enriquiment progressiu via API
+    try {
+        const videoResult = await YouTubeAPI.getVideoDetails(videoId);
+
+        if (videoResult.video) {
+            const video = videoResult.video;
+
+            // 1. Actualitzar estadístiques principals
+            document.getElementById('videoTitle').textContent = video.title;
+            document.getElementById('videoDate').textContent = formatDate(video.publishedAt);
+            document.getElementById('videoViews').textContent = `${formatViews(video.viewCount)} visualitzacions`;
+
+            // Obtenir informació del canal
+            const channelResult = await YouTubeAPI.getChannelDetails(video.channelId);
+
+            if (channelResult.channel) {
+                const channel = channelResult.channel;
+                const channelInfo = document.getElementById('channelInfo');
+                const channelUrl = `https://www.youtube.com/channel/${channel.id}`;
+                channelInfo.innerHTML = `
+                    <div class="channel-header">
+                        <div class="channel-meta">
+                            <div class="channel-name-large">${escapeHtml(channel.title)}</div>
+                            <a href="${channelUrl}" target="_blank" rel="noopener noreferrer" class="subscribe-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; background-color: #cc0000; color: white;">
+                                Canal Youtube
+                            </a>
+                        </div>
+                        <div class="channel-actions">
+                            <button class="info-badge" id="likeToggle" type="button" aria-pressed="false" aria-label="M'agrada">
+                                ${HEART_TOGGLE_SVG}
+                            </button>
+                            <button class="icon-btn-ghost" id="shareBtn" aria-label="Compartir">
+                                <i data-lucide="share-2"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="video-description">${escapeHtml(video.description).substring(0, 500)}${video.description.length > 500 ? '...' : ''}</div>
+                `;
+                setupLikeBadge(videoId);
+            }
+        }
+    } catch (error) {
+        console.warn("L'API ha fallat, però almenys es veu la info bàsica", error);
     }
 
     // Carregar comentaris
@@ -1007,28 +1121,34 @@ function showVideo(videoId) {
         </div>
     `;
 
+    // 1. Actualitzar estadístiques principals
     document.getElementById('videoTitle').textContent = video.title;
-    document.getElementById('videoViews').innerHTML = `
-        <i data-lucide="eye"></i>
-        ${formatViews(video.views)} visualitzacions
-    `;
     document.getElementById('videoDate').textContent = formatDate(video.uploadDate);
-    document.getElementById('videoLikes').textContent = formatViews(video.likes);
+    document.getElementById('videoViews').textContent = `${formatViews(video.views)} visualitzacions`;
 
+    // 2. Mostrar Likes
     const channelInfo = document.getElementById('channelInfo');
+    const channelUrl = `https://www.youtube.com/channel/${channel.id}`;
     channelInfo.innerHTML = `
         <div class="channel-header">
-            <img src="${channel.avatar}" alt="${channel.name}" class="channel-avatar-large">
-            <div class="channel-details">
+            <div class="channel-meta">
                 <div class="channel-name-large">${channel.name}</div>
-                <div class="channel-subscribers">${formatViews(channel.subscribers)} subscriptors</div>
+                <a href="${channelUrl}" target="_blank" rel="noopener noreferrer" class="subscribe-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; background-color: #cc0000; color: white;">
+                    Canal Youtube
+                </a>
             </div>
-            ${CONFIG.features.subscriptions ? `
-                <button class="subscribe-btn">Subscriu-te</button>
-            ` : ''}
+            <div class="channel-actions">
+                <button class="info-badge" id="likeToggle" type="button" aria-pressed="false" aria-label="M'agrada">
+                    ${HEART_TOGGLE_SVG}
+                </button>
+                <button class="icon-btn-ghost" id="shareBtn" aria-label="Compartir">
+                    <i data-lucide="share-2"></i>
+                </button>
+            </div>
         </div>
         <div class="video-description">${video.description}</div>
     `;
+    setupLikeBadge(videoId);
 
     if (CONFIG.features.comments) {
         loadComments(videoId);

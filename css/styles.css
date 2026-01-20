@@ -756,47 +756,99 @@ body.sidebar-collapsed .main-content {
 }
 
 .video-title {
-    font-size: 20px;
-    font-weight: 600;
-    margin-bottom: 8px;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 12px;
 }
 
-.video-stats {
+.video-meta-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: flex-start;
+    gap: 12px;
     color: var(--color-text-secondary);
     font-size: 14px;
-    margin-bottom: 16px;
 }
 
-.video-actions {
-    display: flex;
-    gap: 8px;
+.video-info .video-stats {
+    font-size: 13px;
+    margin-bottom: 12px;
 }
 
-.action-btn {
+.meta-left,
+.meta-right {
     display: flex;
     align-items: center;
+    gap: 12px;
+}
+
+.info-badge {
+    display: inline-flex;
+    align-items: center;
     gap: 8px;
-    padding: 10px 16px;
+    padding: 6px 12px;
     background-color: rgba(255,255,255,0.1);
+    border-radius: 999px;
+    color: var(--color-text);
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s ease, transform 0.2s ease;
     border: none;
-    border-radius: 24px;
+}
+
+.info-badge svg {
+    width: 40px;
+    height: 40px;
+    fill: transparent;
+    stroke: #ffffff;
+    stroke-width: 8px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.2s ease, fill 0.2s ease, stroke 0.2s ease;
+}
+
+.info-badge.liked {
+    color: #ff3b30;
+}
+
+.info-badge.liked svg {
+    fill: currentColor;
+    stroke: currentColor;
+    transform: scale(1.08);
+}
+
+.meta-views {
+    color: var(--color-text-secondary);
+    font-weight: 500;
+}
+
+.meta-dot {
+    color: var(--color-text-secondary);
+}
+
+.icon-btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: none;
+    background-color: transparent;
     color: var(--color-text);
     cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
     transition: background 0.2s;
 }
 
-.action-btn:hover {
-    background-color: rgba(255,255,255,0.2);
+.icon-btn-ghost:hover {
+    background-color: rgba(255,255,255,0.15);
 }
 
-.action-btn svg {
-    width: 20px;
-    height: 20px;
+.icon-btn-ghost svg {
+    width: 40px;
+    height: 40px;
 }
 
 .channel-info {
@@ -808,24 +860,42 @@ body.sidebar-collapsed .main-content {
 
 .channel-header {
     display: flex;
-    align-items: start;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.channel-details,
+.channel-meta {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+
+.channel-actions {
+    display: flex;
+    align-items: center;
     gap: 12px;
 }
 
-.channel-avatar-large {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-}
-
-.channel-details {
-    flex: 1;
-}
-
 .channel-name-large {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
-    margin-bottom: 4px;
+    margin-right: 8px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+@media (min-width: 1024px) {
+    .channel-name-large {
+        font-size: 17px;
+    }
 }
 
 .channel-subscribers {
@@ -842,6 +912,34 @@ body.sidebar-collapsed .main-content {
     font-weight: 600;
     cursor: pointer;
     transition: background 0.2s;
+}
+
+@media (max-width: 768px) {
+    .channel-header {
+        flex-direction: column-reverse;
+        align-items: flex-start;
+    }
+
+    .channel-meta {
+        width: 100%;
+        justify-content: space-between;
+        align-items: baseline;
+    }
+
+    .channel-name-large {
+        font-size: 17px;
+        max-width: 70%;
+    }
+
+    .channel-actions {
+        width: 100%;
+    }
+
+    .channel-details {
+        flex-direction: row;
+        align-items: baseline;
+        flex-wrap: nowrap;
+    }
 }
 
 .subscribe-btn:hover {
