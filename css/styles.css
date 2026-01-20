@@ -869,9 +869,10 @@ body.sidebar-collapsed .main-content {
 .channel-details,
 .channel-meta {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: nowrap;
     flex: 1;
     min-width: 0;
 }
@@ -885,7 +886,7 @@ body.sidebar-collapsed .main-content {
 .channel-name-large {
     font-size: 15px;
     font-weight: 600;
-    margin-bottom: 4px;
+    margin-right: 8px;
     white-space: normal;
     overflow-wrap: anywhere;
     word-break: break-word;
@@ -922,17 +923,22 @@ body.sidebar-collapsed .main-content {
     .channel-meta {
         width: 100%;
         justify-content: space-between;
-        align-items: flex-start;
+        align-items: baseline;
     }
 
     .channel-name-large {
         font-size: 17px;
-        margin-bottom: 0;
         max-width: 70%;
     }
 
     .channel-actions {
         width: 100%;
+    }
+
+    .channel-details {
+        flex-direction: row;
+        align-items: baseline;
+        flex-wrap: nowrap;
     }
 }
 
