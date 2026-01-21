@@ -942,7 +942,12 @@ function updatePlayerIframe({ source, videoId, videoUrl }) {
         return;
     }
     videoPlayer.innerHTML = `
-        <div class="drag-handle" aria-hidden="true"></div>
+        <div class="drag-handle">
+            <span class="handle-indicator" aria-hidden="true"></span>
+            <button class="close-mini-player-btn" type="button" aria-label="Tancar mini reproductor">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
         <div class="video-embed-wrap">
             <iframe
                 src="${iframeSrc}"
@@ -953,6 +958,9 @@ function updatePlayerIframe({ source, videoId, videoUrl }) {
         </div>
     `;
     setupDragHandle();
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
 }
 
 function makeDraggable(element, handle) {
@@ -1036,6 +1044,32 @@ function setupDragHandle() {
         return;
     }
     makeDraggable(videoPlayer, handle);
+
+    const closeButton = handle.querySelector('.close-mini-player-btn');
+    if (!closeButton) {
+        return;
+    }
+
+    if (closeButton._closeHandlers) {
+        closeButton.removeEventListener('click', closeButton._closeHandlers.onClose);
+        closeButton.removeEventListener('mousedown', closeButton._closeHandlers.stopPropagation);
+        closeButton.removeEventListener('touchstart', closeButton._closeHandlers.stopPropagation);
+    }
+
+    const stopPropagation = (event) => {
+        event.stopPropagation();
+    };
+
+    const onClose = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        stopVideoPlayback();
+    };
+
+    closeButton._closeHandlers = { onClose, stopPropagation };
+    closeButton.addEventListener('click', onClose);
+    closeButton.addEventListener('mousedown', stopPropagation);
+    closeButton.addEventListener('touchstart', stopPropagation);
 }
 
 function preparePlayerForPlayback({ thumbnail, title }) {
