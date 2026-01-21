@@ -6,6 +6,7 @@ let historyPage, historyGrid, historyFilters, chipsBar;
 let heroSection, heroTitle, heroDescription, heroImage, heroDuration, heroButton, heroEyebrow, heroChannel;
 let pageTitle;
 let backgroundModal, backgroundBtn, backgroundOptions;
+let videoPlayer, videoPlaceholder, placeholderImage;
 let currentVideoId = null;
 let useYouTubeAPI = false;
 let selectedCategory = 'Tot';
@@ -105,6 +106,9 @@ function initElements() {
     heroEyebrow = document.getElementById('heroEyebrow');
     heroChannel = document.getElementById('heroChannel');
     pageTitle = document.getElementById('pageTitle');
+    videoPlayer = document.getElementById('videoPlayer');
+    videoPlaceholder = document.getElementById('videoPlaceholder');
+    placeholderImage = document.getElementById('placeholderImage');
 }
 
 // Inicialitzar event listeners
@@ -193,7 +197,6 @@ function initEventListeners() {
             }
             const basePath = window.location.pathname.replace(/\/index\.html$/, '/');
             history.pushState({}, '', basePath);
-            stopVideoPlayback();
             showHome();
             if (useYouTubeAPI) {
                 loadVideosFromAPI();
@@ -258,7 +261,6 @@ function initEventListeners() {
             chip.classList.add('is-active');
             const basePath = window.location.pathname.replace(/\/index\.html$/, '/');
             history.pushState({}, '', basePath);
-            stopVideoPlayback();
             showHome();
             setPageTitle(getCategoryPageTitle(selectedCategory));
             renderFeed();
@@ -269,6 +271,19 @@ function initEventListeners() {
             if (!sidebar.contains(e.target) && !menuBtn.contains(e.target)) {
                 sidebar.classList.remove('open');
             }
+        }
+    });
+
+    window.addEventListener('resize', () => {
+        if (isMiniPlayerActive()) {
+            updateMiniPlayerSize();
+            return;
+        }
+        updatePlayerPosition();
+    });
+    window.addEventListener('scroll', () => {
+        if (!isMiniPlayerActive()) {
+            updatePlayerPosition();
         }
     });
 }
@@ -487,7 +502,6 @@ function loadCategories() {
             const categoryId = item.dataset.category;
             const basePath = window.location.pathname.replace(/\/index\.html$/, '/');
             history.pushState({}, '', basePath);
-            stopVideoPlayback();
             showHome();
             if (useYouTubeAPI) {
                 const category = CONFIG.categories.find(c => c.id === categoryId);
@@ -790,12 +804,80 @@ function setupLikeBadge(videoId) {
     likeBadge.addEventListener('keydown', likeBadge._likeHandler);
 }
 
+function isMiniPlayerActive() {
+    return videoPlayer?.classList.contains('mini-player-active');
+}
+
+function setPlaceholderImage(thumbnail, title = '') {
+    if (!placeholderImage) {
+        return;
+    }
+    placeholderImage.src = thumbnail || '';
+    placeholderImage.alt = title || '';
+}
+
+function updatePlayerPosition() {
+    if (!videoPlayer || !videoPlaceholder) {
+        return;
+    }
+    if (isMiniPlayerActive()) {
+        return;
+    }
+    if (videoPlaceholder.classList.contains('hidden')) {
+        return;
+    }
+
+    const rect = videoPlaceholder.getBoundingClientRect();
+    videoPlayer.style.top = `${rect.top + window.scrollY}px`;
+    videoPlayer.style.left = `${rect.left + window.scrollX}px`;
+    videoPlayer.style.width = `${rect.width}px`;
+    videoPlayer.style.height = `${rect.height}px`;
+}
+
+function updateMiniPlayerSize() {
+    if (!videoPlayer) {
+        return;
+    }
+    const width = Math.min(360, window.innerWidth - 32);
+    const height = Math.round((width * 9) / 16);
+    videoPlayer.style.width = `${width}px`;
+    videoPlayer.style.height = `${height}px`;
+}
+
+function preparePlayerForPlayback({ thumbnail, title }) {
+    if (!videoPlayer) {
+        return;
+    }
+
+    videoPlayer.classList.remove('mini-player-active');
+    videoPlayer.style.display = 'block';
+    videoPlayer.style.width = '';
+    videoPlayer.style.height = '';
+
+    if (videoPlaceholder) {
+        videoPlaceholder.classList.remove('hidden');
+        videoPlaceholder.classList.add('is-placeholder-hidden');
+    }
+
+    setPlaceholderImage(thumbnail, title);
+    requestAnimationFrame(updatePlayerPosition);
+}
+
+function handlePlayerVisibilityOnNavigation() {
+    if (!videoPlayer) {
+        return;
+    }
+    if (isMiniPlayerActive()) {
+        videoPlayer.style.display = 'block';
+        return;
+    }
+    stopVideoPlayback();
+}
+
 function setupMiniPlayerToggle() {
     const miniToggle = document.getElementById('miniPlayerToggle');
-    const videoPlayer = document.getElementById('videoPlayer');
-    const watchMain = document.querySelector('.watch-main');
 
-    if (!miniToggle || !videoPlayer || !watchMain) {
+    if (!miniToggle || !videoPlayer) {
         return;
     }
 
@@ -808,27 +890,26 @@ function setupMiniPlayerToggle() {
         }
     };
 
-    const applyPlaceholder = (height) => {
-        watchMain.style.setProperty('--mini-player-placeholder-height', height);
-        watchMain.classList.add('mini-player-placeholder');
-    };
-
-    const clearPlaceholder = () => {
-        watchMain.classList.remove('mini-player-placeholder');
-        watchMain.style.removeProperty('--mini-player-placeholder-height');
-    };
-
     const setMiniPlayerState = (isActive) => {
+        videoPlayer.classList.toggle('mini-player-active', isActive);
+
         if (isActive) {
-            const placeholderHeight = videoPlayer.dataset.normalHeight
-                || `${videoPlayer.getBoundingClientRect().height + 16}px`;
-            applyPlaceholder(placeholderHeight);
+            if (videoPlaceholder) {
+                videoPlaceholder.classList.remove('hidden');
+                videoPlaceholder.classList.remove('is-placeholder-hidden');
+            }
+            videoPlayer.style.top = '';
+            videoPlayer.style.left = '';
+            updateMiniPlayerSize();
         } else {
-            clearPlaceholder();
-            delete videoPlayer.dataset.normalHeight;
+            if (videoPlaceholder) {
+                videoPlaceholder.classList.add('is-placeholder-hidden');
+            }
+            videoPlayer.style.width = '';
+            videoPlayer.style.height = '';
+            updatePlayerPosition();
         }
 
-        videoPlayer.classList.toggle('mini-player-active', isActive);
         updateToggleIcon(isActive);
     };
 
@@ -837,16 +918,12 @@ function setupMiniPlayerToggle() {
     }
 
     miniToggle._miniHandler = () => {
-        const isActive = videoPlayer.classList.contains('mini-player-active');
-        if (!isActive) {
-            const rect = videoPlayer.getBoundingClientRect();
-            videoPlayer.dataset.normalHeight = `${rect.height + 16}px`;
-        }
+        const isActive = isMiniPlayerActive();
         setMiniPlayerState(!isActive);
     };
 
     miniToggle.addEventListener('click', miniToggle._miniHandler);
-    setMiniPlayerState(videoPlayer.classList.contains('mini-player-active'));
+    setMiniPlayerState(isMiniPlayerActive());
 }
 
 // Renderitzar resultats de cerca (sense estadístiques)
@@ -936,7 +1013,6 @@ async function showVideoFromAPI(videoId) {
     watchPage.classList.remove('hidden');
 
     // Carregar reproductor
-    const videoPlayer = document.getElementById('videoPlayer');
     videoPlayer.innerHTML = `
         <div class="video-embed-wrap">
             <iframe
@@ -950,6 +1026,10 @@ async function showVideoFromAPI(videoId) {
 
     // 1. Renderitzat immediat des del catxé si està disponible
     const cachedVideo = cachedAPIVideos.find(video => video.id === videoId);
+    preparePlayerForPlayback({
+        thumbnail: cachedVideo?.thumbnail || '',
+        title: cachedVideo?.title || ''
+    });
     if (cachedVideo) {
         addToHistory({
             ...cachedVideo,
@@ -1001,6 +1081,7 @@ async function showVideoFromAPI(videoId) {
                 ...video,
                 historySource: 'api'
             });
+            setPlaceholderImage(video.thumbnail, video.title);
 
             // 1. Actualitzar estadístiques principals
             document.getElementById('videoTitle').textContent = video.title;
@@ -1225,25 +1306,29 @@ function createVideoCard(video) {
 }
 
 function stopVideoPlayback() {
-    if (!watchPage || watchPage.classList.contains('hidden')) {
-        return;
-    }
-    const videoPlayer = document.getElementById('videoPlayer');
-    const watchMain = document.querySelector('.watch-main');
     if (videoPlayer) {
         videoPlayer.innerHTML = '';
         videoPlayer.classList.remove('mini-player-active');
-        delete videoPlayer.dataset.normalHeight;
+        videoPlayer.style.display = 'none';
+        videoPlayer.style.width = '';
+        videoPlayer.style.height = '';
+        videoPlayer.style.top = '';
+        videoPlayer.style.left = '';
     }
-    if (watchMain) {
-        watchMain.classList.remove('mini-player-placeholder');
-        watchMain.style.removeProperty('--mini-player-placeholder-height');
+    if (videoPlaceholder) {
+        videoPlaceholder.classList.add('hidden');
+        videoPlaceholder.classList.remove('is-placeholder-hidden');
+    }
+    if (placeholderImage) {
+        placeholderImage.src = '';
+        placeholderImage.alt = '';
     }
     currentVideoId = null;
 }
 
 // Mostrar pàgina principal
 function showHome() {
+    handlePlayerVisibilityOnNavigation();
     if (mainContent) {
         mainContent.classList.remove('hidden');
     }
@@ -1255,7 +1340,9 @@ function showHome() {
     }
     homePage.classList.remove('hidden');
     watchPage.classList.add('hidden');
-    currentVideoId = null;
+    if (!isMiniPlayerActive()) {
+        currentVideoId = null;
+    }
     window.scrollTo(0, 0);
 }
 
@@ -1284,7 +1371,6 @@ function showVideo(videoId) {
     homePage.classList.add('hidden');
     watchPage.classList.remove('hidden');
 
-    const videoPlayer = document.getElementById('videoPlayer');
     videoPlayer.innerHTML = `
         <div class="video-embed-wrap">
             <iframe
@@ -1295,6 +1381,10 @@ function showVideo(videoId) {
             </iframe>
         </div>
     `;
+    preparePlayerForPlayback({
+        thumbnail: video.thumbnail,
+        title: video.title
+    });
 
     // 1. Actualitzar estadístiques principals
     document.getElementById('videoTitle').textContent = video.title;
@@ -1534,7 +1624,7 @@ function renderHistory() {
 }
 
 function showHistory() {
-    stopVideoPlayback();
+    handlePlayerVisibilityOnNavigation();
     if (mainContent) {
         mainContent.classList.add('hidden');
     }
