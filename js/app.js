@@ -899,26 +899,19 @@ function queuePlayback({ videoId, source, videoUrl, thumbnail, title }) {
     videoPlaceholder.classList.remove('hidden');
     videoPlaceholder.classList.remove('is-placeholder-hidden');
     setPlaceholderImage(thumbnail, title);
-    ensurePlayOverlay(() => playVideoNow({
+    ensurePlayOverlay(() => loadNewVideoInMiniPlayer(
         videoId,
         source,
         videoUrl,
         thumbnail,
         title
-    }));
+    ));
 }
 
-function playVideoNow({ videoId, source, videoUrl, thumbnail, title }) {
+function loadNewVideoInMiniPlayer(videoId, source, videoUrl, thumbnail, title) {
     if (!videoPlayer) {
         return;
     }
-
-    videoPlayer.classList.remove('mini-player-active');
-    videoPlayer.style.removeProperty('top');
-    videoPlayer.style.removeProperty('left');
-    videoPlayer.style.removeProperty('bottom');
-    videoPlayer.style.removeProperty('right');
-
     updatePlayerIframe({ source, videoId, videoUrl });
     clearPlayOverlay();
     preparePlayerForPlayback({ thumbnail, title });
@@ -1222,27 +1215,34 @@ async function showVideoFromAPI(videoId) {
     // Actualitzar URL
     history.pushState({ videoId }, '', `?v=${videoId}`);
 
-    if (!isMini) {
-        if (mainContent) {
-            mainContent.classList.remove('hidden');
-        }
-        if (historyPage) {
-            historyPage.classList.add('hidden');
-        }
-        if (chipsBar) {
-            chipsBar.classList.add('hidden');
-        }
-        homePage.classList.add('hidden');
-        watchPage.classList.remove('hidden');
+    if (mainContent) {
+        mainContent.classList.remove('hidden');
     }
+    if (historyPage) {
+        historyPage.classList.add('hidden');
+    }
+    if (chipsBar) {
+        chipsBar.classList.add('hidden');
+    }
+    homePage.classList.add('hidden');
+    watchPage.classList.remove('hidden');
 
     // 1. Renderitzat immediat des del catxé si està disponible
     const cachedVideo = cachedAPIVideos.find(video => video.id === videoId);
-    updatePlayerIframe({ source: 'api', videoId });
-    preparePlayerForPlayback({
-        thumbnail: cachedVideo?.thumbnail || '',
-        title: cachedVideo?.title || ''
-    });
+    if (isMini) {
+        queuePlayback({
+            videoId,
+            source: 'api',
+            thumbnail: cachedVideo?.thumbnail || '',
+            title: cachedVideo?.title || ''
+        });
+    } else {
+        updatePlayerIframe({ source: 'api', videoId });
+        preparePlayerForPlayback({
+            thumbnail: cachedVideo?.thumbnail || '',
+            title: cachedVideo?.title || ''
+        });
+    }
     if (cachedVideo) {
         addToHistory({
             ...cachedVideo,
@@ -1294,7 +1294,16 @@ async function showVideoFromAPI(videoId) {
                 ...video,
                 historySource: 'api'
             });
-            setPlaceholderImage(video.thumbnail, video.title);
+            if (isMini) {
+                queuePlayback({
+                    videoId,
+                    source: 'api',
+                    thumbnail: video.thumbnail,
+                    title: video.title
+                });
+            } else {
+                setPlaceholderImage(video.thumbnail, video.title);
+            }
 
             // 1. Actualitzar estadístiques principals
             document.getElementById('videoTitle').textContent = video.title;
@@ -1348,9 +1357,7 @@ async function showVideoFromAPI(videoId) {
         loadRelatedVideosFromAPI(videoId);
     }
 
-    if (!isMini) {
-        window.scrollTo(0, 0);
-    }
+    window.scrollTo(0, 0);
     hideLoading();
 
     if (typeof lucide !== 'undefined') {
@@ -1575,29 +1582,37 @@ function showVideo(videoId) {
 
     history.pushState({ videoId }, '', `?v=${videoId}`);
 
-    if (!isMini) {
-        if (mainContent) {
-            mainContent.classList.remove('hidden');
-        }
-        if (historyPage) {
-            historyPage.classList.add('hidden');
-        }
-        if (chipsBar) {
-            chipsBar.classList.add('hidden');
-        }
-        homePage.classList.add('hidden');
-        watchPage.classList.remove('hidden');
+    if (mainContent) {
+        mainContent.classList.remove('hidden');
     }
+    if (historyPage) {
+        historyPage.classList.add('hidden');
+    }
+    if (chipsBar) {
+        chipsBar.classList.add('hidden');
+    }
+    homePage.classList.add('hidden');
+    watchPage.classList.remove('hidden');
 
-    updatePlayerIframe({
-        source: 'static',
-        videoId,
-        videoUrl: video.videoUrl
-    });
-    preparePlayerForPlayback({
-        thumbnail: video.thumbnail,
-        title: video.title
-    });
+    if (isMini) {
+        queuePlayback({
+            videoId,
+            source: 'static',
+            videoUrl: video.videoUrl,
+            thumbnail: video.thumbnail,
+            title: video.title
+        });
+    } else {
+        updatePlayerIframe({
+            source: 'static',
+            videoId,
+            videoUrl: video.videoUrl
+        });
+        preparePlayerForPlayback({
+            thumbnail: video.thumbnail,
+            title: video.title
+        });
+    }
 
     // 1. Actualitzar estadístiques principals
     document.getElementById('videoTitle').textContent = video.title;
@@ -1640,9 +1655,7 @@ function showVideo(videoId) {
         loadRelatedVideos(videoId);
     }
 
-    if (!isMini) {
-        window.scrollTo(0, 0);
-    }
+    window.scrollTo(0, 0);
 
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
