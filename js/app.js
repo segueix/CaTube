@@ -942,12 +942,18 @@ function updatePlayerIframe({ source, videoId, videoUrl }) {
         return;
     }
     videoPlayer.innerHTML = `
-        <div class="drag-handle">
-            <span class="handle-indicator" aria-hidden="true"></span>
-            <button class="close-mini-player-btn" type="button" aria-label="Tancar mini reproductor">
-                <i data-lucide="x"></i>
-            </button>
+        <div class="drag-handle" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" aria-hidden="true" focusable="false">
+                <polygon points="50,5 65,30 55,30 55,40 45,40 45,30 35,30" fill="white"/>
+                <polygon points="50,95 35,70 45,70 45,60 55,60 55,70 65,70" fill="white"/>
+                <polygon points="5,50 30,35 30,45 40,45 40,55 30,55 30,65" fill="white"/>
+                <polygon points="95,50 70,65 70,55 60,55 60,45 70,45 70,35" fill="white"/>
+                <circle cx="50" cy="50" r="8" fill="white"/>
+            </svg>
         </div>
+        <button class="close-mini-player-btn" type="button" aria-label="Tancar mini reproductor">
+            <i data-lucide="x"></i>
+        </button>
         <div class="video-embed-wrap">
             <iframe
                 src="${iframeSrc}"
@@ -1045,7 +1051,7 @@ function setupDragHandle() {
     }
     makeDraggable(videoPlayer, handle);
 
-    const closeButton = handle.querySelector('.close-mini-player-btn');
+    const closeButton = videoPlayer.querySelector('.close-mini-player-btn');
     if (!closeButton) {
         return;
     }
