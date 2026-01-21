@@ -18,6 +18,13 @@ let currentFeedVideos = [];
 let currentFeedData = null;
 let currentFeedRenderer = null;
 let activePlaylistVideo = null;
+let activePlaylistQueue = [];
+let currentPlaylistIndex = 0;
+let activePlaylistId = null;
+let activePlaylistName = '';
+let isPlaylistNavigation = false;
+let isPlaylistMode = false;
+let youtubeMessageListenerInitialized = false;
 
 const BACKGROUND_STORAGE_KEY = 'catube_background_color';
 const BACKGROUND_COLORS = [
@@ -54,6 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initBackgroundPicker();
     loadCategories();
     renderPlaylistsPage();
+    initYouTubeMessageListener();
 
     // Inicialitzar YouTubeAPI (carregar canals catalans)
     await YouTubeAPI.init();
@@ -920,9 +928,32 @@ function addVideoToPlaylist(playlistId, video) {
     savePlaylists(playlists);
 }
 
+function removeVideoFromPlaylist(playlistId, videoId) {
+    const playlists = getPlaylists();
+    const playlist = playlists.find(item => item.id === playlistId);
+    if (!playlist) return;
+    playlist.videos = playlist.videos.filter(video => String(video.id) !== String(videoId));
+    savePlaylists(playlists);
+    if (activePlaylistId === playlistId) {
+        activePlaylistQueue = playlist.videos;
+        if (currentPlaylistIndex >= activePlaylistQueue.length) {
+            currentPlaylistIndex = Math.max(activePlaylistQueue.length - 1, 0);
+        }
+        if (activePlaylistQueue.length === 0) {
+            exitPlaylistMode();
+        } else {
+            updatePlaylistModeBadge();
+            renderPlaylistQueue();
+        }
+    }
+}
+
 function removePlaylist(playlistId) {
     const playlists = getPlaylists().filter(item => item.id !== playlistId);
     savePlaylists(playlists);
+    if (activePlaylistId === playlistId) {
+        exitPlaylistMode();
+    }
 }
 
 function renderPlaylistsPage() {
@@ -933,15 +964,37 @@ function renderPlaylistsPage() {
         return;
     }
 
-    playlistsList.innerHTML = playlists.map(list => `
-        <div class="playlist-item">
-            <div>
-                <div class="playlist-item-name">${escapeHtml(list.name)}</div>
-                <div class="playlist-item-meta">${list.videos.length} vídeos</div>
+    playlistsList.innerHTML = playlists.map(list => {
+        const firstVideo = list.videos[0];
+        const thumbnail = firstVideo?.thumbnail || 'img/icon-512.png';
+        const videoCount = list.videos.length;
+        return `
+            <div class="playlist-card">
+                <div class="playlist-card-thumb">
+                    <img src="${thumbnail}" alt="${escapeHtml(list.name)}" loading="lazy">
+                    <button class="playlist-play-btn" type="button" data-playlist-id="${list.id}" aria-label="Reproduir tota la llista">
+                        Reproduir tot
+                    </button>
+                    <button class="playlist-delete" type="button" data-playlist-id="${list.id}" aria-label="Esborrar llista">×</button>
+                </div>
+                <div class="playlist-card-body">
+                    <div class="playlist-card-title">${escapeHtml(list.name)}</div>
+                    <div class="playlist-card-meta">${videoCount} vídeos</div>
+                    <div class="playlist-video-list">
+                        ${list.videos.length > 0
+                            ? list.videos.map(video => `
+                                <div class="playlist-video-row" data-playlist-id="${list.id}" data-video-id="${video.id}">
+                                    <img class="playlist-video-thumb" src="${video.thumbnail || 'img/icon-192.png'}" alt="${escapeHtml(video.title)}" loading="lazy">
+                                    <span class="playlist-video-title">${escapeHtml(video.title)}</span>
+                                    <button class="playlist-video-remove" type="button" data-playlist-id="${list.id}" data-video-id="${video.id}" aria-label="Eliminar vídeo">×</button>
+                                </div>
+                            `).join('')
+                            : `<div class="playlist-video-empty">Encara no hi ha vídeos.</div>`}
+                    </div>
+                </div>
             </div>
-            <button class="playlist-delete" type="button" data-playlist-id="${list.id}" aria-label="Esborrar llista">×</button>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 
     playlistsList.querySelectorAll('.playlist-delete').forEach(button => {
         button.addEventListener('click', () => {
@@ -949,6 +1002,102 @@ function renderPlaylistsPage() {
             renderPlaylistsPage();
         });
     });
+
+    playlistsList.querySelectorAll('.playlist-play-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            startPlaylistPlayback(button.dataset.playlistId);
+        });
+    });
+
+    playlistsList.querySelectorAll('.playlist-video-remove').forEach(button => {
+        button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            removeVideoFromPlaylist(button.dataset.playlistId, button.dataset.videoId);
+            renderPlaylistsPage();
+        });
+    });
+}
+
+function playPlaylist(playlistId) {
+    startPlaylistPlayback(playlistId);
+}
+
+function startPlaylistPlayback(playlistId) {
+    const playlists = getPlaylists();
+    const playlist = playlists.find(item => item.id === playlistId);
+    if (!playlist || !Array.isArray(playlist.videos) || playlist.videos.length === 0) {
+        return;
+    }
+    isPlaylistMode = true;
+    activePlaylistQueue = [...playlist.videos];
+    currentPlaylistIndex = 0;
+    activePlaylistId = playlist.id;
+    activePlaylistName = playlist.name || 'Llista';
+    loadVideoInSequence();
+}
+
+function loadVideoInSequence() {
+    if (!activePlaylistQueue.length || currentPlaylistIndex >= activePlaylistQueue.length) {
+        exitPlaylistMode();
+        return;
+    }
+    const video = activePlaylistQueue[currentPlaylistIndex];
+    if (!video) {
+        exitPlaylistMode();
+        return;
+    }
+    isPlaylistMode = true;
+    updatePlaylistModeBadge();
+    isPlaylistNavigation = true;
+    if (video.source === 'static') {
+        showVideo(video.id);
+    } else {
+        showVideoFromAPI(video.id);
+    }
+    isPlaylistNavigation = false;
+}
+
+function handlePlaylistVideoEnded() {
+    if (!isPlaylistMode || activePlaylistQueue.length === 0) {
+        return;
+    }
+    if (currentPlaylistIndex < activePlaylistQueue.length - 1) {
+        currentPlaylistIndex += 1;
+        loadVideoInSequence();
+    } else {
+        exitPlaylistMode();
+    }
+}
+
+function updatePlaylistModeBadge() {
+    const container = document.querySelector('.video-info');
+    if (!container) {
+        return;
+    }
+    const existing = document.getElementById('playlistModeBadge');
+    if (!isPlaylistMode) {
+        existing?.remove();
+        return;
+    }
+    const badge = existing || document.createElement('div');
+    badge.id = 'playlistModeBadge';
+    badge.className = 'playlist-mode-badge';
+    const position = activePlaylistQueue.length > 0
+        ? `${currentPlaylistIndex + 1}/${activePlaylistQueue.length}`
+        : '';
+    badge.textContent = `Mode llista · ${activePlaylistName} ${position}`.trim();
+    if (!existing) {
+        container.insertBefore(badge, container.firstChild);
+    }
+}
+
+function exitPlaylistMode() {
+    isPlaylistMode = false;
+    activePlaylistQueue = [];
+    currentPlaylistIndex = 0;
+    activePlaylistId = null;
+    activePlaylistName = '';
+    updatePlaylistModeBadge();
 }
 
 function openPlaylistModal(video) {
@@ -1025,12 +1174,14 @@ function renderPlaylistModal() {
 }
 
 function getPlaylistVideoData(video) {
+    const source = video.historySource || (video.videoUrl ? 'static' : 'api');
     return {
         id: video.id,
         title: video.title || video.snippet?.title || '',
         thumbnail: getPreferredThumbnail(video),
         channelTitle: video.channelTitle || video.snippet?.channelTitle || '',
-        duration: video.duration || video.contentDetails?.duration || ''
+        duration: video.duration || video.contentDetails?.duration || '',
+        source
     };
 }
 
@@ -1069,6 +1220,50 @@ function setPlaceholderImage(thumbnail, title = '') {
     }
     placeholderImage.src = thumbnail || '';
     placeholderImage.alt = title || '';
+}
+
+function setVideoTitleText(title) {
+    const titleElement = document.getElementById('videoTitle');
+    if (!titleElement) {
+        return;
+    }
+    titleElement.textContent = title || '';
+    updatePlaylistModeBadge();
+}
+
+function renderPlaylistQueue() {
+    const relatedContainer = document.getElementById('relatedVideos');
+    if (!relatedContainer) {
+        return;
+    }
+    if (!isPlaylistMode || activePlaylistQueue.length === 0) {
+        return;
+    }
+    relatedContainer.innerHTML = `
+        <div class="playlist-queue">
+            <div class="playlist-queue-title">Cua de la llista</div>
+            <div class="playlist-queue-list">
+                ${activePlaylistQueue.map((video, index) => `
+                    <button class="playlist-queue-item${index === currentPlaylistIndex ? ' is-active' : ''}" type="button" data-queue-index="${index}">
+                        <img src="${video.thumbnail || 'img/icon-192.png'}" alt="${escapeHtml(video.title)}" loading="lazy">
+                        <div class="playlist-queue-meta">
+                            <div class="playlist-queue-name">${escapeHtml(video.title)}</div>
+                        </div>
+                    </button>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    relatedContainer.querySelectorAll('.playlist-queue-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const index = Number(item.dataset.queueIndex || 0);
+            if (Number.isNaN(index)) {
+                return;
+            }
+            currentPlaylistIndex = index;
+            loadVideoInSequence();
+        });
+    });
 }
 
 function updatePlayerPosition() {
@@ -1172,6 +1367,11 @@ function addAutoplayParam(url) {
         return url;
     }
     let newUrl = url;
+    if (isYouTubeEmbed(newUrl) && !newUrl.includes('enablejsapi=1')) {
+        const origin = encodeURIComponent(window.location.origin || '');
+        const separator = newUrl.includes('?') ? '&' : '?';
+        newUrl = `${newUrl}${separator}enablejsapi=1&origin=${origin}`;
+    }
     if (!newUrl.includes('playsinline=1')) {
         const separator = newUrl.includes('?') ? '&' : '?';
         newUrl = `${newUrl}${separator}playsinline=1`;
@@ -1183,6 +1383,64 @@ function addAutoplayParam(url) {
     return newUrl;
 }
 
+function initYouTubeMessageListener() {
+    if (youtubeMessageListenerInitialized) {
+        return;
+    }
+    window.addEventListener('message', handleYouTubeMessage);
+    youtubeMessageListenerInitialized = true;
+}
+
+function handleYouTubeMessage(event) {
+    if (!event.origin || !/youtube\.com|youtube-nocookie\.com/.test(event.origin)) {
+        return;
+    }
+    let payload = event.data;
+    if (typeof payload === 'string') {
+        try {
+            payload = JSON.parse(payload);
+        } catch (error) {
+            return;
+        }
+    }
+    if (payload?.event === 'onStateChange' && payload?.info === 0) {
+        handlePlaylistVideoEnded();
+    }
+}
+
+function isYouTubeEmbed(url) {
+    if (!url) {
+        return false;
+    }
+    return url.includes('youtube.com/embed') || url.includes('youtube-nocookie.com/embed');
+}
+
+function setupYouTubeIframeMessaging(iframe) {
+    if (!iframe || !isYouTubeEmbed(iframe.src)) {
+        return;
+    }
+    const sendListenerCommand = () => {
+        if (!iframe.contentWindow) {
+            return;
+        }
+        iframe.contentWindow.postMessage(JSON.stringify({
+            event: 'listening',
+            id: 'catube-player'
+        }), '*');
+        iframe.contentWindow.postMessage(JSON.stringify({
+            event: 'command',
+            func: 'addEventListener',
+            args: ['onStateChange']
+        }), '*');
+    };
+    if (iframe._ytListener) {
+        iframe.removeEventListener('load', iframe._ytListener);
+    }
+    iframe._ytListener = sendListenerCommand;
+    iframe.addEventListener('load', sendListenerCommand);
+    setTimeout(sendListenerCommand, 300);
+}
+
 function updatePlayerIframe({ source, videoId, videoUrl }) {
     if (!videoPlayer) {
         return;
@@ -1192,12 +1450,15 @@ function updatePlayerIframe({ source, videoId, videoUrl }) {
     if (videoId) {
         videoPlayer.dataset.playingVideoId = videoId;
     }
+    const origin = encodeURIComponent(window.location.origin || '');
     const iframeSrc = source === 'api'
-        ? `https://www.youtube.com/embed/${videoId}?playsinline=1&rel=0&modestbranding=1&autoplay=1&hl=ca&cc_lang_pref=ca&gl=AD`
+        ? `https://www.youtube.com/embed/${videoId}?playsinline=1&rel=0&modestbranding=1&autoplay=1&enablejsapi=1&origin=${origin}&hl=ca&cc_lang_pref=ca&gl=AD`
         : addAutoplayParam(videoUrl);
     const existingIframe = videoPlayer.querySelector('iframe');
     if (!isMobile && existingIframe) {
         existingIframe.src = iframeSrc;
+        existingIframe.id = 'catube-player';
+        setupYouTubeIframeMessaging(existingIframe);
         return;
     }
     videoPlayer.innerHTML = `
@@ -1218,6 +1479,7 @@ function updatePlayerIframe({ source, videoId, videoUrl }) {
         </button>
         <div class="video-embed-wrap">
             <iframe
+                id="catube-player"
                 src="${iframeSrc}"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowfullscreen
@@ -1225,6 +1487,10 @@ function updatePlayerIframe({ source, videoId, videoUrl }) {
             </iframe>
         </div>
     `;
+    const newIframe = videoPlayer.querySelector('iframe');
+    if (newIframe) {
+        setupYouTubeIframeMessaging(newIframe);
+    }
     setupDragHandle();
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
@@ -1625,6 +1891,9 @@ function createVideoCardAPI(video) {
 // Mostrar vídeo des de l'API
 async function showVideoFromAPI(videoId) {
     const isMini = videoPlayer?.classList.contains('mini-player-active');
+    if (!isPlaylistNavigation) {
+        exitPlaylistMode();
+    }
     currentVideoId = videoId;
     showLoading();
 
@@ -1667,7 +1936,7 @@ async function showVideoFromAPI(videoId) {
             ...cachedVideo,
             historySource: 'api'
         });
-        document.getElementById('videoTitle').textContent = cachedVideo.title || '';
+        setVideoTitleText(cachedVideo.title || '');
         document.getElementById('videoDate').textContent = cachedVideo.publishedAt
             ? formatDate(cachedVideo.publishedAt)
             : '';
@@ -1734,7 +2003,7 @@ async function showVideoFromAPI(videoId) {
             }
 
             // 1. Actualitzar estadístiques principals
-            document.getElementById('videoTitle').textContent = video.title;
+            setVideoTitleText(video.title);
             document.getElementById('videoDate').textContent = formatDate(video.publishedAt);
             document.getElementById('videoViews').textContent = `${formatViews(video.viewCount)} visualitzacions`;
 
@@ -1789,8 +2058,10 @@ async function showVideoFromAPI(videoId) {
         loadCommentsFromAPI(videoId);
     }
 
-    // Carregar vídeos relacionats
-    if (CONFIG.features.recommendations) {
+    // Carregar vídeos relacionats o cua de la llista
+    if (isPlaylistMode) {
+        renderPlaylistQueue();
+    } else if (CONFIG.features.recommendations) {
         loadRelatedVideosFromAPI(videoId);
     }
 
@@ -2004,6 +2275,7 @@ function stopVideoPlayback() {
 // Mostrar pàgina principal
 function showHome() {
     handlePlayerVisibilityOnNavigation();
+    exitPlaylistMode();
     if (mainContent) {
         mainContent.classList.remove('hidden');
     }
@@ -2027,6 +2299,9 @@ function showHome() {
 // Mostrar vídeo (estàtic)
 function showVideo(videoId) {
     const isMini = videoPlayer?.classList.contains('mini-player-active');
+    if (!isPlaylistNavigation) {
+        exitPlaylistMode();
+    }
     currentVideoId = videoId;
     const video = getVideoById(videoId);
     const channel = getChannelById(video.channelId);
@@ -2071,7 +2346,7 @@ function showVideo(videoId) {
     }
 
     // 1. Actualitzar estadístiques principals
-    document.getElementById('videoTitle').textContent = video.title;
+    setVideoTitleText(video.title);
     document.getElementById('videoDate').textContent = formatDate(video.uploadDate);
     document.getElementById('videoViews').textContent = `${formatViews(video.views)} visualitzacions`;
 
@@ -2116,7 +2391,9 @@ function showVideo(videoId) {
         loadComments(videoId);
     }
 
-    if (CONFIG.features.recommendations) {
+    if (isPlaylistMode) {
+        renderPlaylistQueue();
+    } else if (CONFIG.features.recommendations) {
         loadRelatedVideos(videoId);
     }
 
@@ -2331,6 +2608,7 @@ function renderHistory() {
 
 function showHistory() {
     handlePlayerVisibilityOnNavigation();
+    exitPlaylistMode();
     if (mainContent) {
         mainContent.classList.add('hidden');
     }
@@ -2350,6 +2628,7 @@ function showHistory() {
 
 function showPlaylists() {
     handlePlayerVisibilityOnNavigation();
+    exitPlaylistMode();
     if (mainContent) {
         mainContent.classList.add('hidden');
     }
