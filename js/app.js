@@ -951,6 +951,9 @@ function updatePlayerIframe({ source, videoId, videoUrl }) {
                 <circle cx="50" cy="50" r="8" fill="white"/>
             </svg>
         </div>
+        <button class="expand-mini-player-btn" type="button" aria-label="Restaurar reproductor">
+            <i data-lucide="maximize-2"></i>
+        </button>
         <button class="close-mini-player-btn" type="button" aria-label="Tancar mini reproductor">
             <i data-lucide="x"></i>
         </button>
@@ -1052,14 +1055,23 @@ function setupDragHandle() {
     makeDraggable(videoPlayer, handle);
 
     const closeButton = videoPlayer.querySelector('.close-mini-player-btn');
+    const expandButton = videoPlayer.querySelector('.expand-mini-player-btn');
     if (!closeButton) {
         return;
     }
+
+    const miniPlayerControls = [closeButton, expandButton].filter(Boolean);
 
     if (closeButton._closeHandlers) {
         closeButton.removeEventListener('click', closeButton._closeHandlers.onClose);
         closeButton.removeEventListener('mousedown', closeButton._closeHandlers.stopPropagation);
         closeButton.removeEventListener('touchstart', closeButton._closeHandlers.stopPropagation);
+    }
+
+    if (expandButton?._expandHandlers) {
+        expandButton.removeEventListener('click', expandButton._expandHandlers.onExpand);
+        expandButton.removeEventListener('mousedown', expandButton._expandHandlers.stopPropagation);
+        expandButton.removeEventListener('touchstart', expandButton._expandHandlers.stopPropagation);
     }
 
     const stopPropagation = (event) => {
@@ -1072,10 +1084,27 @@ function setupDragHandle() {
         stopVideoPlayback();
     };
 
+    const onExpand = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setMiniPlayerState(false);
+    };
+
     closeButton._closeHandlers = { onClose, stopPropagation };
     closeButton.addEventListener('click', onClose);
     closeButton.addEventListener('mousedown', stopPropagation);
     closeButton.addEventListener('touchstart', stopPropagation);
+
+    if (expandButton) {
+        expandButton._expandHandlers = { onExpand, stopPropagation };
+        expandButton.addEventListener('click', onExpand);
+        expandButton.addEventListener('mousedown', stopPropagation);
+        expandButton.addEventListener('touchstart', stopPropagation);
+    }
+
+    miniPlayerControls.forEach(control => {
+        control.addEventListener('pointerdown', stopPropagation);
+    });
 }
 
 function preparePlayerForPlayback({ thumbnail, title }) {
@@ -1122,62 +1151,70 @@ function handlePlayerVisibilityOnNavigation() {
     stopVideoPlayback();
 }
 
+function updateMiniPlayerToggleIcon(isActive) {
+    const miniToggle = document.getElementById('miniPlayerToggle');
+    if (!miniToggle) {
+        return;
+    }
+    miniToggle.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    miniToggle.setAttribute('aria-label', isActive ? 'Restaurar reproductor' : 'Mini reproductor');
+    miniToggle.innerHTML = `<i data-lucide="${isActive ? 'maximize-2' : 'minimize-2'}"></i>`;
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+}
+
+function setMiniPlayerState(isActive) {
+    if (!videoPlayer) {
+        return;
+    }
+
+    videoPlayer.classList.toggle('mini-player-active', isActive);
+
+    if (isActive) {
+        if (videoPlaceholder) {
+            videoPlaceholder.classList.remove('hidden');
+            videoPlaceholder.classList.remove('is-placeholder-hidden');
+        }
+        videoPlayer.style.removeProperty('top');
+        videoPlayer.style.removeProperty('left');
+        videoPlayer.style.removeProperty('bottom');
+        videoPlayer.style.removeProperty('right');
+        updateMiniPlayerSize();
+    } else {
+        if (mainContent) {
+            mainContent.classList.remove('hidden');
+        }
+        if (historyPage) {
+            historyPage.classList.add('hidden');
+        }
+        if (chipsBar) {
+            chipsBar.classList.add('hidden');
+        }
+        homePage.classList.add('hidden');
+        watchPage.classList.remove('hidden');
+        if (videoPlaceholder) {
+            videoPlaceholder.classList.add('is-placeholder-hidden');
+        }
+        videoPlayer.style.width = '';
+        videoPlayer.style.height = '';
+        updatePlayerPosition();
+        if (videoPlaceholder) {
+            requestAnimationFrame(() => {
+                videoPlaceholder.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+    }
+
+    updateMiniPlayerToggleIcon(isActive);
+}
+
 function setupMiniPlayerToggle() {
     const miniToggle = document.getElementById('miniPlayerToggle');
 
     if (!miniToggle || !videoPlayer) {
         return;
     }
-
-    const updateToggleIcon = (isActive) => {
-        miniToggle.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-        miniToggle.setAttribute('aria-label', isActive ? 'Restaurar reproductor' : 'Mini reproductor');
-        miniToggle.innerHTML = `<i data-lucide="${isActive ? 'maximize-2' : 'minimize-2'}"></i>`;
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-    };
-
-    const setMiniPlayerState = (isActive) => {
-        videoPlayer.classList.toggle('mini-player-active', isActive);
-
-        if (isActive) {
-            if (videoPlaceholder) {
-                videoPlaceholder.classList.remove('hidden');
-                videoPlaceholder.classList.remove('is-placeholder-hidden');
-            }
-            videoPlayer.style.removeProperty('top');
-            videoPlayer.style.removeProperty('left');
-            videoPlayer.style.removeProperty('bottom');
-            videoPlayer.style.removeProperty('right');
-            updateMiniPlayerSize();
-        } else {
-            if (mainContent) {
-                mainContent.classList.remove('hidden');
-            }
-            if (historyPage) {
-                historyPage.classList.add('hidden');
-            }
-            if (chipsBar) {
-                chipsBar.classList.add('hidden');
-            }
-            homePage.classList.add('hidden');
-            watchPage.classList.remove('hidden');
-            if (videoPlaceholder) {
-                videoPlaceholder.classList.add('is-placeholder-hidden');
-            }
-            videoPlayer.style.width = '';
-            videoPlayer.style.height = '';
-            updatePlayerPosition();
-            if (videoPlaceholder) {
-                requestAnimationFrame(() => {
-                    videoPlaceholder.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                });
-            }
-        }
-
-        updateToggleIcon(isActive);
-    };
 
     if (miniToggle._miniHandler) {
         miniToggle.removeEventListener('click', miniToggle._miniHandler);

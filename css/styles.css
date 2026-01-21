@@ -902,13 +902,34 @@ body.sidebar-collapsed .main-content {
 }
 
 .close-mini-player-btn svg {
+    width: 26px;
+    height: 26px;
+    stroke-width: 3;
+}
+
+.expand-mini-player-btn {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    cursor: pointer;
+    padding: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.expand-mini-player-btn svg {
     width: 24px;
     height: 24px;
     stroke-width: 2.5;
 }
 
 #videoPlayer:not(.mini-player-active) .drag-handle,
-#videoPlayer:not(.mini-player-active) .close-mini-player-btn {
+#videoPlayer:not(.mini-player-active) .close-mini-player-btn,
+#videoPlayer:not(.mini-player-active) .expand-mini-player-btn {
     display: none;
 }
 
