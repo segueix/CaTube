@@ -128,7 +128,9 @@
         <div class="page hidden" id="watchPage">
             <div class="watch-container">
                 <div class="watch-main">
-                    <div class="video-player" id="videoPlayer"></div>
+                    <div id="videoPlaceholder" class="video-placeholder hidden">
+                        <img id="placeholderImage" src="" alt="">
+                    </div>
                     <div class="video-info">
                         <h1 class="video-title" id="videoTitle"></h1>
 
@@ -150,6 +152,8 @@
             </div>
         </div>
     </main>
+
+    <div class="video-player" id="videoPlayer"></div>
 
     <div id="historyPage" class="main-content hidden">
         <h1 class="page-title">Historial</h1>
