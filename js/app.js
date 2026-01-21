@@ -1215,41 +1215,34 @@ function createVideoCardAPI(video) {
 
 // Mostrar vídeo des de l'API
 async function showVideoFromAPI(videoId) {
-    const miniActive = isMiniPlayerActive();
+    const isMini = videoPlayer?.classList.contains('mini-player-active');
     currentVideoId = videoId;
     showLoading();
 
     // Actualitzar URL
     history.pushState({ videoId }, '', `?v=${videoId}`);
 
-    if (mainContent) {
-        mainContent.classList.remove('hidden');
+    if (!isMini) {
+        if (mainContent) {
+            mainContent.classList.remove('hidden');
+        }
+        if (historyPage) {
+            historyPage.classList.add('hidden');
+        }
+        if (chipsBar) {
+            chipsBar.classList.add('hidden');
+        }
+        homePage.classList.add('hidden');
+        watchPage.classList.remove('hidden');
     }
-    if (historyPage) {
-        historyPage.classList.add('hidden');
-    }
-    if (chipsBar) {
-        chipsBar.classList.add('hidden');
-    }
-    homePage.classList.add('hidden');
-    watchPage.classList.remove('hidden');
 
     // 1. Renderitzat immediat des del catxé si està disponible
     const cachedVideo = cachedAPIVideos.find(video => video.id === videoId);
-    if (miniActive) {
-        queuePlayback({
-            videoId,
-            source: 'api',
-            thumbnail: cachedVideo?.thumbnail || '',
-            title: cachedVideo?.title || ''
-        });
-    } else {
-        updatePlayerIframe({ source: 'api', videoId });
-        preparePlayerForPlayback({
-            thumbnail: cachedVideo?.thumbnail || '',
-            title: cachedVideo?.title || ''
-        });
-    }
+    updatePlayerIframe({ source: 'api', videoId });
+    preparePlayerForPlayback({
+        thumbnail: cachedVideo?.thumbnail || '',
+        title: cachedVideo?.title || ''
+    });
     if (cachedVideo) {
         addToHistory({
             ...cachedVideo,
@@ -1301,16 +1294,7 @@ async function showVideoFromAPI(videoId) {
                 ...video,
                 historySource: 'api'
             });
-            if (miniActive) {
-                queuePlayback({
-                    videoId,
-                    source: 'api',
-                    thumbnail: video.thumbnail,
-                    title: video.title
-                });
-            } else {
-                setPlaceholderImage(video.thumbnail, video.title);
-            }
+            setPlaceholderImage(video.thumbnail, video.title);
 
             // 1. Actualitzar estadístiques principals
             document.getElementById('videoTitle').textContent = video.title;
@@ -1364,7 +1348,7 @@ async function showVideoFromAPI(videoId) {
         loadRelatedVideosFromAPI(videoId);
     }
 
-    if (!miniActive) {
+    if (!isMini) {
         window.scrollTo(0, 0);
     }
     hideLoading();
@@ -1579,7 +1563,7 @@ function showHome() {
 
 // Mostrar vídeo (estàtic)
 function showVideo(videoId) {
-    const miniActive = isMiniPlayerActive();
+    const isMini = videoPlayer?.classList.contains('mini-player-active');
     currentVideoId = videoId;
     const video = getVideoById(videoId);
     const channel = getChannelById(video.channelId);
@@ -1591,37 +1575,29 @@ function showVideo(videoId) {
 
     history.pushState({ videoId }, '', `?v=${videoId}`);
 
-    if (mainContent) {
-        mainContent.classList.remove('hidden');
+    if (!isMini) {
+        if (mainContent) {
+            mainContent.classList.remove('hidden');
+        }
+        if (historyPage) {
+            historyPage.classList.add('hidden');
+        }
+        if (chipsBar) {
+            chipsBar.classList.add('hidden');
+        }
+        homePage.classList.add('hidden');
+        watchPage.classList.remove('hidden');
     }
-    if (historyPage) {
-        historyPage.classList.add('hidden');
-    }
-    if (chipsBar) {
-        chipsBar.classList.add('hidden');
-    }
-    homePage.classList.add('hidden');
-    watchPage.classList.remove('hidden');
 
-    if (miniActive) {
-        queuePlayback({
-            videoId,
-            source: 'static',
-            videoUrl: video.videoUrl,
-            thumbnail: video.thumbnail,
-            title: video.title
-        });
-    } else {
-        updatePlayerIframe({
-            source: 'static',
-            videoId,
-            videoUrl: video.videoUrl
-        });
-        preparePlayerForPlayback({
-            thumbnail: video.thumbnail,
-            title: video.title
-        });
-    }
+    updatePlayerIframe({
+        source: 'static',
+        videoId,
+        videoUrl: video.videoUrl
+    });
+    preparePlayerForPlayback({
+        thumbnail: video.thumbnail,
+        title: video.title
+    });
 
     // 1. Actualitzar estadístiques principals
     document.getElementById('videoTitle').textContent = video.title;
@@ -1664,7 +1640,7 @@ function showVideo(videoId) {
         loadRelatedVideos(videoId);
     }
 
-    if (!miniActive) {
+    if (!isMini) {
         window.scrollTo(0, 0);
     }
 
