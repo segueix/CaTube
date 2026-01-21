@@ -197,6 +197,9 @@ function initEventListeners() {
             }
             const basePath = window.location.pathname.replace(/\/index\.html$/, '/');
             history.pushState({}, '', basePath);
+            if (!isMiniPlayerActive()) {
+                stopVideoPlayback();
+            }
             showHome();
             if (useYouTubeAPI) {
                 loadVideosFromAPI();
@@ -261,6 +264,9 @@ function initEventListeners() {
             chip.classList.add('is-active');
             const basePath = window.location.pathname.replace(/\/index\.html$/, '/');
             history.pushState({}, '', basePath);
+            if (!isMiniPlayerActive()) {
+                stopVideoPlayback();
+            }
             showHome();
             setPageTitle(getCategoryPageTitle(selectedCategory));
             renderFeed();
@@ -932,19 +938,31 @@ function preparePlayerForPlayback({ thumbnail, title }) {
         return;
     }
 
-    videoPlayer.classList.remove('mini-player-active');
+    const miniActive = isMiniPlayerActive();
+
+    if (!miniActive) {
+        videoPlayer.classList.remove('mini-player-active');
+        videoPlayer.style.width = '';
+        videoPlayer.style.height = '';
+    }
     videoPlayer.style.display = 'block';
-    videoPlayer.style.width = '';
-    videoPlayer.style.height = '';
 
     if (videoPlaceholder) {
         videoPlaceholder.classList.remove('hidden');
-        videoPlaceholder.classList.add('is-placeholder-hidden');
+        if (miniActive) {
+            videoPlaceholder.classList.remove('is-placeholder-hidden');
+        } else {
+            videoPlaceholder.classList.add('is-placeholder-hidden');
+        }
     }
 
     setPlaceholderImage(thumbnail, title);
     setupDragHandle();
-    requestAnimationFrame(updatePlayerPosition);
+    if (miniActive) {
+        updateMiniPlayerSize();
+    } else {
+        requestAnimationFrame(updatePlayerPosition);
+    }
 }
 
 function handlePlayerVisibilityOnNavigation() {
@@ -1079,6 +1097,7 @@ function createVideoCardAPI(video) {
 
 // Mostrar vídeo des de l'API
 async function showVideoFromAPI(videoId) {
+    const miniActive = isMiniPlayerActive();
     currentVideoId = videoId;
     showLoading();
 
@@ -1086,17 +1105,19 @@ async function showVideoFromAPI(videoId) {
     history.pushState({ videoId }, '', `?v=${videoId}`);
 
     // Mostrar pàgina de vídeo
-    if (mainContent) {
-        mainContent.classList.remove('hidden');
+    if (!miniActive) {
+        if (mainContent) {
+            mainContent.classList.remove('hidden');
+        }
+        if (historyPage) {
+            historyPage.classList.add('hidden');
+        }
+        if (chipsBar) {
+            chipsBar.classList.add('hidden');
+        }
+        homePage.classList.add('hidden');
+        watchPage.classList.remove('hidden');
     }
-    if (historyPage) {
-        historyPage.classList.add('hidden');
-    }
-    if (chipsBar) {
-        chipsBar.classList.add('hidden');
-    }
-    homePage.classList.add('hidden');
-    watchPage.classList.remove('hidden');
 
     // Carregar reproductor
     videoPlayer.innerHTML = `
@@ -1222,7 +1243,9 @@ async function showVideoFromAPI(videoId) {
         loadRelatedVideosFromAPI(videoId);
     }
 
-    window.scrollTo(0, 0);
+    if (!miniActive) {
+        window.scrollTo(0, 0);
+    }
     hideLoading();
 
     if (typeof lucide !== 'undefined') {
@@ -1435,6 +1458,7 @@ function showHome() {
 
 // Mostrar vídeo (estàtic)
 function showVideo(videoId) {
+    const miniActive = isMiniPlayerActive();
     currentVideoId = videoId;
     const video = getVideoById(videoId);
     const channel = getChannelById(video.channelId);
@@ -1446,17 +1470,19 @@ function showVideo(videoId) {
 
     history.pushState({ videoId }, '', `?v=${videoId}`);
 
-    if (mainContent) {
-        mainContent.classList.remove('hidden');
+    if (!miniActive) {
+        if (mainContent) {
+            mainContent.classList.remove('hidden');
+        }
+        if (historyPage) {
+            historyPage.classList.add('hidden');
+        }
+        if (chipsBar) {
+            chipsBar.classList.add('hidden');
+        }
+        homePage.classList.add('hidden');
+        watchPage.classList.remove('hidden');
     }
-    if (historyPage) {
-        historyPage.classList.add('hidden');
-    }
-    if (chipsBar) {
-        chipsBar.classList.add('hidden');
-    }
-    homePage.classList.add('hidden');
-    watchPage.classList.remove('hidden');
 
     videoPlayer.innerHTML = `
         <div class="drag-handle" aria-hidden="true"></div>
@@ -1515,7 +1541,9 @@ function showVideo(videoId) {
         loadRelatedVideos(videoId);
     }
 
-    window.scrollTo(0, 0);
+    if (!miniActive) {
+        window.scrollTo(0, 0);
+    }
 
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
