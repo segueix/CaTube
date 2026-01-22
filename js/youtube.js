@@ -931,7 +931,7 @@ const YouTubeAPI = {
             id: item.id,
             title: item.snippet.title,
             description: item.snippet.description,
-            thumbnail: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url,
+            thumbnail: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url,
             subscriberCount: parseInt(item.statistics?.subscriberCount || 0),
             videoCount: parseInt(item.statistics?.videoCount || 0),
             viewCount: parseInt(item.statistics?.viewCount || 0)

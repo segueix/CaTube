@@ -1172,6 +1172,29 @@ button:disabled,
     color: var(--color-text-secondary);
 }
 
+.follow-channel-btn {
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--color-primary);
+    background: transparent;
+    color: var(--color-primary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.follow-channel-btn.is-followed {
+    background: var(--color-primary);
+    color: #ffffff;
+}
+
+.follow-channel-btn:hover {
+    border-color: #cc0000;
+    color: #ffffff;
+    background: #cc0000;
+}
+
 .subscribe-btn {
     padding: 10px 16px;
     background-color: var(--color-primary);
@@ -1220,6 +1243,71 @@ button:disabled,
     font-size: 14px;
     color: var(--color-text-secondary);
     line-height: 1.6;
+}
+
+.follow-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 18px;
+    margin-top: 16px;
+}
+
+.follow-card {
+    display: grid;
+    gap: 12px;
+    justify-items: center;
+    text-align: center;
+    padding: 18px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.follow-avatar-wrap {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.follow-avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.follow-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.follow-toggle-btn {
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--color-primary);
+    background: transparent;
+    color: var(--color-primary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.follow-toggle-btn.is-followed {
+    background: var(--color-primary);
+    color: #ffffff;
+}
+
+.follow-toggle-btn:hover {
+    border-color: #cc0000;
+    background: #cc0000;
+    color: #ffffff;
 }
 
 /* Comments */

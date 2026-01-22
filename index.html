@@ -59,7 +59,7 @@
             <a class="icon-btn nav-trigger" href="#" data-page="history" aria-label="Historial" title="Historial">
                 <i data-lucide="history"></i>
             </a>
-            <a class="icon-btn nav-trigger" href="#" data-page="subscriptions" aria-label="Subscripcions" title="Subscripcions">
+            <a class="icon-btn nav-trigger" href="#" data-page="follow" aria-label="Segueix!" title="Segueix!">
                 <i data-lucide="users"></i>
             </a>
             <button class="icon-btn" id="backgroundBtn" type="button" aria-label="Color de fons" title="Color de fons">
@@ -89,9 +89,9 @@
                 <i data-lucide="trending-up"></i>
                 <span>Tendències</span>
             </a>
-            <a href="#" class="nav-item" data-page="subscriptions">
+            <a href="#" class="nav-item" data-page="follow">
                 <i data-lucide="users"></i>
-                <span>Subscripcions</span>
+                <span>Segueix!</span>
             </a>
             <a href="#" class="nav-item" data-page="library">
                 <i data-lucide="library"></i>
@@ -189,6 +189,12 @@
             <button id="createPlaylistBtn" class="playlist-create-btn" type="button">Crear nova llista</button>
         </div>
         <div id="playlistsList" class="playlists-list"></div>
+    </div>
+
+    <div id="followPage" class="main-content hidden" aria-labelledby="followPageTitle">
+        <h1 class="page-title" id="followPageTitle">Segueix!</h1>
+        <p class="page-subtitle">Descobreix i segueix els canals catalans disponibles.</p>
+        <div id="followGrid" class="follow-grid"></div>
     </div>
 
     <div id="short-modal" class="short-modal hidden" aria-hidden="true">
