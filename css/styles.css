@@ -1172,6 +1172,29 @@ button:disabled,
     color: var(--color-text-secondary);
 }
 
+.follow-channel-btn {
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--color-primary);
+    background: transparent;
+    color: var(--color-primary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.follow-channel-btn.is-followed {
+    background: var(--color-primary);
+    color: #ffffff;
+}
+
+.follow-channel-btn:hover {
+    border-color: #cc0000;
+    color: #ffffff;
+    background: #cc0000;
+}
+
 .subscribe-btn {
     padding: 10px 16px;
     background-color: var(--color-primary);
@@ -1220,6 +1243,180 @@ button:disabled,
     font-size: 14px;
     color: var(--color-text-secondary);
     line-height: 1.6;
+}
+
+.channel-profile-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px 0;
+    flex-wrap: wrap;
+}
+
+.channel-back-btn {
+    border: none;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--color-text);
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.channel-profile-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+    min-width: 240px;
+}
+
+.channel-profile-avatar {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.channel-profile-text {
+    display: grid;
+    gap: 6px;
+}
+
+.channel-profile-name {
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.channel-profile-subscribers {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+}
+
+.channel-profile-description {
+    max-width: 760px;
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    line-height: 1.6;
+    white-space: pre-line;
+    margin-bottom: 24px;
+}
+
+@media (max-width: 768px) {
+    .channel-profile-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .channel-profile-meta {
+        width: 100%;
+    }
+}
+
+.follow-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 18px;
+    margin-top: 16px;
+}
+
+.follow-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.follow-tab {
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-text);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.follow-tab.is-active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #ffffff;
+}
+
+.follow-empty-link {
+    margin-left: 8px;
+    border: none;
+    background: none;
+    color: var(--color-primary);
+    cursor: pointer;
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+.follow-card {
+    display: grid;
+    gap: 12px;
+    justify-items: center;
+    text-align: center;
+    padding: 18px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+}
+
+.follow-avatar-wrap {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.follow-avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.follow-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.follow-toggle-btn {
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--color-primary);
+    background: transparent;
+    color: var(--color-primary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.follow-toggle-btn.is-followed {
+    background: var(--color-primary);
+    color: #ffffff;
+}
+
+.follow-toggle-btn:hover {
+    border-color: #cc0000;
+    background: #cc0000;
+    color: #ffffff;
 }
 
 /* Comments */

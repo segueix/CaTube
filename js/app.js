@@ -4,11 +4,15 @@
 let sidebar, menuBtn, videosGrid, homePage, watchPage, loading, mainContent;
 let historyPage, historyGrid, historyFilters, chipsBar;
 let playlistsPage, playlistsList, playlistNameInput, createPlaylistBtn;
+let followPage, followGrid, followTabs;
 let heroSection, heroTitle, heroDescription, heroImage, heroDuration, heroButton, heroEyebrow, heroChannel;
 let pageTitle;
 let backgroundModal, backgroundBtn, backgroundOptions;
 let playlistModal, playlistModalBody;
 let videoPlayer, videoPlaceholder, placeholderImage;
+let channelPage, channelVideosGrid;
+let channelBackBtn, channelProfileAvatar, channelProfileName, channelProfileSubscribers;
+let channelProfileDescription, channelProfileFollowBtn;
 let currentVideoId = null;
 let useYouTubeAPI = false;
 let selectedCategory = 'Tot';
@@ -39,18 +43,141 @@ const BACKGROUND_COLORS = [
 const HISTORY_STORAGE_KEY = 'catube_history';
 const HISTORY_LIMIT = 50;
 const PLAYLIST_STORAGE_KEY = 'catube_playlists';
+const FOLLOW_STORAGE_KEY = 'catube_follows';
 
 // Cache de canals carregats de l'API
 let cachedChannels = {};
 
 // Cache de vídeos carregats de l'API
 let cachedAPIVideos = [];
+let activeFollowTab = 'following';
 
 function mergeChannelCategories(channel, categories) {
     if (!channel || !Array.isArray(categories) || categories.length === 0) {
         return;
     }
     channel.categories = [...new Set([...(channel.categories || []), ...categories])];
+}
+
+function getFollowedChannelIds() {
+    const stored = localStorage.getItem(FOLLOW_STORAGE_KEY);
+    if (!stored) {
+        return [];
+    }
+    try {
+        const parsed = JSON.parse(stored);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        console.warn('No es pot llegir catube_follows', error);
+        return [];
+    }
+}
+
+function saveFollowedChannelIds(ids) {
+    localStorage.setItem(FOLLOW_STORAGE_KEY, JSON.stringify(ids));
+}
+
+function isChannelFollowed(channelId) {
+    if (!channelId) {
+        return false;
+    }
+    const normalizedId = String(channelId);
+    return getFollowedChannelIds().some(id => String(id) === normalizedId);
+}
+
+function toggleFollowChannel(channelId) {
+    if (!channelId) {
+        return false;
+    }
+    const normalizedId = String(channelId);
+    const current = new Set(getFollowedChannelIds().map(id => String(id)));
+    if (current.has(normalizedId)) {
+        current.delete(normalizedId);
+    } else {
+        current.add(normalizedId);
+    }
+    saveFollowedChannelIds(Array.from(current));
+    return current.has(normalizedId);
+}
+
+function updateFollowButtonState(button, channelId) {
+    if (!button) {
+        return;
+    }
+    const followed = isChannelFollowed(channelId);
+    button.classList.toggle('is-followed', followed);
+    button.setAttribute('aria-pressed', followed ? 'true' : 'false');
+    button.textContent = followed ? 'Seguint' : 'Segueix';
+    button.setAttribute('aria-label', followed ? 'Deixa de seguir aquest canal' : 'Segueix aquest canal');
+}
+
+function refreshFollowButtons(channelId) {
+    document.querySelectorAll(`[data-follow-channel="${channelId}"]`).forEach(button => {
+        updateFollowButtonState(button, channelId);
+    });
+}
+
+function bindFollowButtons(container = document) {
+    const buttons = container.querySelectorAll('[data-follow-channel]');
+    buttons.forEach(button => {
+        if (button.dataset.followBound === 'true') {
+            return;
+        }
+        button.dataset.followBound = 'true';
+        const channelId = button.dataset.followChannel;
+        updateFollowButtonState(button, channelId);
+        button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            event.preventDefault();
+            const normalizedId = String(channelId);
+            const nowFollowed = toggleFollowChannel(normalizedId);
+            updateFollowButtonState(button, normalizedId);
+            refreshFollowButtons(channelId);
+            if (activeFollowTab === 'following' && !nowFollowed) {
+                const card = button.closest('.follow-card');
+                if (card) {
+                    card.remove();
+                }
+                if (followGrid && followGrid.children.length === 0) {
+                    renderFollowEmptyState();
+                }
+            }
+        });
+    });
+}
+
+function getFollowChannelAvatar(channelId) {
+    const cached = cachedChannels[channelId];
+    if (cached?.thumbnail) {
+        return cached.thumbnail;
+    }
+    return null;
+}
+
+async function enrichFollowChannelAvatars(channels) {
+    if (!Array.isArray(channels) || typeof YouTubeAPI?.getChannelDetails !== 'function') {
+        return;
+    }
+    await Promise.all(channels.map(async (channel) => {
+        if (!channel?.id) {
+            return;
+        }
+        const existing = channel.avatar || channel.thumbnail || getFollowChannelAvatar(channel.id);
+        if (existing) {
+            const image = document.querySelector(`.follow-card[data-channel-id="${channel.id}"] img`);
+            if (image) {
+                image.src = existing;
+            }
+            return;
+        }
+        const result = await YouTubeAPI.getChannelDetails(channel.id);
+        if (result.channel?.thumbnail) {
+            const image = document.querySelector(`.follow-card[data-channel-id="${channel.id}"] img`);
+            if (image) {
+                image.src = result.channel.thumbnail;
+            }
+        }
+    }));
 }
 
 // Inicialitzar l'aplicació
@@ -109,6 +236,9 @@ function initElements() {
     playlistsList = document.getElementById('playlistsList');
     playlistNameInput = document.getElementById('playlistNameInput');
     createPlaylistBtn = document.getElementById('createPlaylistBtn');
+    followPage = document.getElementById('followPage');
+    followGrid = document.getElementById('followGrid');
+    followTabs = document.getElementById('followTabs');
     chipsBar = document.querySelector('.chips-bar');
     loading = document.getElementById('loading');
     backgroundModal = document.getElementById('backgroundModal');
@@ -128,6 +258,14 @@ function initElements() {
     videoPlayer = document.getElementById('videoPlayer');
     videoPlaceholder = document.getElementById('videoPlaceholder');
     placeholderImage = document.getElementById('placeholderImage');
+    channelPage = document.getElementById('channelPage');
+    channelVideosGrid = document.getElementById('channelVideosGrid');
+    channelBackBtn = document.getElementById('channelBackBtn');
+    channelProfileAvatar = document.getElementById('channelProfileAvatar');
+    channelProfileName = document.getElementById('channelProfileName');
+    channelProfileSubscribers = document.getElementById('channelProfileSubscribers');
+    channelProfileDescription = document.getElementById('channelProfileDescription');
+    channelProfileFollowBtn = document.getElementById('channelProfileFollowBtn');
 }
 
 // Inicialitzar event listeners
@@ -170,6 +308,8 @@ function initEventListeners() {
                 }
             } else if (page === 'history') {
                 showHistory();
+            } else if (page === 'follow') {
+                showFollow();
             }
         });
     });
@@ -201,11 +341,25 @@ function initEventListeners() {
                 }
             } else if (page === 'playlists') {
                 showPlaylists();
+            } else if (page === 'follow') {
+                showFollow();
             } else {
                 showHome();
             }
         });
     });
+
+    if (followTabs) {
+        followTabs.querySelectorAll('.follow-tab').forEach(tab => {
+            tab.addEventListener('click', (event) => {
+                event.preventDefault();
+                const tabId = tab.dataset.followTab;
+                if (tabId) {
+                    setActiveFollowTab(tabId);
+                }
+            });
+        });
+    }
 
     const brandLink = document.querySelector('.brand');
     if (brandLink) {
@@ -227,6 +381,13 @@ function initEventListeners() {
             } else {
                 loadVideos();
             }
+        });
+    }
+
+    if (channelBackBtn) {
+        channelBackBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            showFollow();
         });
     }
 
@@ -1018,6 +1179,99 @@ function renderPlaylistsPage() {
     });
 }
 
+async function renderFollowPage() {
+    if (!followGrid) {
+        return;
+    }
+    followGrid.innerHTML = '<div class="empty-state">Carregant canals...</div>';
+
+    const allChannels = Array.isArray(YouTubeAPI?.getAllChannels?.())
+        ? YouTubeAPI.getAllChannels()
+        : [];
+
+    if (!allChannels.length) {
+        followGrid.innerHTML = '<div class="empty-state">No hi ha canals disponibles ara mateix.</div>';
+        return;
+    }
+
+    const followedIds = new Set(getFollowedChannelIds().map(id => String(id)));
+    const channels = activeFollowTab === 'following'
+        ? allChannels.filter(channel => followedIds.has(String(channel.id)))
+        : allChannels;
+
+    if (channels.length === 0) {
+        renderFollowEmptyState();
+        return;
+    }
+
+    const sortedChannels = channels
+        .map(channel => ({
+            ...channel,
+            name: channel.name || channel.title || ''
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+    followGrid.innerHTML = sortedChannels.map(channel => {
+        const name = channel.name || 'Canal';
+        const avatar = channel.avatar || channel.thumbnail || getFollowChannelAvatar(channel.id) || 'img/icon-192.png';
+        return `
+            <div class="follow-card" data-channel-id="${channel.id}">
+                <div class="follow-avatar-wrap">
+                    <img class="follow-avatar" src="${avatar}" alt="${escapeHtml(name)}" loading="lazy">
+                </div>
+                <div class="follow-name">${escapeHtml(name)}</div>
+                <button class="follow-toggle-btn" type="button" data-follow-channel="${channel.id}" aria-pressed="false">
+                    Segueix
+                </button>
+            </div>
+        `;
+    }).join('');
+
+    bindFollowButtons(followGrid);
+    enrichFollowChannelAvatars(sortedChannels);
+
+    followGrid.querySelectorAll('.follow-card').forEach(card => {
+        card.addEventListener('click', () => {
+            openChannelProfile(card.dataset.channelId);
+        });
+    });
+}
+
+function renderFollowEmptyState() {
+    if (!followGrid) {
+        return;
+    }
+    if (activeFollowTab === 'following') {
+        followGrid.innerHTML = `
+            <div class="empty-state">
+                Encara no segueixes cap canal.
+                <button class="follow-empty-link" type="button" data-follow-tab-link="all">Veure tots els canals</button>
+            </div>
+        `;
+        const link = followGrid.querySelector('[data-follow-tab-link="all"]');
+        if (link) {
+            link.addEventListener('click', (event) => {
+                event.preventDefault();
+                setActiveFollowTab('all');
+            });
+        }
+    } else {
+        followGrid.innerHTML = '<div class="empty-state">No hi ha canals disponibles ara mateix.</div>';
+    }
+}
+
+function setActiveFollowTab(tabId) {
+    activeFollowTab = tabId;
+    if (followTabs) {
+        followTabs.querySelectorAll('.follow-tab').forEach(tab => {
+            const isActive = tab.dataset.followTab === activeFollowTab;
+            tab.classList.toggle('is-active', isActive);
+            tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+    }
+    renderFollowPage();
+}
+
 function playPlaylist(playlistId) {
     startPlaylistPlayback(playlistId);
 }
@@ -1753,6 +2007,9 @@ function setMiniPlayerState(isActive) {
         if (historyPage) {
             historyPage.classList.add('hidden');
         }
+        if (followPage) {
+            followPage.classList.add('hidden');
+        }
         if (chipsBar) {
             chipsBar.classList.add('hidden');
         }
@@ -1909,6 +2166,9 @@ async function showVideoFromAPI(videoId) {
     if (playlistsPage) {
         playlistsPage.classList.add('hidden');
     }
+    if (followPage) {
+        followPage.classList.add('hidden');
+    }
     if (chipsBar) {
         chipsBar.classList.add('hidden');
     }
@@ -1949,6 +2209,9 @@ async function showVideoFromAPI(videoId) {
                 <div class="channel-header">
                     <div class="channel-meta">
                         <div class="channel-name-large">${escapeHtml(cachedChannelTitle)}</div>
+                        <button class="follow-channel-btn" type="button" data-follow-channel="${cachedVideo.channelId || ''}" aria-pressed="false">
+                            Segueix
+                        </button>
                         <a href="https://www.youtube.com/channel/${cachedVideo.channelId || ''}" target="_blank" rel="noopener noreferrer" class="subscribe-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; background-color: #cc0000; color: white;">
                             Canal Youtube
                         </a>
@@ -1972,6 +2235,7 @@ async function showVideoFromAPI(videoId) {
             `;
             setupLikeBadge(videoId);
             setupMiniPlayerToggle();
+            bindFollowButtons(channelInfo);
             const addToPlaylistBtn = document.getElementById('addToPlaylistBtn');
             if (addToPlaylistBtn) {
                 addToPlaylistBtn.addEventListener('click', () => {
@@ -2018,6 +2282,9 @@ async function showVideoFromAPI(videoId) {
                     <div class="channel-header">
                         <div class="channel-meta">
                             <div class="channel-name-large">${escapeHtml(channel.title)}</div>
+                            <button class="follow-channel-btn" type="button" data-follow-channel="${channel.id}" aria-pressed="false">
+                                Segueix
+                            </button>
                             <a href="${channelUrl}" target="_blank" rel="noopener noreferrer" class="subscribe-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; background-color: #cc0000; color: white;">
                                 Canal Youtube
                             </a>
@@ -2041,6 +2308,7 @@ async function showVideoFromAPI(videoId) {
                 `;
                 setupLikeBadge(videoId);
                 setupMiniPlayerToggle();
+                bindFollowButtons(channelInfo);
                 const addToPlaylistBtn = document.getElementById('addToPlaylistBtn');
                 if (addToPlaylistBtn) {
                     addToPlaylistBtn.addEventListener('click', () => {
@@ -2285,6 +2553,12 @@ function showHome() {
     if (playlistsPage) {
         playlistsPage.classList.add('hidden');
     }
+    if (followPage) {
+        followPage.classList.add('hidden');
+    }
+    if (channelPage) {
+        channelPage.classList.add('hidden');
+    }
     if (chipsBar) {
         chipsBar.classList.remove('hidden');
     }
@@ -2318,6 +2592,12 @@ function showVideo(videoId) {
     }
     if (historyPage) {
         historyPage.classList.add('hidden');
+    }
+    if (followPage) {
+        followPage.classList.add('hidden');
+    }
+    if (channelPage) {
+        channelPage.classList.add('hidden');
     }
     if (chipsBar) {
         chipsBar.classList.add('hidden');
@@ -2357,6 +2637,9 @@ function showVideo(videoId) {
         <div class="channel-header">
             <div class="channel-meta">
                 <div class="channel-name-large">${channel.name}</div>
+                <button class="follow-channel-btn" type="button" data-follow-channel="${channel.id}" aria-pressed="false">
+                    Segueix
+                </button>
                 <a href="${channelUrl}" target="_blank" rel="noopener noreferrer" class="subscribe-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; background-color: #cc0000; color: white;">
                     Canal Youtube
                 </a>
@@ -2380,6 +2663,7 @@ function showVideo(videoId) {
     `;
     setupLikeBadge(videoId);
     setupMiniPlayerToggle();
+    bindFollowButtons(channelInfo);
     const addToPlaylistBtn = document.getElementById('addToPlaylistBtn');
     if (addToPlaylistBtn) {
         addToPlaylistBtn.addEventListener('click', () => {
@@ -2618,6 +2902,12 @@ function showHistory() {
     if (playlistsPage) {
         playlistsPage.classList.add('hidden');
     }
+    if (followPage) {
+        followPage.classList.add('hidden');
+    }
+    if (channelPage) {
+        channelPage.classList.add('hidden');
+    }
     if (chipsBar) {
         chipsBar.classList.add('hidden');
     }
@@ -2638,10 +2928,139 @@ function showPlaylists() {
     if (playlistsPage) {
         playlistsPage.classList.remove('hidden');
     }
+    if (followPage) {
+        followPage.classList.add('hidden');
+    }
+    if (channelPage) {
+        channelPage.classList.add('hidden');
+    }
     if (chipsBar) {
         chipsBar.classList.add('hidden');
     }
     renderPlaylistsPage();
+    window.scrollTo(0, 0);
+}
+
+function showFollow() {
+    handlePlayerVisibilityOnNavigation();
+    exitPlaylistMode();
+    if (mainContent) {
+        mainContent.classList.add('hidden');
+    }
+    if (historyPage) {
+        historyPage.classList.add('hidden');
+    }
+    if (playlistsPage) {
+        playlistsPage.classList.add('hidden');
+    }
+    if (followPage) {
+        followPage.classList.remove('hidden');
+    }
+    if (channelPage) {
+        channelPage.classList.add('hidden');
+    }
+    if (chipsBar) {
+        chipsBar.classList.add('hidden');
+    }
+    setActiveFollowTab('following');
+    window.scrollTo(0, 0);
+}
+
+function openChannelProfile(channelId) {
+    if (!channelId) {
+        return;
+    }
+    handlePlayerVisibilityOnNavigation();
+    exitPlaylistMode();
+    const normalizedId = String(channelId);
+    const channels = Array.isArray(YouTubeAPI?.getAllChannels?.())
+        ? YouTubeAPI.getAllChannels()
+        : [];
+    const channel = channels.find(item => String(item.id) === normalizedId);
+    if (!channelPage || !channelVideosGrid) {
+        return;
+    }
+
+    if (mainContent) {
+        mainContent.classList.remove('hidden');
+    }
+    if (historyPage) {
+        historyPage.classList.add('hidden');
+    }
+    if (playlistsPage) {
+        playlistsPage.classList.add('hidden');
+    }
+    if (followPage) {
+        followPage.classList.add('hidden');
+    }
+    if (channelPage) {
+        channelPage.classList.add('hidden');
+    }
+    if (chipsBar) {
+        chipsBar.classList.add('hidden');
+    }
+    if (homePage) {
+        homePage.classList.add('hidden');
+    }
+    if (watchPage) {
+        watchPage.classList.add('hidden');
+    }
+    channelPage.classList.remove('hidden');
+
+    const channelName = channel?.name || channel?.title || 'Canal';
+    const channelAvatar = channel?.avatar || channel?.thumbnail || getFollowChannelAvatar(normalizedId) || 'img/icon-192.png';
+    if (channelProfileAvatar) {
+        channelProfileAvatar.src = channelAvatar;
+        channelProfileAvatar.alt = channelName;
+    }
+    if (channelProfileName) {
+        channelProfileName.textContent = channelName;
+    }
+    if (channelProfileSubscribers) {
+        if (channel?.subscriberCount) {
+            channelProfileSubscribers.textContent = `${formatViews(channel.subscriberCount)} subscriptors`;
+            channelProfileSubscribers.classList.remove('hidden');
+        } else {
+            channelProfileSubscribers.textContent = '';
+            channelProfileSubscribers.classList.add('hidden');
+        }
+    }
+    if (channelProfileDescription) {
+        channelProfileDescription.textContent = channel?.description || 'No hi ha descripció disponible.';
+    }
+    if (channelProfileFollowBtn) {
+        channelProfileFollowBtn.dataset.followChannel = normalizedId;
+        channelProfileFollowBtn.dataset.followBound = 'false';
+    }
+    bindFollowButtons(channelPage);
+
+    const feedVideos = Array.isArray(YouTubeAPI?.feedVideos) ? YouTubeAPI.feedVideos : [];
+    const combinedVideos = [...feedVideos, ...cachedAPIVideos];
+    const videosById = new Map();
+    combinedVideos.forEach(video => {
+        if (String(video.channelId) !== normalizedId) {
+            return;
+        }
+        videosById.set(String(video.id), video);
+    });
+
+    const channelVideos = Array.from(videosById.values());
+    if (channelVideos.length === 0) {
+        channelVideosGrid.innerHTML = '<div class="empty-state">Encara no hi ha vídeos d\'aquest canal.</div>';
+        return;
+    }
+
+    channelVideosGrid.innerHTML = channelVideos.map(video => createVideoCardAPI(video)).join('');
+    channelVideosGrid.querySelectorAll('.video-card').forEach(card => {
+        card.addEventListener('click', () => {
+            showVideoFromAPI(card.dataset.videoId);
+        });
+    });
+
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+    setupVideoCardActionButtons();
     window.scrollTo(0, 0);
 }
 
