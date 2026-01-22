@@ -1,6 +1,115 @@
 {
-  "generatedAt": "2026-01-21T07:26:44.392Z",
+  "generatedAt": "2026-01-22T01:41:59.258Z",
   "videos": [
+    {
+      "id": "v2SUqtISVsY",
+      "title": "El boicot a Filmin pel documental de les pallisses demostra el poder dels catalans units /2026 01 21",
+      "thumbnail": "https://i.ytimg.com/vi/v2SUqtISVsY/mqdefault.jpg",
+      "channelId": "UCaCWG8cBOwER_Vf3qAsr8Zg",
+      "channelTitle": "Notícies Un Quart de Galves",
+      "publishedAt": "2026-01-21T22:41:22Z",
+      "categories": [
+        "societat"
+      ],
+      "sourceChannelId": "@unquartdegalves",
+      "duration": "PT34M21S",
+      "durationSeconds": 2061,
+      "isShort": false,
+      "viewCount": 169,
+      "likeCount": 47,
+      "commentCount": 10
+    },
+    {
+      "id": "bZz5o6y9_FQ",
+      "title": "Monòlegs km0 (88.7) Santoral 21/01, IA del dia, Rodalies, Trump, gas, Musk vs O’Leary i el Barça!",
+      "thumbnail": "https://i.ytimg.com/vi/bZz5o6y9_FQ/mqdefault.jpg",
+      "channelId": "UCT8sBQf4grkfLMjOXdIkV2w",
+      "channelTitle": "Enric Bastardas",
+      "publishedAt": "2026-01-21T16:51:07Z",
+      "categories": [
+        "humor",
+        "societat"
+      ],
+      "sourceChannelId": "@EnricBastardas1",
+      "duration": "PT11M5S",
+      "durationSeconds": 665,
+      "isShort": false,
+      "viewCount": 11,
+      "likeCount": 0,
+      "commentCount": 0
+    },
+    {
+      "id": "fg8s16U8ax0",
+      "title": "Déu mos guard de fer servir un objecte segons la seua funció. #català #podcast #humor #lasotana",
+      "thumbnail": "https://i.ytimg.com/vi/fg8s16U8ax0/mqdefault.jpg",
+      "channelId": "UCNSmn5NLUDrV_paFZl--7qw",
+      "channelTitle": "La Sotana",
+      "publishedAt": "2026-01-21T16:29:04Z",
+      "categories": [
+        "humor"
+      ],
+      "sourceChannelId": "@LaSotana",
+      "duration": "PT24S",
+      "durationSeconds": 24,
+      "isShort": true,
+      "viewCount": 782,
+      "likeCount": 18,
+      "commentCount": 0
+    },
+    {
+      "id": "I0eH35o1pws",
+      "title": "La Competència. Dia 52 de La Volta al Món a Peu ",
+      "thumbnail": "https://i.ytimg.com/vi/I0eH35o1pws/mqdefault.jpg",
+      "channelId": "UCDawX1bxeC4-hZiGnkqevbw",
+      "channelTitle": "Enric Adventures",
+      "publishedAt": "2026-01-21T15:00:00Z",
+      "categories": [
+        "vida"
+      ],
+      "sourceChannelId": "@EnricAdventures",
+      "duration": "PT23M59S",
+      "durationSeconds": 1439,
+      "isShort": false,
+      "viewCount": 8659,
+      "likeCount": 1013,
+      "commentCount": 131
+    },
+    {
+      "id": "ZzzyUVI5CK4",
+      "title": "Com ens fas sentir, Èric! #català #humor #podcast #lasotana #fcbarcelona",
+      "thumbnail": "https://i.ytimg.com/vi/ZzzyUVI5CK4/mqdefault.jpg",
+      "channelId": "UCNSmn5NLUDrV_paFZl--7qw",
+      "channelTitle": "La Sotana",
+      "publishedAt": "2026-01-21T12:01:58Z",
+      "categories": [
+        "humor"
+      ],
+      "sourceChannelId": "@LaSotana",
+      "duration": "PT34S",
+      "durationSeconds": 34,
+      "isShort": true,
+      "viewCount": 3270,
+      "likeCount": 107,
+      "commentCount": 4
+    },
+    {
+      "id": "NZOMMnrmlv4",
+      "title": "If it's possible I can sign tomorrow. #català #humor #lasotana #podcast",
+      "thumbnail": "https://i.ytimg.com/vi/NZOMMnrmlv4/mqdefault.jpg",
+      "channelId": "UCNSmn5NLUDrV_paFZl--7qw",
+      "channelTitle": "La Sotana",
+      "publishedAt": "2026-01-21T10:45:51Z",
+      "categories": [
+        "humor"
+      ],
+      "sourceChannelId": "@LaSotana",
+      "duration": "PT1M21S",
+      "durationSeconds": 81,
+      "isShort": true,
+      "viewCount": 903,
+      "likeCount": 17,
+      "commentCount": 0
+    },
     {
       "id": "oLY_Y0bXS1o",
       "title": "La Sotana 396 amb Èric Montes",
@@ -15,9 +124,9 @@
       "duration": "PT1H3M21S",
       "durationSeconds": 3801,
       "isShort": false,
-      "viewCount": 5089,
-      "likeCount": 140,
-      "commentCount": 19
+      "viewCount": 37127,
+      "likeCount": 1404,
+      "commentCount": 100
     },
     {
       "id": "1VbgtmNtJ3g",
@@ -33,9 +142,9 @@
       "duration": "PT45M26S",
       "durationSeconds": 2726,
       "isShort": false,
-      "viewCount": 276,
-      "likeCount": 71,
-      "commentCount": 23
+      "viewCount": 1097,
+      "likeCount": 200,
+      "commentCount": 69
     },
     {
       "id": "n9GlWSujeWY",
@@ -51,9 +160,9 @@
       "duration": "PT14M20S",
       "durationSeconds": 860,
       "isShort": false,
-      "viewCount": 8617,
-      "likeCount": 981,
-      "commentCount": 99
+      "viewCount": 10685,
+      "likeCount": 1098,
+      "commentCount": 121
     },
     {
       "id": "mi720wF4MtQ",
@@ -69,8 +178,8 @@
       "duration": "PT42S",
       "durationSeconds": 42,
       "isShort": true,
-      "viewCount": 3023,
-      "likeCount": 75,
+      "viewCount": 3927,
+      "likeCount": 86,
       "commentCount": 0
     },
     {
@@ -87,8 +196,8 @@
       "duration": "PT39S",
       "durationSeconds": 39,
       "isShort": true,
-      "viewCount": 4668,
-      "likeCount": 94,
+      "viewCount": 5579,
+      "likeCount": 104,
       "commentCount": 4
     },
     {
@@ -106,7 +215,7 @@
       "duration": "PT12M",
       "durationSeconds": 720,
       "isShort": false,
-      "viewCount": 8,
+      "viewCount": 25,
       "likeCount": 0,
       "commentCount": 0
     },
@@ -125,7 +234,7 @@
       "duration": "PT1H39M27S",
       "durationSeconds": 5967,
       "isShort": false,
-      "viewCount": 34,
+      "viewCount": 35,
       "likeCount": 5,
       "commentCount": 0
     },
@@ -143,8 +252,8 @@
       "duration": "PT38M43S",
       "durationSeconds": 2323,
       "isShort": false,
-      "viewCount": 1802,
-      "likeCount": 272,
+      "viewCount": 1878,
+      "likeCount": 274,
       "commentCount": 75
     },
     {
@@ -180,9 +289,9 @@
       "duration": "PT15M21S",
       "durationSeconds": 921,
       "isShort": false,
-      "viewCount": 11440,
-      "likeCount": 1191,
-      "commentCount": 125
+      "viewCount": 11976,
+      "likeCount": 1223,
+      "commentCount": 126
     },
     {
       "id": "STZqF2Oq0hM",
@@ -217,9 +326,9 @@
       "duration": "PT18M12S",
       "durationSeconds": 1092,
       "isShort": false,
-      "viewCount": 13641,
-      "likeCount": 1270,
-      "commentCount": 144
+      "viewCount": 13936,
+      "likeCount": 1288,
+      "commentCount": 145
     },
     {
       "id": "Zw-EL0TJK4c",
@@ -235,7 +344,7 @@
       "duration": "PT46M22S",
       "durationSeconds": 2782,
       "isShort": false,
-      "viewCount": 1212,
+      "viewCount": 1221,
       "likeCount": 229,
       "commentCount": 69
     },
@@ -272,7 +381,7 @@
       "duration": "PT32M11S",
       "durationSeconds": 1931,
       "isShort": false,
-      "viewCount": 1087,
+      "viewCount": 1090,
       "likeCount": 223,
       "commentCount": 52
     },
@@ -309,8 +418,8 @@
       "duration": "PT33M52S",
       "durationSeconds": 2032,
       "isShort": false,
-      "viewCount": 1319,
-      "likeCount": 188,
+      "viewCount": 1325,
+      "likeCount": 189,
       "commentCount": 45
     },
     {
@@ -328,7 +437,7 @@
       "duration": "PT12M15S",
       "durationSeconds": 735,
       "isShort": false,
-      "viewCount": 13,
+      "viewCount": 14,
       "likeCount": 0,
       "commentCount": 0
     },
@@ -346,8 +455,8 @@
       "duration": "PT1H6M17S",
       "durationSeconds": 3977,
       "isShort": false,
-      "viewCount": 69557,
-      "likeCount": 1406,
+      "viewCount": 70286,
+      "likeCount": 1414,
       "commentCount": 80
     },
     {
@@ -364,7 +473,7 @@
       "duration": "PT45M22S",
       "durationSeconds": 2722,
       "isShort": false,
-      "viewCount": 1104,
+      "viewCount": 1106,
       "likeCount": 202,
       "commentCount": 41
     },
@@ -382,8 +491,8 @@
       "duration": "PT1M12S",
       "durationSeconds": 72,
       "isShort": true,
-      "viewCount": 3956,
-      "likeCount": 86,
+      "viewCount": 4186,
+      "likeCount": 87,
       "commentCount": 3
     },
     {
@@ -400,8 +509,8 @@
       "duration": "PT17M59S",
       "durationSeconds": 1079,
       "isShort": false,
-      "viewCount": 14321,
-      "likeCount": 1141,
+      "viewCount": 14426,
+      "likeCount": 1148,
       "commentCount": 120
     },
     {
@@ -437,8 +546,8 @@
       "duration": "PT1M9S",
       "durationSeconds": 69,
       "isShort": true,
-      "viewCount": 5140,
-      "likeCount": 143,
+      "viewCount": 5273,
+      "likeCount": 144,
       "commentCount": 4
     },
     {
@@ -492,8 +601,8 @@
       "duration": "PT15M40S",
       "durationSeconds": 940,
       "isShort": false,
-      "viewCount": 14745,
-      "likeCount": 1214,
+      "viewCount": 14811,
+      "likeCount": 1218,
       "commentCount": 158
     },
     {
@@ -529,8 +638,8 @@
       "duration": "PT13M51S",
       "durationSeconds": 831,
       "isShort": false,
-      "viewCount": 14632,
-      "likeCount": 1337,
+      "viewCount": 14683,
+      "likeCount": 1341,
       "commentCount": 185
     },
     {
@@ -547,8 +656,8 @@
       "duration": "PT13M46S",
       "durationSeconds": 826,
       "isShort": false,
-      "viewCount": 14364,
-      "likeCount": 1379,
+      "viewCount": 14402,
+      "likeCount": 1380,
       "commentCount": 153
     },
     {
@@ -602,8 +711,8 @@
       "duration": "PT17M20S",
       "durationSeconds": 1040,
       "isShort": false,
-      "viewCount": 15590,
-      "likeCount": 1330,
+      "viewCount": 15618,
+      "likeCount": 1331,
       "commentCount": 147
     },
     {
@@ -658,8 +767,8 @@
       "duration": "PT30M28S",
       "durationSeconds": 1828,
       "isShort": false,
-      "viewCount": 1247,
-      "likeCount": 203,
+      "viewCount": 1253,
+      "likeCount": 204,
       "commentCount": 64
     },
     {
@@ -676,64 +785,9 @@
       "duration": "PT19M21S",
       "durationSeconds": 1161,
       "isShort": false,
-      "viewCount": 14534,
-      "likeCount": 1262,
+      "viewCount": 14566,
+      "likeCount": 1263,
       "commentCount": 121
-    },
-    {
-      "id": "erUGvtKfqe8",
-      "title": "Monòlegs km0 (78.7) Bon any 2026, santoral, IA, Veneçuela i més, tortell, professions i graus i Grok",
-      "thumbnail": "https://i.ytimg.com/vi/erUGvtKfqe8/mqdefault.jpg",
-      "channelId": "UCT8sBQf4grkfLMjOXdIkV2w",
-      "channelTitle": "Enric Bastardas",
-      "publishedAt": "2026-01-07T09:50:36Z",
-      "categories": [
-        "humor",
-        "societat"
-      ],
-      "sourceChannelId": "@EnricBastardas1",
-      "duration": "PT16M30S",
-      "durationSeconds": 990,
-      "isShort": false,
-      "viewCount": 21,
-      "likeCount": 1,
-      "commentCount": 0
-    },
-    {
-      "id": "ek-Da9v0O6U",
-      "title": "Josep Lluís Alay anima Grenlàndia a la independència amb el suport dels catalans /2026 01 07",
-      "thumbnail": "https://i.ytimg.com/vi/ek-Da9v0O6U/mqdefault.jpg",
-      "channelId": "UCaCWG8cBOwER_Vf3qAsr8Zg",
-      "channelTitle": "Notícies Un Quart de Galves",
-      "publishedAt": "2026-01-07T08:00:56Z",
-      "categories": [
-        "societat"
-      ],
-      "sourceChannelId": "@unquartdegalves",
-      "duration": "PT30M7S",
-      "durationSeconds": 1807,
-      "isShort": false,
-      "viewCount": 1221,
-      "likeCount": 180,
-      "commentCount": 49
-    },
-    {
-      "id": "bEZ4Fkyad0E",
-      "title": "DIRECTE. Dies 37 i 38 de La Volta al Món a Peu",
-      "thumbnail": "https://i.ytimg.com/vi/bEZ4Fkyad0E/mqdefault.jpg",
-      "channelId": "UCDawX1bxeC4-hZiGnkqevbw",
-      "channelTitle": "Enric Adventures",
-      "publishedAt": "2026-01-06T20:21:31Z",
-      "categories": [
-        "vida"
-      ],
-      "sourceChannelId": "@EnricAdventures",
-      "duration": "PT2H4M43S",
-      "durationSeconds": 7483,
-      "isShort": false,
-      "viewCount": 14762,
-      "likeCount": 979,
-      "commentCount": 56
     },
     {
       "id": "FLR3gEYe3cs",
@@ -807,8 +861,8 @@
       "duration": "PT37M38S",
       "durationSeconds": 2258,
       "isShort": false,
-      "viewCount": 594,
-      "likeCount": 42,
+      "viewCount": 598,
+      "likeCount": 43,
       "commentCount": 9
     },
     {
@@ -825,63 +879,9 @@
       "duration": "PT1M33S",
       "durationSeconds": 93,
       "isShort": true,
-      "viewCount": 2800,
+      "viewCount": 2875,
       "likeCount": 65,
       "commentCount": 1
-    },
-    {
-      "id": "74CvvmVUgFo",
-      "title": "Caballero! #català #podcast",
-      "thumbnail": "https://i.ytimg.com/vi/74CvvmVUgFo/mqdefault.jpg",
-      "channelId": "UCNSmn5NLUDrV_paFZl--7qw",
-      "channelTitle": "La Sotana",
-      "publishedAt": "2025-12-24T10:12:52Z",
-      "categories": [
-        "humor"
-      ],
-      "sourceChannelId": "@LaSotana",
-      "duration": "PT1M15S",
-      "durationSeconds": 75,
-      "isShort": true,
-      "viewCount": 2894,
-      "likeCount": 50,
-      "commentCount": 1
-    },
-    {
-      "id": "GbQAnYaMXnA",
-      "title": "La Sotana 394 amb en Peyu",
-      "thumbnail": "https://i.ytimg.com/vi/GbQAnYaMXnA/mqdefault.jpg",
-      "channelId": "UCNSmn5NLUDrV_paFZl--7qw",
-      "channelTitle": "La Sotana",
-      "publishedAt": "2025-12-24T08:55:11Z",
-      "categories": [
-        "humor"
-      ],
-      "sourceChannelId": "@LaSotana",
-      "duration": "PT1H11M54S",
-      "durationSeconds": 4314,
-      "isShort": false,
-      "viewCount": 91695,
-      "likeCount": 1926,
-      "commentCount": 110
-    },
-    {
-      "id": "TVqCwc6FqjA",
-      "title": "Que la vida que ens hem perdut simplement no existeix. #català",
-      "thumbnail": "https://i.ytimg.com/vi/TVqCwc6FqjA/mqdefault.jpg",
-      "channelId": "UCNSmn5NLUDrV_paFZl--7qw",
-      "channelTitle": "La Sotana",
-      "publishedAt": "2025-12-23T17:29:14Z",
-      "categories": [
-        "humor"
-      ],
-      "sourceChannelId": "@LaSotana",
-      "duration": "PT40S",
-      "durationSeconds": 40,
-      "isShort": true,
-      "viewCount": 5002,
-      "likeCount": 73,
-      "commentCount": 3
     },
     {
       "id": "ivKgGEnbD2Q",
@@ -1009,7 +1009,7 @@
       "duration": "PT1H49M40S",
       "durationSeconds": 6580,
       "isShort": false,
-      "viewCount": 104,
+      "viewCount": 106,
       "likeCount": 8,
       "commentCount": 0
     },
@@ -1027,7 +1027,7 @@
       "duration": "PT12M",
       "durationSeconds": 720,
       "isShort": false,
-      "viewCount": 290,
+      "viewCount": 292,
       "likeCount": 32,
       "commentCount": 3
     },
@@ -1045,7 +1045,7 @@
       "duration": "PT1M30S",
       "durationSeconds": 90,
       "isShort": true,
-      "viewCount": 78,
+      "viewCount": 79,
       "likeCount": 14,
       "commentCount": 2
     },
@@ -1081,7 +1081,7 @@
       "duration": "PT3M13S",
       "durationSeconds": 193,
       "isShort": false,
-      "viewCount": 215,
+      "viewCount": 216,
       "likeCount": 24,
       "commentCount": 4
     },
@@ -1173,8 +1173,8 @@
       "duration": "PT39M26S",
       "durationSeconds": 2366,
       "isShort": false,
-      "viewCount": 1755,
-      "likeCount": 78,
+      "viewCount": 1761,
+      "likeCount": 79,
       "commentCount": 19
     },
     {
@@ -1268,7 +1268,7 @@
       "duration": "PT40M9S",
       "durationSeconds": 2409,
       "isShort": false,
-      "viewCount": 853,
+      "viewCount": 854,
       "likeCount": 52,
       "commentCount": 2
     },
