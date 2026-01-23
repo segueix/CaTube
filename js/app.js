@@ -2344,7 +2344,7 @@ async function showVideoFromAPI(videoId) {
                                 Segueix
                             </button>
                             <button class="btn-heart" id="likeToggle" type="button" aria-label="M'agrada" aria-pressed="false">
-                                <i class="far fa-heart" aria-hidden="true"></i>
+                                <i data-lucide="heart"></i>
                             </button>
                         </div>
                     </div>
@@ -2366,7 +2366,7 @@ async function showVideoFromAPI(videoId) {
 
                     <div class="video-description"></div>
 
-                    <div class="comments-preview-box" onclick="window.open('${watchUrl}', '_blank', 'noopener')">
+                    <div class="comments-preview-inline" onclick="window.open('${watchUrl}', '_blank', 'noopener')">
                         <div class="comments-header-mini">
                             <span>Comentaris <span style="font-weight: normal; color: var(--text-secondary);">${formatViews(cachedVideo.commentCount || 0)}</span></span>
                             <i data-lucide="chevrons-down" style="width: 16px;"></i>
@@ -2455,7 +2455,7 @@ async function showVideoFromAPI(videoId) {
                                     Segueix
                                 </button>
                                 <button class="btn-heart" id="likeToggle" type="button" aria-label="M'agrada" aria-pressed="false">
-                                    <i class="far fa-heart" aria-hidden="true"></i>
+                                    <i data-lucide="heart"></i>
                                 </button>
                             </div>
                         </div>
@@ -2479,7 +2479,7 @@ async function showVideoFromAPI(videoId) {
                             ${escapeHtml(video.description || '').substring(0, 500)}${video.description?.length > 500 ? '...' : ''}
                         </div>
 
-                        <div class="comments-preview-box" onclick="window.open('${watchUrl}', '_blank', 'noopener')">
+                        <div class="comments-preview-inline" onclick="window.open('${watchUrl}', '_blank', 'noopener')">
                             <div class="comments-header-mini">
                                 <span>Comentaris <span style="font-weight: normal; color: var(--text-secondary);">${formatViews(video.commentCount || 0)}</span></span>
                                 <i data-lucide="chevrons-down" style="width: 16px;"></i>
@@ -2839,7 +2839,7 @@ function showVideo(videoId) {
                         Segueix
                     </button>
                     <button class="btn-heart" id="likeToggle" type="button" aria-label="M'agrada" aria-pressed="false">
-                        <i class="far fa-heart" aria-hidden="true"></i>
+                        <i data-lucide="heart"></i>
                     </button>
                 </div>
             </div>
@@ -2863,7 +2863,7 @@ function showVideo(videoId) {
                 ${escapeHtml(video.description || '').substring(0, 500)}${video.description?.length > 500 ? '...' : ''}
             </div>
 
-            <div class="comments-preview-box" onclick="window.open('${watchUrl}', '_blank', 'noopener')">
+            <div class="comments-preview-inline" onclick="window.open('${watchUrl}', '_blank', 'noopener')">
                 <div class="comments-header-mini">
                     <span>Comentaris <span style="font-weight: normal; color: var(--text-secondary);">${formatViews(video.commentCount || 0)}</span></span>
                     <i data-lucide="chevrons-down" style="width: 16px;"></i>
