@@ -154,6 +154,25 @@ function getFollowChannelAvatar(channelId) {
     return null;
 }
 
+function bindChannelLinks(container = document) {
+    const links = container.querySelectorAll('.channel-link');
+    links.forEach(link => {
+        if (link.dataset.channelLinkBound === 'true') {
+            return;
+        }
+        const channelId = link.dataset.channelId;
+        if (!channelId) {
+            return;
+        }
+        link.dataset.channelLinkBound = 'true';
+        link.addEventListener('click', (event) => {
+            event.stopPropagation();
+            event.preventDefault();
+            openChannelProfile(channelId);
+        });
+    });
+}
+
 
 // Inicialitzar l'aplicació
 document.addEventListener('DOMContentLoaded', async () => {
@@ -895,6 +914,7 @@ function renderVideos(videos) {
             showVideoFromAPI(videoId);
         });
     });
+    bindChannelLinks(videosGrid);
 
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
@@ -2057,7 +2077,7 @@ function renderSearchResults(videos) {
                         </div>
                     </div>
                     <div class="video-metadata">
-                        <div class="channel-name">${escapeHtml(video.channelTitle)}</div>
+                        <div class="channel-name channel-link" data-channel-id="${video.channelId}">${escapeHtml(video.channelTitle)}</div>
                         <div class="video-stats">
                             <span>${formatDate(video.publishedAt)}</span>
                         </div>
@@ -2075,6 +2095,7 @@ function renderSearchResults(videos) {
             showVideoFromAPI(videoId);
         });
     });
+    bindChannelLinks(videosGrid);
 
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
@@ -2108,7 +2129,7 @@ function createVideoCardAPI(video) {
                         </div>
                     </div>
                     <div class="video-metadata">
-                        <div class="channel-name">${escapeHtml(video.channelTitle)}</div>
+                        <div class="channel-name channel-link" data-channel-id="${video.channelId}">${escapeHtml(video.channelTitle)}</div>
                         <div class="video-stats">
                             <i data-lucide="eye" style="width: 12px; height: 12px;"></i>
                             <span>${formatViews(video.viewCount || 0)} visualitzacions</span>
@@ -2182,10 +2203,14 @@ async function showVideoFromAPI(videoId) {
         const channelInfo = document.getElementById('channelInfo');
         if (channelInfo) {
             const cachedChannelTitle = cachedVideo.channelTitle || '';
+            const cachedChannelAvatar = cachedVideo.channelThumbnail
+                || getFollowChannelAvatar(cachedVideo.channelId)
+                || 'img/icon-192.png';
             channelInfo.innerHTML = `
                 <div class="channel-header">
                     <div class="channel-meta">
-                        <div class="channel-name-large">${escapeHtml(cachedChannelTitle)}</div>
+                        <img src="${cachedChannelAvatar}" alt="${escapeHtml(cachedChannelTitle)}" class="channel-avatar channel-link" data-channel-id="${cachedVideo.channelId || ''}" loading="lazy">
+                        <div class="channel-name-large channel-link" data-channel-id="${cachedVideo.channelId || ''}">${escapeHtml(cachedChannelTitle)}</div>
                         <button class="follow-channel-btn" type="button" data-follow-channel="${cachedVideo.channelId || ''}" aria-pressed="false">
                             Segueix
                         </button>
@@ -2213,6 +2238,7 @@ async function showVideoFromAPI(videoId) {
             setupLikeBadge(videoId);
             setupMiniPlayerToggle();
             bindFollowButtons(channelInfo);
+            bindChannelLinks(channelInfo);
             const addToPlaylistBtn = document.getElementById('addToPlaylistBtn');
             if (addToPlaylistBtn) {
                 addToPlaylistBtn.addEventListener('click', () => {
@@ -2255,10 +2281,12 @@ async function showVideoFromAPI(videoId) {
                 const channel = channelResult.channel;
                 const channelInfo = document.getElementById('channelInfo');
                 const channelUrl = `https://www.youtube.com/channel/${channel.id}`;
+                const channelAvatar = channel.thumbnail || channel.avatar || getFollowChannelAvatar(channel.id) || 'img/icon-192.png';
                 channelInfo.innerHTML = `
                     <div class="channel-header">
                         <div class="channel-meta">
-                            <div class="channel-name-large">${escapeHtml(channel.title)}</div>
+                            <img src="${channelAvatar}" alt="${escapeHtml(channel.title)}" class="channel-avatar channel-link" data-channel-id="${channel.id}" loading="lazy">
+                            <div class="channel-name-large channel-link" data-channel-id="${channel.id}">${escapeHtml(channel.title)}</div>
                             <button class="follow-channel-btn" type="button" data-follow-channel="${channel.id}" aria-pressed="false">
                                 Segueix
                             </button>
@@ -2286,6 +2314,7 @@ async function showVideoFromAPI(videoId) {
                 setupLikeBadge(videoId);
                 setupMiniPlayerToggle();
                 bindFollowButtons(channelInfo);
+                bindChannelLinks(channelInfo);
                 const addToPlaylistBtn = document.getElementById('addToPlaylistBtn');
                 if (addToPlaylistBtn) {
                     addToPlaylistBtn.addEventListener('click', () => {
@@ -2425,6 +2454,7 @@ function renderStaticVideos(videos) {
             showVideo(videoId);
         });
     });
+    bindChannelLinks(videosGrid);
 
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
@@ -2448,6 +2478,7 @@ function loadVideosByCategoryStatic(categoryId) {
             showVideo(videoId);
         });
     });
+    bindChannelLinks(videosGrid);
 
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
@@ -2468,7 +2499,7 @@ function createVideoCard(video) {
                 <span class="video-duration">${video.duration}</span>
             </div>
             <div class="video-details">
-                <img src="${channel.avatar}" alt="${channel.name}" class="channel-avatar">
+                <img src="${channel.avatar}" alt="${channel.name}" class="channel-avatar channel-link" data-channel-id="${channel.id}">
                 <div class="video-info-container">
                     <div class="video-info-header">
                         <h3 class="video-card-title">${video.title}</h3>
@@ -2482,7 +2513,7 @@ function createVideoCard(video) {
                         </div>
                     </div>
                     <div class="video-metadata">
-                        <div class="channel-name">${channel.name}</div>
+                        <div class="channel-name channel-link" data-channel-id="${channel.id}">${channel.name}</div>
                         <div class="video-stats">
                             <i data-lucide="eye" style="width: 12px; height: 12px;"></i>
                             <span>${formatViews(video.views)} visualitzacions</span>
@@ -2613,7 +2644,8 @@ function showVideo(videoId) {
     channelInfo.innerHTML = `
         <div class="channel-header">
             <div class="channel-meta">
-                <div class="channel-name-large">${channel.name}</div>
+                <img src="${channel.avatar}" alt="${channel.name}" class="channel-avatar channel-link" data-channel-id="${channel.id}" loading="lazy">
+                <div class="channel-name-large channel-link" data-channel-id="${channel.id}">${channel.name}</div>
                 <button class="follow-channel-btn" type="button" data-follow-channel="${channel.id}" aria-pressed="false">
                     Segueix
                 </button>
@@ -2641,6 +2673,7 @@ function showVideo(videoId) {
     setupLikeBadge(videoId);
     setupMiniPlayerToggle();
     bindFollowButtons(channelInfo);
+    bindChannelLinks(channelInfo);
     const addToPlaylistBtn = document.getElementById('addToPlaylistBtn');
     if (addToPlaylistBtn) {
         addToPlaylistBtn.addEventListener('click', () => {
@@ -2795,7 +2828,7 @@ function createHistoryCard(video) {
                 ${duration ? `<span class="video-duration">${duration}</span>` : ''}
             </div>
             <div class="video-details">
-                ${channel ? `<img src="${channel.avatar}" alt="${escapeHtml(channel.name)}" class="channel-avatar">` : ''}
+                ${channel ? `<img src="${channel.avatar}" alt="${escapeHtml(channel.name)}" class="channel-avatar channel-link" data-channel-id="${channel.id}">` : ''}
                 <div class="video-info-container">
                     <div class="video-info-header">
                         <h3 class="video-card-title">${escapeHtml(title)}</h3>
@@ -2809,7 +2842,7 @@ function createHistoryCard(video) {
                         </div>
                     </div>
                     <div class="video-metadata">
-                        <div class="channel-name">${escapeHtml(channelTitle)}</div>
+                        <div class="channel-name channel-link" data-channel-id="${video.channelId || channel?.id || ''}">${escapeHtml(channelTitle)}</div>
                         <div class="video-stats">
                             <i data-lucide="eye" style="width: 12px; height: 12px;"></i>
                             <span>${formatViews(views)} visualitzacions</span>
@@ -2850,6 +2883,7 @@ function renderHistory() {
             }
         });
     });
+    bindChannelLinks(historyGrid);
 
     const deleteButtons = historyGrid.querySelectorAll('.delete-history-btn');
     deleteButtons.forEach(button => {
@@ -3042,6 +3076,7 @@ function openChannelProfile(channelId) {
             showVideoFromAPI(card.dataset.videoId);
         });
     });
+    bindChannelLinks(channelVideosGrid);
 
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();

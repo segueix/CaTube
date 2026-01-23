@@ -704,6 +704,15 @@ body.sidebar-collapsed .main-content {
     flex-shrink: 0;
 }
 
+.channel-link {
+    cursor: pointer;
+}
+
+.channel-link:hover {
+    color: var(--color-primary);
+    text-decoration: underline;
+}
+
 .video-info-container {
     flex: 1;
     min-width: 0;
