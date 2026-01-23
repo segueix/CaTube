@@ -108,7 +108,7 @@ function updateFollowButtonState(button, channelId) {
     button.classList.toggle('is-followed', followed);
     button.setAttribute('aria-pressed', followed ? 'true' : 'false');
     button.setAttribute('aria-label', followed ? 'Deixa de seguir aquest canal' : 'Segueix aquest canal');
-    button.innerHTML = `<i class="${followed ? 'fas' : 'far'} fa-heart"></i>`;
+    button.textContent = followed ? 'Seguint' : 'Segueix';
 }
 
 function refreshFollowButtons(channelId) {
@@ -2206,18 +2206,25 @@ async function showVideoFromAPI(videoId) {
         const channelInfo = document.getElementById('channelInfo');
         if (channelInfo) {
             const cachedChannelTitle = cachedVideo.channelTitle || '';
-            const cachedChannelAvatar = cachedVideo.channelThumbnail
+            const channelList = Array.isArray(YouTubeAPI?.getAllChannels?.())
+                ? YouTubeAPI.getAllChannels()
+                : [];
+            const matchedChannel = channelList.find(channelItem => String(channelItem.id) === String(cachedVideo.channelId));
+            const cachedChannelAvatar = matchedChannel?.avatar
+                || cachedVideo.channelThumbnail
                 || getFollowChannelAvatar(cachedVideo.channelId)
                 || 'img/icon-192.png';
             channelInfo.innerHTML = `
                 <div class="video-metadata-bar">
                     <div class="channel-meta">
-                        <img src="${cachedChannelAvatar}" alt="${escapeHtml(cachedChannelTitle)}" class="channel-avatar-small channel-link" data-channel-id="${cachedVideo.channelId || ''}" loading="lazy">
-                        <div class="channel-name-large channel-link" data-channel-id="${cachedVideo.channelId || ''}">${escapeHtml(cachedChannelTitle)}</div>
+                        <div class="channel-name-large channel-link" data-channel-id="${cachedVideo.channelId || ''}">
+                            <img src="${cachedChannelAvatar}" alt="${escapeHtml(cachedChannelTitle)}" class="channel-avatar-small" loading="lazy">
+                            <span>${escapeHtml(cachedChannelTitle)}</span>
+                        </div>
                     </div>
                     <div class="video-metadata-actions">
-                        <button class="action-btn follow-channel-btn" type="button" data-follow-channel="${cachedVideo.channelId || ''}" aria-pressed="false"></button>
-                        <button class="action-btn" id="addToPlaylistBtn" type="button" aria-label="Afegir a una llista">
+                        <button class="follow-channel-btn" type="button" data-follow-channel="${cachedVideo.channelId || ''}" aria-pressed="false"></button>
+                        <button class="icon-btn-ghost" id="addToPlaylistBtn" type="button" aria-label="Afegir a una llista">
                             ${PLAYLIST_ICON_SVG}
                         </button>
                     </div>
@@ -2282,18 +2289,29 @@ async function showVideoFromAPI(videoId) {
 
             if (channelResult.channel) {
                 const channel = channelResult.channel;
+                const currentVideo = video;
                 const channelInfo = document.getElementById('channelInfo');
                 const channelUrl = `https://www.youtube.com/channel/${channel.id}`;
-                const channelAvatar = channel.thumbnail || channel.avatar || getFollowChannelAvatar(channel.id) || 'img/icon-192.png';
+                const channelList = Array.isArray(YouTubeAPI?.getAllChannels?.())
+                    ? YouTubeAPI.getAllChannels()
+                    : [];
+                const matchedChannel = channelList.find(channelItem => String(channelItem.id) === String(currentVideo.channelId));
+                const channelAvatar = matchedChannel?.avatar
+                    || channel.thumbnail
+                    || channel.avatar
+                    || getFollowChannelAvatar(channel.id)
+                    || 'img/icon-192.png';
                 channelInfo.innerHTML = `
                     <div class="video-metadata-bar">
                         <div class="channel-meta">
-                            <img src="${channelAvatar}" alt="${escapeHtml(channel.title)}" class="channel-avatar-small channel-link" data-channel-id="${channel.id}" loading="lazy">
-                            <div class="channel-name-large channel-link" data-channel-id="${channel.id}">${escapeHtml(channel.title)}</div>
+                            <div class="channel-name-large channel-link" data-channel-id="${channel.id}">
+                                <img src="${channelAvatar}" alt="${escapeHtml(channel.title)}" class="channel-avatar-small" loading="lazy">
+                                <span>${escapeHtml(channel.title)}</span>
+                            </div>
                         </div>
                         <div class="video-metadata-actions">
-                            <button class="action-btn follow-channel-btn" type="button" data-follow-channel="${channel.id}" aria-pressed="false"></button>
-                            <button class="action-btn" id="addToPlaylistBtn" type="button" aria-label="Afegir a una llista">
+                            <button class="follow-channel-btn" type="button" data-follow-channel="${channel.id}" aria-pressed="false"></button>
+                            <button class="icon-btn-ghost" id="addToPlaylistBtn" type="button" aria-label="Afegir a una llista">
                                 ${PLAYLIST_ICON_SVG}
                             </button>
                         </div>
@@ -2647,12 +2665,14 @@ function showVideo(videoId) {
     channelInfo.innerHTML = `
         <div class="video-metadata-bar">
             <div class="channel-meta">
-                <img src="${channel.avatar}" alt="${channel.name}" class="channel-avatar-small channel-link" data-channel-id="${channel.id}" loading="lazy">
-                <div class="channel-name-large channel-link" data-channel-id="${channel.id}">${channel.name}</div>
+                <div class="channel-name-large channel-link" data-channel-id="${channel.id}">
+                    <img src="${channel.avatar || 'img/icon-192.png'}" alt="${channel.name}" class="channel-avatar-small" loading="lazy">
+                    <span>${channel.name}</span>
+                </div>
             </div>
             <div class="video-metadata-actions">
-                <button class="action-btn follow-channel-btn" type="button" data-follow-channel="${channel.id}" aria-pressed="false"></button>
-                <button class="action-btn" id="addToPlaylistBtn" type="button" aria-label="Afegir a una llista">
+                <button class="follow-channel-btn" type="button" data-follow-channel="${channel.id}" aria-pressed="false"></button>
+                <button class="icon-btn-ghost" id="addToPlaylistBtn" type="button" aria-label="Afegir a una llista">
                     ${PLAYLIST_ICON_SVG}
                 </button>
             </div>

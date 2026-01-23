@@ -708,8 +708,10 @@ body.sidebar-collapsed .main-content {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    margin-right: 10px;
     object-fit: cover;
+    margin-right: 10px;
+    vertical-align: middle;
+    display: inline-block;
     flex-shrink: 0;
 }
 
@@ -1160,51 +1162,6 @@ button:disabled,
     flex-shrink: 0;
 }
 
-.action-btn {
-    border: none;
-    background: none;
-    color: var(--color-text);
-    cursor: pointer;
-    font-size: 1.2rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 6px;
-    line-height: 1;
-}
-
-.action-btn svg {
-    width: 20px;
-    height: 20px;
-}
-
-.action-btn.follow-channel-btn {
-    padding: 6px;
-    border: none;
-    background: none;
-}
-
-.action-btn .fa-heart {
-    font-size: 1.2rem;
-}
-
-.fa-heart {
-    display: inline-block;
-    line-height: 1;
-}
-
-.fa-heart.far::before {
-    content: '♡';
-}
-
-.fa-heart.fas::before {
-    content: '♥';
-}
-
-.fa-heart.fas {
-    color: var(--color-primary);
-}
-
 .channel-header {
     display: flex;
     align-items: center;
@@ -1234,6 +1191,9 @@ button:disabled,
     font-size: 15px;
     font-weight: 600;
     margin-right: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
     white-space: normal;
     overflow-wrap: anywhere;
     word-break: break-word;
@@ -1254,8 +1214,8 @@ button:disabled,
     padding: 6px 14px;
     border-radius: 999px;
     border: 1px solid var(--color-primary);
-    background: transparent;
-    color: var(--color-primary);
+    background: var(--color-primary);
+    color: #ffffff;
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
@@ -1263,8 +1223,8 @@ button:disabled,
 }
 
 .follow-channel-btn.is-followed {
-    background: var(--color-primary);
-    color: #ffffff;
+    background: transparent;
+    color: var(--color-primary);
 }
 
 .follow-channel-btn:hover {
