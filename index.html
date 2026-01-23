@@ -59,7 +59,7 @@
             <a class="icon-btn nav-trigger" href="#" data-page="history" aria-label="Historial" title="Historial">
                 <i data-lucide="history"></i>
             </a>
-            <a class="icon-btn nav-trigger" href="#" data-page="subscriptions" aria-label="Subscripcions" title="Subscripcions">
+            <a class="icon-btn nav-trigger" href="#" data-page="follow" aria-label="Segueix!" title="Segueix!">
                 <i data-lucide="users"></i>
             </a>
             <button class="icon-btn" id="backgroundBtn" type="button" aria-label="Color de fons" title="Color de fons">
@@ -89,9 +89,9 @@
                 <i data-lucide="trending-up"></i>
                 <span>Tendències</span>
             </a>
-            <a href="#" class="nav-item" data-page="subscriptions">
+            <a href="#" class="nav-item" data-page="follow">
                 <i data-lucide="users"></i>
-                <span>Subscripcions</span>
+                <span>Segueix!</span>
             </a>
             <a href="#" class="nav-item" data-page="library">
                 <i data-lucide="library"></i>
@@ -161,6 +161,26 @@
                 </div>
             </div>
         </div>
+
+        <div class="page hidden" id="channelPage">
+            <div class="channel-profile-header">
+                <button class="channel-back-btn" id="channelBackBtn" type="button" aria-label="Tornar enrere">
+                    <i data-lucide="arrow-left"></i>
+                </button>
+                <div class="channel-profile-meta">
+                    <img class="channel-profile-avatar" id="channelProfileAvatar" alt="">
+                    <div class="channel-profile-text">
+                        <h1 class="channel-profile-name" id="channelProfileName"></h1>
+                        <p class="channel-profile-subscribers" id="channelProfileSubscribers"></p>
+                    </div>
+                </div>
+                <button class="follow-channel-btn" id="channelProfileFollowBtn" type="button" data-follow-channel="" aria-pressed="false">
+                    Segueix
+                </button>
+            </div>
+            <div class="channel-profile-description" id="channelProfileDescription"></div>
+            <div id="channelVideosGrid" class="videos-grid"></div>
+        </div>
     </main>
 
     <div class="video-player" id="videoPlayer"></div>
@@ -189,6 +209,20 @@
             <button id="createPlaylistBtn" class="playlist-create-btn" type="button">Crear nova llista</button>
         </div>
         <div id="playlistsList" class="playlists-list"></div>
+    </div>
+
+    <div id="followPage" class="main-content hidden" aria-labelledby="followPageTitle">
+        <h1 class="page-title" id="followPageTitle">Segueix!</h1>
+        <p class="page-subtitle">Descobreix i segueix els canals catalans disponibles.</p>
+        <div class="follow-tabs" id="followTabs" role="tablist" aria-label="Filtres de canals">
+            <button class="follow-tab is-active" type="button" role="tab" aria-selected="true" data-follow-tab="following">
+                Seguint
+            </button>
+            <button class="follow-tab" type="button" role="tab" aria-selected="false" data-follow-tab="all">
+                Tots els canals
+            </button>
+        </div>
+        <div id="followGrid" class="follow-grid"></div>
     </div>
 
     <div id="short-modal" class="short-modal hidden" aria-hidden="true">

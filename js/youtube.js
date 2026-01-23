@@ -73,26 +73,42 @@ const YouTubeAPI = {
             const feedItems = Array.isArray(feedData)
                 ? feedData
                 : (Array.isArray(feedData.items) ? feedData.items : (Array.isArray(feedData.videos) ? feedData.videos : []));
-            
+
+            const feedChannelsMap = feedData?.channels && typeof feedData.channels === 'object'
+                ? feedData.channels
+                : null;
+
             if (Array.isArray(feedItems) && feedItems.length > 0) {
                 // Guardar vídeos del feed
                 this.feedVideos = feedItems;
-                
-                // Extreure canals únics dels vídeos
-                const channelsMap = {};
-                feedItems.forEach(video => {
-                    if (video.channelTitle && !channelsMap[video.channelTitle]) {
-                        channelsMap[video.channelTitle] = {
-                            id: video.channelId || null,
-                            name: video.channelTitle,
-                            categories: this.normalizeCategories(video.categories)
-                        };
-                    }
-                });
-                
-                this.feedChannels = Object.values(channelsMap);
+
+                if (feedChannelsMap) {
+                    this.feedChannels = Object.entries(feedChannelsMap).map(([id, channel]) => ({
+                        id,
+                        name: channel.name || '',
+                        avatar: channel.avatar || '',
+                        description: channel.description || '',
+                        handle: channel.handle || '',
+                        categories: this.normalizeCategories(channel.categories || [])
+                    }));
+                } else {
+                    // Fallback per feeds antics
+                    const channelsMap = {};
+                    feedItems.forEach(video => {
+                        if (video.channelTitle && !channelsMap[video.channelTitle]) {
+                            channelsMap[video.channelTitle] = {
+                                id: video.channelId || null,
+                                name: video.channelTitle,
+                                categories: this.normalizeCategories(video.categories)
+                            };
+                        }
+                    });
+
+                    this.feedChannels = Object.values(channelsMap);
+                }
+
                 this.feedLoaded = true;
-                
+
                 console.log(`iuTube: Carregats ${this.feedVideos.length} vídeos i ${this.feedChannels.length} canals des del feed`);
             }
         } catch (error) {
@@ -510,14 +526,12 @@ const YouTubeAPI = {
         localStorage.removeItem('iutube_cache_catalan_videos');
     },
 
-    // Obtenir tots els canals (feed > hardcodejats > usuari)
+    // Obtenir tots els canals (feed.json com a font única)
     getAllChannels() {
-        // Prioritat: feed, després fallback hardcodejat, després usuari
-        const baseChannels = this.feedLoaded && this.feedChannels.length > 0 
-            ? this.feedChannels 
-            : this.catalanChannels;
-        
-        return [...baseChannels, ...this.userChannels];
+        if (this.feedLoaded && this.feedChannels.length > 0) {
+            return this.feedChannels;
+        }
+        return [];
     },
 
     // Obtenir vídeos per categoria (suporta múltiples categories per canal)
@@ -931,7 +945,7 @@ const YouTubeAPI = {
             id: item.id,
             title: item.snippet.title,
             description: item.snippet.description,
-            thumbnail: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url,
+            thumbnail: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url,
             subscriberCount: parseInt(item.statistics?.subscriberCount || 0),
             videoCount: parseInt(item.statistics?.videoCount || 0),
             viewCount: parseInt(item.statistics?.viewCount || 0)
