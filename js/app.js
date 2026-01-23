@@ -2214,36 +2214,72 @@ async function showVideoFromAPI(videoId) {
                 || cachedVideo.channelThumbnail
                 || getFollowChannelAvatar(cachedVideo.channelId)
                 || 'img/icon-192.png';
+            const channel = {
+                id: cachedVideo.channelId || '',
+                title: cachedChannelTitle,
+                subscriberCount: matchedChannel?.subscriberCount
+            };
+            const channelUrl = `https://www.youtube.com/channel/${channel.id}`;
+            const subsText = channel.subscriberCount
+                ? formatViews(channel.subscriberCount) + ' subscriptors'
+                : 'Subscriptors ocults';
             channelInfo.innerHTML = `
-                <div class="video-metadata-bar">
-                    <div class="channel-meta">
-                        <div class="channel-name-large channel-link" data-channel-id="${cachedVideo.channelId || ''}">
-                            <img src="${cachedChannelAvatar}" alt="${escapeHtml(cachedChannelTitle)}" class="channel-avatar-small" loading="lazy">
-                            <span>${escapeHtml(cachedChannelTitle)}</span>
+                <div class="video-info-modern">
+                    <div class="channel-header-row">
+                        <div class="channel-identity-modern channel-link" data-channel-id="${channel.id}">
+                            <div class="avatar-ring">
+                                <img src="${cachedChannelAvatar}" alt="${escapeHtml(channel.title)}">
+                            </div>
+                            <div class="channel-text-modern">
+                                <h1 class="channel-name-modern">${escapeHtml(channel.title)}</h1>
+                                <span class="channel-subs-modern">${subsText}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="header-actions">
+                            <button class="follow-btn-pill" type="button" data-follow-channel="${channel.id}" aria-pressed="false">
+                                Segueix
+                            </button>
+                            <button class="btn-round-icon" id="addToPlaylistBtn" aria-label="Afegir a llista">
+                                <i data-lucide="plus"></i>
+                            </button>
                         </div>
                     </div>
-                    <div class="video-metadata-actions">
-                        <button class="follow-channel-btn" type="button" data-follow-channel="${cachedVideo.channelId || ''}" aria-pressed="false"></button>
-                        <button class="icon-btn-ghost" id="addToPlaylistBtn" type="button" aria-label="Afegir a una llista">
-                            ${PLAYLIST_ICON_SVG}
-                        </button>
+
+                    <div class="actions-scroll-row">
+                        <a href="${channelUrl}" target="_blank" rel="noopener noreferrer" class="btn-pill-red">
+                            Canal Youtube
+                        </a>
+                        
+                        <div class="action-group">
+                            <button class="btn-round-icon" id="likeToggle" type="button" aria-label="M'agrada">
+                                <i data-lucide="heart"></i>
+                            </button>
+                            <button class="btn-round-icon" id="miniPlayerToggle" type="button" aria-label="Mini reproductor">
+                                <i data-lucide="minimize-2"></i>
+                            </button>
+                            <button class="btn-round-icon" id="shareBtn" aria-label="Compartir">
+                                <i data-lucide="share-2"></i>
+                            </button>
+                            <button class="btn-round-icon" aria-label="Més">
+                                <i data-lucide="more-horizontal"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="video-description"></div>
+
+                    <div class="comments-preview-box" onclick="document.getElementById('commentsSection').scrollIntoView({behavior: 'smooth'})">
+                        <div class="comments-header-mini">
+                            <span>Comentaris <span style="font-weight: normal; color: var(--text-secondary);">${formatViews(cachedVideo.commentCount || 0)}</span></span>
+                            <i data-lucide="chevrons-down" style="width: 16px;"></i>
+                        </div>
+                        <div class="comment-input-placeholder">
+                            <div class="user-avatar-placeholder"></div>
+                            <span class="comment-text-placeholder">Afegeix un comentari...</span>
+                        </div>
                     </div>
                 </div>
-                <div class="channel-actions">
-                    <a href="https://www.youtube.com/channel/${cachedVideo.channelId || ''}" target="_blank" rel="noopener noreferrer" class="subscribe-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; background-color: #cc0000; color: white;">
-                        Canal Youtube
-                    </a>
-                    <button class="info-badge" id="likeToggle" type="button" aria-pressed="false" aria-label="M'agrada">
-                        ${HEART_TOGGLE_SVG}
-                    </button>
-                    <button class="icon-btn-ghost" id="miniPlayerToggle" type="button" aria-label="Mini reproductor" aria-pressed="false">
-                        <i data-lucide="minimize-2"></i>
-                    </button>
-                    <button class="icon-btn-ghost" id="shareBtn" aria-label="Compartir">
-                        <i data-lucide="share-2"></i>
-                    </button>
-                </div>
-                <div class="video-description"></div>
             `;
             setupLikeBadge(videoId);
             setupMiniPlayerToggle();
@@ -2301,36 +2337,68 @@ async function showVideoFromAPI(videoId) {
                     || channel.avatar
                     || getFollowChannelAvatar(channel.id)
                     || 'img/icon-192.png';
+                const subsText = channel.subscriberCount
+                    ? formatViews(channel.subscriberCount) + ' subscriptors'
+                    : 'Subscriptors ocults';
                 channelInfo.innerHTML = `
-                    <div class="video-metadata-bar">
-                        <div class="channel-meta">
-                            <div class="channel-name-large channel-link" data-channel-id="${channel.id}">
-                                <img src="${channelAvatar}" alt="${escapeHtml(channel.title)}" class="channel-avatar-small" loading="lazy">
-                                <span>${escapeHtml(channel.title)}</span>
+                    <div class="video-info-modern">
+                        <div class="channel-header-row">
+                            <div class="channel-identity-modern channel-link" data-channel-id="${channel.id}">
+                                <div class="avatar-ring">
+                                    <img src="${channelAvatar}" alt="${escapeHtml(channel.title)}">
+                                </div>
+                                <div class="channel-text-modern">
+                                    <h1 class="channel-name-modern">${escapeHtml(channel.title)}</h1>
+                                    <span class="channel-subs-modern">${subsText}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="header-actions">
+                                <button class="follow-btn-pill" type="button" data-follow-channel="${channel.id}" aria-pressed="false">
+                                    Segueix
+                                </button>
+                                <button class="btn-round-icon" id="addToPlaylistBtn" aria-label="Afegir a llista">
+                                    <i data-lucide="plus"></i>
+                                </button>
                             </div>
                         </div>
-                        <div class="video-metadata-actions">
-                            <button class="follow-channel-btn" type="button" data-follow-channel="${channel.id}" aria-pressed="false"></button>
-                            <button class="icon-btn-ghost" id="addToPlaylistBtn" type="button" aria-label="Afegir a una llista">
-                                ${PLAYLIST_ICON_SVG}
-                            </button>
+
+                        <div class="actions-scroll-row">
+                            <a href="${channelUrl}" target="_blank" rel="noopener noreferrer" class="btn-pill-red">
+                                Canal Youtube
+                            </a>
+                            
+                            <div class="action-group">
+                                <button class="btn-round-icon" id="likeToggle" type="button" aria-label="M'agrada">
+                                    <i data-lucide="heart"></i>
+                                </button>
+                                <button class="btn-round-icon" id="miniPlayerToggle" type="button" aria-label="Mini reproductor">
+                                    <i data-lucide="minimize-2"></i>
+                                </button>
+                                <button class="btn-round-icon" id="shareBtn" aria-label="Compartir">
+                                    <i data-lucide="share-2"></i>
+                                </button>
+                                <button class="btn-round-icon" aria-label="Més">
+                                    <i data-lucide="more-horizontal"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="video-description">
+                            ${escapeHtml(video.description || '').substring(0, 500)}${video.description?.length > 500 ? '...' : ''}
+                        </div>
+
+                        <div class="comments-preview-box" onclick="document.getElementById('commentsSection').scrollIntoView({behavior: 'smooth'})">
+                            <div class="comments-header-mini">
+                                <span>Comentaris <span style="font-weight: normal; color: var(--text-secondary);">${formatViews(video.commentCount || 0)}</span></span>
+                                <i data-lucide="chevrons-down" style="width: 16px;"></i>
+                            </div>
+                            <div class="comment-input-placeholder">
+                                <div class="user-avatar-placeholder"></div>
+                                <span class="comment-text-placeholder">Afegeix un comentari...</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="channel-actions">
-                        <a href="${channelUrl}" target="_blank" rel="noopener noreferrer" class="subscribe-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; background-color: #cc0000; color: white;">
-                            Canal Youtube
-                        </a>
-                        <button class="info-badge" id="likeToggle" type="button" aria-pressed="false" aria-label="M'agrada">
-                            ${HEART_TOGGLE_SVG}
-                        </button>
-                        <button class="icon-btn-ghost" id="miniPlayerToggle" type="button" aria-label="Mini reproductor" aria-pressed="false">
-                            <i data-lucide="minimize-2"></i>
-                        </button>
-                        <button class="icon-btn-ghost" id="shareBtn" aria-label="Compartir">
-                            <i data-lucide="share-2"></i>
-                        </button>
-                    </div>
-                    <div class="video-description">${escapeHtml(video.description).substring(0, 500)}${video.description.length > 500 ? '...' : ''}</div>
                 `;
                 setupLikeBadge(videoId);
                 setupMiniPlayerToggle();
@@ -2662,36 +2730,68 @@ function showVideo(videoId) {
     // 2. Mostrar Likes
     const channelInfo = document.getElementById('channelInfo');
     const channelUrl = `https://www.youtube.com/channel/${channel.id}`;
+    const subsText = channel.subscriberCount
+        ? formatViews(channel.subscriberCount) + ' subscriptors'
+        : 'Subscriptors ocults';
     channelInfo.innerHTML = `
-        <div class="video-metadata-bar">
-            <div class="channel-meta">
-                <div class="channel-name-large channel-link" data-channel-id="${channel.id}">
-                    <img src="${channel.avatar || 'img/icon-192.png'}" alt="${channel.name}" class="channel-avatar-small" loading="lazy">
-                    <span>${channel.name}</span>
+        <div class="video-info-modern">
+            <div class="channel-header-row">
+                <div class="channel-identity-modern channel-link" data-channel-id="${channel.id}">
+                    <div class="avatar-ring">
+                        <img src="${channel.avatar || 'img/icon-192.png'}" alt="${escapeHtml(channel.name)}">
+                    </div>
+                    <div class="channel-text-modern">
+                        <h1 class="channel-name-modern">${escapeHtml(channel.name)}</h1>
+                        <span class="channel-subs-modern">${subsText}</span>
+                    </div>
+                </div>
+                
+                <div class="header-actions">
+                    <button class="follow-btn-pill" type="button" data-follow-channel="${channel.id}" aria-pressed="false">
+                        Segueix
+                    </button>
+                    <button class="btn-round-icon" id="addToPlaylistBtn" aria-label="Afegir a llista">
+                        <i data-lucide="plus"></i>
+                    </button>
                 </div>
             </div>
-            <div class="video-metadata-actions">
-                <button class="follow-channel-btn" type="button" data-follow-channel="${channel.id}" aria-pressed="false"></button>
-                <button class="icon-btn-ghost" id="addToPlaylistBtn" type="button" aria-label="Afegir a una llista">
-                    ${PLAYLIST_ICON_SVG}
-                </button>
+
+            <div class="actions-scroll-row">
+                <a href="${channelUrl}" target="_blank" rel="noopener noreferrer" class="btn-pill-red">
+                    Canal Youtube
+                </a>
+                
+                <div class="action-group">
+                    <button class="btn-round-icon" id="likeToggle" type="button" aria-label="M'agrada">
+                        <i data-lucide="heart"></i>
+                    </button>
+                    <button class="btn-round-icon" id="miniPlayerToggle" type="button" aria-label="Mini reproductor">
+                        <i data-lucide="minimize-2"></i>
+                    </button>
+                    <button class="btn-round-icon" id="shareBtn" aria-label="Compartir">
+                        <i data-lucide="share-2"></i>
+                    </button>
+                    <button class="btn-round-icon" aria-label="Més">
+                        <i data-lucide="more-horizontal"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="video-description">
+                ${escapeHtml(video.description || '').substring(0, 500)}${video.description?.length > 500 ? '...' : ''}
+            </div>
+
+            <div class="comments-preview-box" onclick="document.getElementById('commentsSection').scrollIntoView({behavior: 'smooth'})">
+                <div class="comments-header-mini">
+                    <span>Comentaris <span style="font-weight: normal; color: var(--text-secondary);">${formatViews(video.commentCount || 0)}</span></span>
+                    <i data-lucide="chevrons-down" style="width: 16px;"></i>
+                </div>
+                <div class="comment-input-placeholder">
+                    <div class="user-avatar-placeholder"></div>
+                    <span class="comment-text-placeholder">Afegeix un comentari...</span>
+                </div>
             </div>
         </div>
-        <div class="channel-actions">
-            <a href="${channelUrl}" target="_blank" rel="noopener noreferrer" class="subscribe-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; background-color: #cc0000; color: white;">
-                Canal Youtube
-            </a>
-            <button class="info-badge" id="likeToggle" type="button" aria-pressed="false" aria-label="M'agrada">
-                ${HEART_TOGGLE_SVG}
-            </button>
-            <button class="icon-btn-ghost" id="miniPlayerToggle" type="button" aria-label="Mini reproductor" aria-pressed="false">
-                <i data-lucide="minimize-2"></i>
-            </button>
-            <button class="icon-btn-ghost" id="shareBtn" aria-label="Compartir">
-                <i data-lucide="share-2"></i>
-            </button>
-        </div>
-        <div class="video-description">${video.description}</div>
     `;
     setupLikeBadge(videoId);
     setupMiniPlayerToggle();
