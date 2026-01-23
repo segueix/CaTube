@@ -1,5 +1,80 @@
 {
-  "generatedAt": "2026-01-23T07:23:59.068Z",
+  "generatedAt": "2026-01-23T09:09:16.767Z",
+  "channels": {
+    "UC5ytRP5VNigPHovAY7kyicQ": {
+      "name": "Esquetxes comèdia en català",
+      "avatar": "https://yt3.ggpht.com/XDDUdG7DVvwndp1iicbIbUWausu4yGgjPjXURTou76lhF5Ec3ZksBM8MQhyXonlyoaQYu7yehyE=s800-c-k-c0x00ffffff-no-rj",
+      "description": "Nous vídeos cada setmana\n\n\"Esquetxes comèdia en català\" és una web sèrie de gags en català, sense pressupost però amb molta gràcia i rodada a Malgrat de Mar. Feta per amor a l'art i per afició, conté tots els dialectes orientals i occidentals del català. També tenim varis premis i nominacions de fes...",
+      "handle": "@esquetxes",
+      "subscriberCount": 2960,
+      "categories": [
+        "humor"
+      ]
+    },
+    "UCT8sBQf4grkfLMjOXdIkV2w": {
+      "name": "Enric Bastardas",
+      "avatar": "https://yt3.ggpht.com/ytc/AIdro_kFNW13EohJbYD9EtNjWPpKGIgSmMaCGt7YfftkU5iKwA=s800-c-k-c0x00ffffff-no-rj",
+      "description": "Monòlegs de conya, xerrades i conferències. Repeteixo...de conya!!!!! Les xerrades i les conferències no són de conya, bé, una mica sí, perquè sino fem conya què? eh?\nL'actualitat del dia a dia, cada dia per riure una mica de tot el que ens passa!\n",
+      "handle": "@enricbastardas1",
+      "subscriberCount": 303,
+      "categories": [
+        "humor",
+        "societat"
+      ]
+    },
+    "UCaCWG8cBOwER_Vf3qAsr8Zg": {
+      "name": "Notícies Un Quart de Galves",
+      "avatar": "https://yt3.ggpht.com/Hw-5OfXTofpK0KUBT5G8txv5DVPbv16sd4sdnpOT5VILlx7Hs-wlFKvVXVJ-ZEjgtfyw44J0Yw=s800-c-k-c0x00ffffff-no-rj",
+      "description": "Les notícies de cada dia en 15 minuts. Comentades i explicades per Jordi Galves.",
+      "handle": "@unquartdegalves",
+      "subscriberCount": 4430,
+      "categories": [
+        "societat"
+      ]
+    },
+    "UChOzqUp9V9AQPB4WzOhu-Xw": {
+      "name": "Aya_ZholvaX: Jocs de taula",
+      "avatar": "https://yt3.ggpht.com/AmupdKY3JuLY0OPRRwbHPFML5nsR2_5urZmxz9A7qZpWiO0YWT3sGP8wi63Rk14TzJmtZOmOVA=s800-c-k-c0x00ffffff-no-rj",
+      "description": "Fem videos i parlem de Jocs de taula en català  ",
+      "handle": "@ayazholvax",
+      "subscriberCount": 602,
+      "categories": [
+        "gaming",
+        "cultura"
+      ]
+    },
+    "UCNSmn5NLUDrV_paFZl--7qw": {
+      "name": "La Sotana",
+      "avatar": "https://yt3.ggpht.com/ytc/AIdro_mO0v5nKplUkfqSab7DdXQSvTWrnqIgF1CafWsUG4IvAec=s800-c-k-c0x00ffffff-no-rj",
+      "description": "",
+      "handle": "@lasotana",
+      "subscriberCount": 65000,
+      "categories": [
+        "humor"
+      ]
+    },
+    "UCDawX1bxeC4-hZiGnkqevbw": {
+      "name": "Enric Adventures",
+      "avatar": "https://yt3.ggpht.com/ECuCXTvGzVbIoiUIJGUS3AjNSFbkFHhR1oKwwK3g44xXvNRIIBgYbbcU-Jht8EXWOnpzknIE=s800-c-k-c0x00ffffff-no-rj",
+      "description": "Em dic Enric Luzán i en aquest canal trobareu senderisme, travesses i bolets\n\nContacte professional: enricadventures@gmail.com\n",
+      "handle": "@enricadventures",
+      "subscriberCount": 21700,
+      "categories": [
+        "vida"
+      ]
+    },
+    "UC995eaX8sye3WGZB3XUl9lg": {
+      "name": "L´ESCAQUIMAT",
+      "avatar": "https://yt3.ggpht.com/3HUwOrjELA_Ef0xAacNO0df-YHiFP2o6FL41qhhv9pjL3LEDjFgxFc6iERK6-SozdJi8PnIJ7yk=s800-c-k-c0x00ffffff-no-rj",
+      "description": "",
+      "handle": "@lescaquimat4658",
+      "subscriberCount": 1920,
+      "categories": [
+        "cultura",
+        "societat"
+      ]
+    }
+  },
   "videos": [
     {
       "id": "hJNEX1HYgXk",
@@ -15,9 +90,9 @@
       "duration": "PT31M18S",
       "durationSeconds": 1878,
       "isShort": false,
-      "viewCount": 288,
-      "likeCount": 76,
-      "commentCount": 12
+      "viewCount": 386,
+      "likeCount": 109,
+      "commentCount": 21
     },
     {
       "id": "rlZ-FUIE65w",
@@ -33,9 +108,9 @@
       "duration": "PT16M24S",
       "durationSeconds": 984,
       "isShort": false,
-      "viewCount": 8786,
-      "likeCount": 983,
-      "commentCount": 182
+      "viewCount": 8999,
+      "likeCount": 1008,
+      "commentCount": 190
     },
     {
       "id": "kQ3veSrw9JQ",
@@ -51,8 +126,8 @@
       "duration": "PT28S",
       "durationSeconds": 28,
       "isShort": true,
-      "viewCount": 1486,
-      "likeCount": 45,
+      "viewCount": 1547,
+      "likeCount": 47,
       "commentCount": 1
     },
     {
@@ -88,9 +163,9 @@
       "duration": "PT34M21S",
       "durationSeconds": 2061,
       "isShort": false,
-      "viewCount": 2113,
-      "likeCount": 273,
-      "commentCount": 73
+      "viewCount": 2120,
+      "likeCount": 275,
+      "commentCount": 77
     },
     {
       "id": "bZz5o6y9_FQ",
@@ -125,7 +200,7 @@
       "duration": "PT24S",
       "durationSeconds": 24,
       "isShort": true,
-      "viewCount": 1789,
+      "viewCount": 1823,
       "likeCount": 37,
       "commentCount": 0
     },
@@ -143,8 +218,8 @@
       "duration": "PT23M59S",
       "durationSeconds": 1439,
       "isShort": false,
-      "viewCount": 12163,
-      "likeCount": 1266,
+      "viewCount": 12203,
+      "likeCount": 1268,
       "commentCount": 180
     },
     {
@@ -161,8 +236,8 @@
       "duration": "PT34S",
       "durationSeconds": 34,
       "isShort": true,
-      "viewCount": 4975,
-      "likeCount": 193,
+      "viewCount": 5042,
+      "likeCount": 196,
       "commentCount": 6
     },
     {
@@ -197,8 +272,8 @@
       "duration": "PT1H3M21S",
       "durationSeconds": 3801,
       "isShort": false,
-      "viewCount": 56063,
-      "likeCount": 1842,
+      "viewCount": 56469,
+      "likeCount": 1848,
       "commentCount": 145
     },
     {
@@ -215,7 +290,7 @@
       "duration": "PT45M26S",
       "durationSeconds": 2726,
       "isShort": false,
-      "viewCount": 1208,
+      "viewCount": 1209,
       "likeCount": 209,
       "commentCount": 69
     },
@@ -233,8 +308,8 @@
       "duration": "PT14M20S",
       "durationSeconds": 860,
       "isShort": false,
-      "viewCount": 11329,
-      "likeCount": 1148,
+      "viewCount": 11345,
+      "likeCount": 1149,
       "commentCount": 124
     },
     {
@@ -269,7 +344,7 @@
       "duration": "PT39S",
       "durationSeconds": 39,
       "isShort": true,
-      "viewCount": 5969,
+      "viewCount": 5992,
       "likeCount": 113,
       "commentCount": 4
     },
@@ -399,8 +474,8 @@
       "duration": "PT18M12S",
       "durationSeconds": 1092,
       "isShort": false,
-      "viewCount": 14149,
-      "likeCount": 1298,
+      "viewCount": 14156,
+      "likeCount": 1299,
       "commentCount": 145
     },
     {
@@ -528,8 +603,8 @@
       "duration": "PT1H6M17S",
       "durationSeconds": 3977,
       "isShort": false,
-      "viewCount": 71056,
-      "likeCount": 1425,
+      "viewCount": 71059,
+      "likeCount": 1426,
       "commentCount": 81
     },
     {
@@ -582,8 +657,8 @@
       "duration": "PT17M59S",
       "durationSeconds": 1079,
       "isShort": false,
-      "viewCount": 14530,
-      "likeCount": 1152,
+      "viewCount": 14531,
+      "likeCount": 1153,
       "commentCount": 120
     },
     {
@@ -711,7 +786,7 @@
       "duration": "PT13M51S",
       "durationSeconds": 831,
       "isShort": false,
-      "viewCount": 14730,
+      "viewCount": 14731,
       "likeCount": 1341,
       "commentCount": 185
     },
@@ -729,7 +804,7 @@
       "duration": "PT13M46S",
       "durationSeconds": 826,
       "isShort": false,
-      "viewCount": 14435,
+      "viewCount": 14436,
       "likeCount": 1382,
       "commentCount": 153
     },
