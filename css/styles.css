@@ -2408,6 +2408,7 @@ button:disabled,
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 0.75rem;
 }
 
 .channel-identity-modern {
@@ -2415,25 +2416,20 @@ button:disabled,
     align-items: center;
     gap: 0.75rem;
     cursor: pointer;
-}
-
-.avatar-ring {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    overflow: hidden;
-    border: 1px solid var(--border-color);
-}
-
-.avatar-ring img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    min-width: 0;
 }
 
 .channel-text-modern {
     display: flex;
     flex-direction: column;
+    min-width: 0;
+}
+
+.channel-name-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
 }
 
 .channel-name-modern {
@@ -2441,6 +2437,7 @@ button:disabled,
     font-size: 15px;
     line-height: 1.2;
     color: var(--text-color);
+    margin: 0;
 }
 
 .channel-subs-modern {
@@ -2448,25 +2445,16 @@ button:disabled,
     color: var(--text-secondary);
 }
 
-.header-actions {
+.channel-header-actions {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-shrink: 0;
 }
 
 /* Row 2: Action Buttons */
-.actions-scroll-row {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    overflow-x: auto;
-    padding-bottom: 0.25rem;
-    /* Hide scrollbar */
-    scrollbar-width: none; 
-    -ms-overflow-style: none;
-}
-.actions-scroll-row::-webkit-scrollbar { 
-    display: none; 
+.video-info-modern .video-metadata-bar {
+    flex-wrap: nowrap;
 }
 
 .btn-pill-red {
@@ -2564,17 +2552,27 @@ html[style*="--color-background: #3d3d3d"] .comments-preview-box {
 }
 
 .follow-btn-pill {
-    background-color: var(--text-color);
-    color: var(--color-background);
-    padding: 6px 16px;
+    background-color: #ffffff;
+    color: var(--color-primary);
+    padding: 6px 14px;
     border-radius: 9999px;
     font-size: 14px;
     font-weight: 600;
-    border: none;
+    border: 1px solid var(--color-primary);
     cursor: pointer;
 }
 .follow-btn-pill.is-followed {
-    background-color: var(--surface-light);
-    color: var(--text-color);
-    border: 1px solid var(--border-color);
+    background-color: var(--color-primary);
+    color: #ffffff;
+    border-color: var(--color-primary);
+}
+
+.desktop-only {
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .desktop-only {
+        display: inline-flex;
+    }
 }
