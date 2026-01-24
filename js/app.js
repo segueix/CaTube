@@ -3635,8 +3635,14 @@ function createHistoryCard(video) {
 function renderHistory() {
     if (!historyGrid) return;
 
-    const historyItems = getFilteredHistoryItems();
+    let historyItems = getFilteredHistoryItems();
     const totalHistoryItems = getHistoryItems();
+    // FIX: Explicitly sort history items by date (newest first) to ensure correct grouping
+    historyItems.sort((a, b) => {
+        const dateA = new Date(a.viewedAt || a.publishedAt || a.uploadDate || 0).getTime();
+        const dateB = new Date(b.viewedAt || b.publishedAt || b.uploadDate || 0).getTime();
+        return dateB - dateA;
+    });
 
     if (historyItems.length === 0) {
         const message = totalHistoryItems.length === 0
