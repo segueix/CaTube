@@ -2513,5 +2513,17 @@ html[style*="--color-background: #224262"] .btn-round-icon {
 
     .action-group {
         gap: 0.4rem;
+        flex-wrap: nowrap;
+        justify-content: flex-end;
+    }
+
+    .btn-round-icon {
+        width: 64px;
+        height: 64px;
+    }
+
+    .btn-round-icon svg {
+        width: 1.6em;
+        height: 1.6em;
     }
 }
