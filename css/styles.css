@@ -2311,7 +2311,7 @@ button:disabled,
 }
 
 .video-info-modern {
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 1rem 0.5rem;
     display: flex;
     flex-direction: column;
     gap: 1rem;
@@ -2432,8 +2432,8 @@ button:disabled,
 }
 
 .btn-round-icon {
-    width: 87.88px;
-    height: 87.88px;
+    width: 96.67px;
+    height: 96.67px;
     border-radius: 50%;
     background-color: var(--surface-light);
     color: var(--text-color);
@@ -2446,8 +2446,8 @@ button:disabled,
 }
 
 .btn-round-icon svg {
-    width: 2.197em;
-    height: 2.197em;
+    width: 2.417em;
+    height: 2.417em;
 }
 
 /* Dark mode override for specific backgrounds */
