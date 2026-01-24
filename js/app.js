@@ -2423,10 +2423,13 @@ async function showVideoFromAPI(videoId) {
                         </a>
                         
                         <div class="action-group">
-                            <button class="btn-round-icon" id="shareBtn" aria-label="Compartir">
+                            <button class="btn-round-icon" id="playlistBtn" title="Llista de reproducció">
+                                <i data-lucide="list-video"></i>
+                            </button>
+                            <button class="btn-round-icon" id="shareBtn" title="Compartir">
                                 <i data-lucide="share-2"></i>
                             </button>
-                            <button class="btn-round-icon" id="miniPlayerToggle" type="button" aria-label="Mini reproductor">
+                            <button class="btn-round-icon" id="miniPlayerToggle" type="button" title="Mini reproductor">
                                 <i data-lucide="minimize-2"></i>
                             </button>
                         </div>
@@ -2440,9 +2443,9 @@ async function showVideoFromAPI(videoId) {
             setupMiniPlayerToggle();
             bindFollowButtons(channelInfo);
             bindChannelLinks(channelInfo);
-            const addToPlaylistBtn = document.getElementById('addToPlaylistBtn');
-            if (addToPlaylistBtn) {
-                addToPlaylistBtn.addEventListener('click', () => {
+            const playlistBtn = document.getElementById('playlistBtn');
+            if (playlistBtn) {
+                playlistBtn.addEventListener('click', () => {
                     openPlaylistModal(getPlaylistVideoData(cachedVideo));
                 });
             }
@@ -2524,10 +2527,13 @@ async function showVideoFromAPI(videoId) {
                             </a>
                             
                             <div class="action-group">
-                                <button class="btn-round-icon" id="shareBtn" aria-label="Compartir">
+                                <button class="btn-round-icon" id="playlistBtn" title="Llista de reproducció">
+                                    <i data-lucide="list-video"></i>
+                                </button>
+                                <button class="btn-round-icon" id="shareBtn" title="Compartir">
                                     <i data-lucide="share-2"></i>
                                 </button>
-                                <button class="btn-round-icon" id="miniPlayerToggle" type="button" aria-label="Mini reproductor">
+                                <button class="btn-round-icon" id="miniPlayerToggle" type="button" title="Mini reproductor">
                                     <i data-lucide="minimize-2"></i>
                                 </button>
                             </div>
@@ -2543,9 +2549,9 @@ async function showVideoFromAPI(videoId) {
                 setupMiniPlayerToggle();
                 bindFollowButtons(channelInfo);
                 bindChannelLinks(channelInfo);
-                const addToPlaylistBtn = document.getElementById('addToPlaylistBtn');
-                if (addToPlaylistBtn) {
-                    addToPlaylistBtn.addEventListener('click', () => {
+                const playlistBtn = document.getElementById('playlistBtn');
+                if (playlistBtn) {
+                    playlistBtn.addEventListener('click', () => {
                         openPlaylistModal(getPlaylistVideoData(video));
                     });
                 }
@@ -2855,10 +2861,13 @@ function showVideo(videoId) {
                 </a>
                 
                 <div class="action-group">
-                    <button class="btn-round-icon" id="shareBtn" aria-label="Compartir">
+                    <button class="btn-round-icon" id="playlistBtn" title="Llista de reproducció">
+                        <i data-lucide="list-video"></i>
+                    </button>
+                    <button class="btn-round-icon" id="shareBtn" title="Compartir">
                         <i data-lucide="share-2"></i>
                     </button>
-                    <button class="btn-round-icon" id="miniPlayerToggle" type="button" aria-label="Mini reproductor">
+                    <button class="btn-round-icon" id="miniPlayerToggle" type="button" title="Mini reproductor">
                         <i data-lucide="minimize-2"></i>
                     </button>
                 </div>
@@ -2881,9 +2890,9 @@ function showVideo(videoId) {
     setupMiniPlayerToggle();
     bindFollowButtons(channelInfo);
     bindChannelLinks(channelInfo);
-    const addToPlaylistBtn = document.getElementById('addToPlaylistBtn');
-    if (addToPlaylistBtn) {
-        addToPlaylistBtn.addEventListener('click', () => {
+    const playlistBtn = document.getElementById('playlistBtn');
+    if (playlistBtn) {
+        playlistBtn.addEventListener('click', () => {
             openPlaylistModal(getPlaylistVideoData(video));
         });
     }
