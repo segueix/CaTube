@@ -14,6 +14,7 @@ let channelPage, channelVideosGrid;
 let channelBackBtn, channelProfileAvatar, channelProfileName, channelProfileSubscribers;
 let channelProfileHandle, channelProfileDescription, channelProfileFollowBtn;
 let searchForm, searchInput, searchDropdown;
+let extraVideosGrid;
 let currentVideoId = null;
 let useYouTubeAPI = false;
 let selectedCategory = 'Tot';
@@ -324,6 +325,7 @@ function initElements() {
     videoPlayer = document.getElementById('videoPlayer');
     videoPlaceholder = document.getElementById('videoPlaceholder');
     placeholderImage = document.getElementById('placeholderImage');
+    extraVideosGrid = document.getElementById('extraVideosGrid');
     channelPage = document.getElementById('channelPage');
     channelVideosGrid = document.getElementById('channelVideosGrid');
     channelBackBtn = document.getElementById('channelBackBtn');
@@ -3053,16 +3055,21 @@ async function showVideoFromAPI(videoId) {
 // Carregar vídeos relacionats des de l'API
 async function loadRelatedVideosFromAPI(videoId) {
     const relatedContainer = document.getElementById('relatedVideos');
+    const extraContainer = extraVideosGrid || document.getElementById('extraVideosGrid');
+    const sidebarLimit = 8;
 
     // La API de vídeos relacionats pot no funcionar, fem fallback a vídeos populars
-    let result = await YouTubeAPI.getRelatedVideos(videoId, 10);
+    let result = await YouTubeAPI.getRelatedVideos(videoId, 20);
 
     if (result.error || result.items.length === 0) {
-        result = await YouTubeAPI.getPopularVideos(10);
+        result = await YouTubeAPI.getPopularVideos(20);
     }
 
     if (result.items.length === 0) {
         relatedContainer.innerHTML = '<p>No hi ha vídeos relacionats</p>';
+        if (extraContainer) {
+            extraContainer.innerHTML = '';
+        }
         return;
     }
 
@@ -3071,7 +3078,10 @@ async function loadRelatedVideosFromAPI(videoId) {
     const details = await fetchVideoDetails(videoIds);
     const videos = details.length > 0 ? details : result.items;
 
-    relatedContainer.innerHTML = videos.map(video => `
+    const sidebarVideos = videos.slice(0, sidebarLimit);
+    const extraVideos = videos.slice(sidebarLimit);
+
+    relatedContainer.innerHTML = sidebarVideos.map(video => `
         <div class="related-video" data-video-id="${video.id}">
             <div class="related-thumbnail">
                 <img src="${video.thumbnail}" alt="${escapeHtml(video.title)}" loading="lazy">
@@ -3087,14 +3097,32 @@ async function loadRelatedVideosFromAPI(videoId) {
         </div>
     `).join('');
 
+    if (extraContainer) {
+        extraContainer.innerHTML = extraVideos.map(video => createVideoCardAPI(video)).join('');
+    }
+
     // Event listeners
-    const relatedVideoElements = document.querySelectorAll('.related-video');
+    const relatedVideoElements = relatedContainer.querySelectorAll('.related-video');
     relatedVideoElements.forEach(element => {
         element.addEventListener('click', () => {
             const id = element.dataset.videoId;
             showVideoFromAPI(id);
         });
     });
+
+    if (extraContainer) {
+        extraContainer.querySelectorAll('.video-card').forEach(card => {
+            card.addEventListener('click', () => {
+                showVideoFromAPI(card.dataset.videoId);
+            });
+        });
+        bindChannelLinks(extraContainer);
+    }
+
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+    setupVideoCardActionButtons();
 }
 
 // ==================== DADES ESTÀTIQUES (FALLBACK) ====================
@@ -3786,12 +3814,33 @@ function openChannelProfile(channelId) {
     setupVideoCardActionButtons();
     window.scrollTo(0, 0);
 }
+
+function mapStaticVideoToCardData(video) {
+    const channel = getChannelById(video.channelId);
+    return {
+        id: video.id,
+        title: video.title,
+        thumbnail: video.thumbnail,
+        duration: video.duration,
+        isShort: video.isShort,
+        channelId: video.channelId,
+        channelTitle: channel?.name || '',
+        viewCount: video.views,
+        publishedAt: video.uploadDate,
+        videoUrl: video.videoUrl
+    };
+}
 // Carregar vídeos relacionats (estàtic)
 function loadRelatedVideos(currentVideoId) {
-    const relatedVideos = VIDEOS.filter(v => v.id !== parseInt(currentVideoId)).slice(0, 10);
+    const relatedVideos = VIDEOS.filter(v => v.id !== parseInt(currentVideoId)).slice(0, 20);
     const relatedContainer = document.getElementById('relatedVideos');
+    const extraContainer = extraVideosGrid || document.getElementById('extraVideosGrid');
+    const sidebarLimit = 8;
 
-    relatedContainer.innerHTML = relatedVideos.map(video => {
+    const sidebarVideos = relatedVideos.slice(0, sidebarLimit);
+    const extraVideos = relatedVideos.slice(sidebarLimit);
+
+    relatedContainer.innerHTML = sidebarVideos.map(video => {
         const channel = getChannelById(video.channelId);
         return `
             <div class="related-video" data-video-id="${video.id}">
@@ -3810,6 +3859,12 @@ function loadRelatedVideos(currentVideoId) {
         `;
     }).join('');
 
+    if (extraContainer) {
+        extraContainer.innerHTML = extraVideos
+            .map(video => createVideoCardAPI(mapStaticVideoToCardData(video)))
+            .join('');
+    }
+
     const relatedVideoElements = document.querySelectorAll('.related-video');
     relatedVideoElements.forEach(element => {
         element.addEventListener('click', () => {
@@ -3817,6 +3872,20 @@ function loadRelatedVideos(currentVideoId) {
             showVideo(videoId);
         });
     });
+
+    if (extraContainer) {
+        extraContainer.querySelectorAll('.video-card').forEach(card => {
+            card.addEventListener('click', () => {
+                showVideo(card.dataset.videoId);
+            });
+        });
+        bindChannelLinks(extraContainer);
+    }
+
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+    setupVideoCardActionButtons();
 }
 
 // ==================== UTILITATS ====================
