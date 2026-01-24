@@ -2427,7 +2427,7 @@ button:disabled,
     }
 }
 
-/* --- Modern Video Info Interface (Mobile) --- */
+/* --- Modern Video Info Interface (Desktop Compact) --- */
 :root {
     --surface-light: #F3F4F6;
     --surface-dark: #272727;
@@ -2440,14 +2440,15 @@ button:disabled,
 }
 
 .video-info-modern {
-    padding: 0.5rem 1rem 0.25rem 1rem;
+    padding: 0.25rem 1rem;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.25rem;
 }
 
 .channel-header-row {
     margin-bottom: 0;
+    min-height: 48px;
 }
 
 .video-metadata-bar {
@@ -2532,7 +2533,7 @@ button:disabled,
     color: white;
     background: transparent;
     border: none;
-    padding: 6px;
+    padding: 4px;
     margin-left: 0.25rem;
     cursor: pointer;
     display: inline-flex;
@@ -2548,8 +2549,8 @@ button:disabled,
 
 .btn-heart i,
 .btn-heart svg {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
 }
 
 .btn-heart.is-liked svg,
@@ -2566,15 +2567,16 @@ button:disabled,
 .btn-pill-red {
     background-color: #CC0000;
     color: white;
-    padding: 0.5rem 1rem;
+    padding: 0.4rem 1rem;
     border-radius: 9999px;
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     font-weight: 700;
     white-space: nowrap;
     text-decoration: none;
     display: flex;
     align-items: center;
     border: none;
+    height: 36px;
 }
 
 .btn-pill-red:active { transform: scale(0.98); }
@@ -2584,13 +2586,13 @@ button:disabled,
     display: inline-block;
     background-color: white;
     color: black;
-    padding: 0.6rem 1.2rem;
+    padding: 0.4rem 1rem;
     border-radius: 20px;
     font-weight: 500;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     text-decoration: none;
     transition: all 0.2s ease;
-    margin-top: 0.75rem;
+    margin-top: 0.25rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -2604,8 +2606,8 @@ button:disabled,
 }
 
 .btn-round-icon {
-    width: 96.67px;
-    height: 96.67px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     background-color: var(--surface-light);
     color: var(--text-color);
@@ -2614,12 +2616,13 @@ button:disabled,
     justify-content: center;
     border: none;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s, transform 0.2s;
 }
 
 .btn-round-icon svg {
-    width: 2.417em;
-    height: 2.417em;
+    width: 24px;
+    height: 24px;
+    stroke-width: 2px;
 }
 
 /* Dark mode override for specific backgrounds */
@@ -2642,12 +2645,12 @@ html[style*="--color-background: #224262"] .btn-round-icon {
 .btn-round-icon.is-liked svg,
 .btn-round-icon.liked svg { fill: #CC0000; }
 
-.follow-btn-pill {
+.channel-actions-inline .follow-btn-pill {
     background-color: #ffffff;
     color: var(--color-primary);
-    padding: 6px 14px;
+    padding: 4px 12px;
     border-radius: 9999px;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     border: 1px solid var(--color-primary);
     cursor: pointer;
@@ -2665,23 +2668,6 @@ html[style*="--color-background: #224262"] .btn-round-icon {
         gap: 0.4rem;
     }
 
-    .follow-btn-pill,
-    .subscribe-btn-modern {
-        padding: 0.4rem 0.8rem;
-        font-size: 0.85rem;
-    }
-
-    .channel-avatar-small {
-        width: 36px;
-        height: 36px;
-    }
-
-    .action-group {
-        gap: 0.4rem;
-        flex-wrap: nowrap;
-        justify-content: flex-end;
-    }
-
     .btn-round-icon {
         width: 64px;
         height: 64px;
@@ -2692,10 +2678,9 @@ html[style*="--color-background: #224262"] .btn-round-icon {
         height: 1.6em;
     }
 
-    .btn-comment-youtube {
-        margin-top: 0.5rem;
+    .btn-pill-red {
+        height: auto;
         padding: 0.5rem 1rem;
-        font-size: 0.85rem;
     }
 }
 
