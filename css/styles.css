@@ -2417,11 +2417,15 @@ button:disabled,
 }
 
 .btn-heart svg {
-    width: 1.3em;
-    height: 1.3em;
     stroke: white;
     fill: none;
     transition: fill 0.2s ease;
+}
+
+.btn-heart i,
+.btn-heart svg {
+    width: 20px;
+    height: 20px;
 }
 
 .btn-heart.is-liked svg,
