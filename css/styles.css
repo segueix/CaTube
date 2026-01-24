@@ -2432,8 +2432,8 @@ button:disabled,
 }
 
 .btn-round-icon {
-    width: 52px;
-    height: 52px;
+    width: 67.6px;
+    height: 67.6px;
     border-radius: 50%;
     background-color: var(--surface-light);
     color: var(--text-color);
@@ -2446,8 +2446,8 @@ button:disabled,
 }
 
 .btn-round-icon svg {
-    width: 1.3em;
-    height: 1.3em;
+    width: 1.69em;
+    height: 1.69em;
 }
 
 /* Dark mode override for specific backgrounds */
