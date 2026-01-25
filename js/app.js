@@ -1659,12 +1659,86 @@ function createShortCard(video) {
     `;
 }
 
+const SHORT_CLOSE_ICON = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+        <path d="M6 6L18 18"></path>
+        <path d="M6 18L18 6"></path>
+    </svg>
+`;
+
+const SHORT_SWIPE_HINT_ICON = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+        <path d="M12 19V5"></path>
+        <path d="M5 12l7-7 7 7"></path>
+    </svg>
+`;
+
+function setupShortModalUI() {
+    const modal = document.getElementById('short-modal');
+    if (!modal) {
+        return;
+    }
+
+    const panel = modal.querySelector('.short-modal-panel');
+    if (!panel) {
+        return;
+    }
+
+    panel.classList.add('immersive');
+
+    const legacyClose = panel.querySelector('.short-modal-close');
+    if (legacyClose) {
+        legacyClose.remove();
+    }
+
+    if (!panel.querySelector('.short-close-x')) {
+        const closeButton = document.createElement('button');
+        closeButton.type = 'button';
+        closeButton.className = 'short-close-x';
+        closeButton.setAttribute('aria-label', 'Tancar');
+        closeButton.innerHTML = SHORT_CLOSE_ICON;
+        closeButton.addEventListener('click', closeShortModal);
+        panel.appendChild(closeButton);
+    }
+}
+
+function addShortSwipeHint() {
+    const modal = document.getElementById('short-modal');
+    if (!modal) {
+        return;
+    }
+
+    const panel = modal.querySelector('.short-modal-panel');
+    if (!panel) {
+        return;
+    }
+
+    const existingHint = panel.querySelector('.swipe-hint-overlay');
+    if (existingHint) {
+        existingHint.remove();
+    }
+
+    if (!window.matchMedia("(max-width: 768px)").matches) {
+        return;
+    }
+
+    const hint = document.createElement('div');
+    hint.className = 'swipe-hint-overlay';
+    hint.innerHTML = `
+        <div class="swipe-arrow">${SHORT_SWIPE_HINT_ICON}</div>
+        <div class="swipe-text">Llisca cap amunt</div>
+    `;
+    panel.appendChild(hint);
+}
+
 function openShortModal(videoId) {
     const modal = document.getElementById('short-modal');
     const iframe = document.getElementById('short-iframe');
     const src = `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?playsinline=1&rel=0&modestbranding=1&autoplay=1&hl=ca&cc_lang_pref=ca&gl=AD`;
 
     iframe.src = src;
+    setupShortModalUI();
+    addShortSwipeHint();
     modal.classList.remove('hidden');
     modal.setAttribute('aria-hidden', 'false');
     document.body.classList.add('no-scroll');
@@ -1673,8 +1747,10 @@ function openShortModal(videoId) {
 function closeShortModal() {
     const modal = document.getElementById('short-modal');
     const iframe = document.getElementById('short-iframe');
+    const panel = modal?.querySelector('.short-modal-panel');
 
     iframe.src = '';
+    panel?.querySelector('.swipe-hint-overlay')?.remove();
     modal.classList.add('hidden');
     modal.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('no-scroll');
