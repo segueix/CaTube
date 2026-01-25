@@ -33,6 +33,8 @@ let isPlaylistMode = false;
 let currentShortIndex = 0;
 let currentShortsQueue = [];
 let isNavigatingShort = false;
+let shortModalScrollY = 0;
+let shortNavHintShown = false;
 let youtubeMessageListenerInitialized = false;
 let searchDropdownItems = [];
 let searchDropdownActiveIndex = -1;
@@ -1668,6 +1670,9 @@ function openShortModal(videoId) {
     const modal = document.getElementById('short-modal');
     if (!modal) return;
 
+    shortModalScrollY = window.scrollY || 0;
+    shortNavHintShown = false;
+
     if (isPlaylistMode && activePlaylistQueue.length > 0) {
         currentShortsQueue = activePlaylistQueue;
         currentShortIndex = currentPlaylistIndex;
@@ -1728,6 +1733,10 @@ function loadShort(index) {
     if (channelEl) channelEl.textContent = short.channelTitle || '';
 
     updateShortNavButtons();
+
+    if (index === 0 && !shortNavHintShown) {
+        triggerShortNavHint();
+    }
 }
 
 function navigateShort(direction) {
@@ -1770,6 +1779,22 @@ function updateShortNavButtons() {
 
     if (prevBtn) prevBtn.disabled = currentShortIndex === 0;
     if (nextBtn) nextBtn.disabled = currentShortIndex === currentShortsQueue.length - 1;
+}
+
+function triggerShortNavHint() {
+    const prevBtn = document.querySelector('.short-nav-prev');
+    const nextBtn = document.querySelector('.short-nav-next');
+
+    if (!prevBtn || !nextBtn) return;
+
+    prevBtn.classList.add('short-nav-hint');
+    nextBtn.classList.add('short-nav-hint');
+    shortNavHintShown = true;
+
+    setTimeout(() => {
+        prevBtn.classList.remove('short-nav-hint');
+        nextBtn.classList.remove('short-nav-hint');
+    }, 2000);
 }
 
 function setupShortScroll() {
@@ -1847,6 +1872,7 @@ function closeShortModal() {
     modal.classList.add('hidden');
     modal.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('no-scroll');
+    window.scrollTo({ top: shortModalScrollY, behavior: 'auto' });
 
     currentShortIndex = 0;
     currentShortsQueue = [];

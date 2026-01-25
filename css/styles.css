@@ -968,6 +968,25 @@ body.sidebar-collapsed .main-content {
     transition: background 0.2s;
 }
 
+.short-nav-btn svg {
+    width: 28px;
+    height: 48px;
+    stroke-width: 2.5;
+}
+
+.short-nav-btn.short-nav-hint {
+    width: 64px;
+    height: 64px;
+    background: transparent;
+    box-shadow: none;
+}
+
+.short-nav-btn.short-nav-hint svg {
+    width: 32px;
+    height: 56px;
+    animation: shortHintBlink 0.6s ease-in-out infinite;
+}
+
 .short-nav-btn:hover {
     background: rgba(0, 0, 0, 0.8);
 }
@@ -978,6 +997,18 @@ body.sidebar-collapsed .main-content {
 
 .short-nav-next {
     bottom: 60px;
+}
+
+@keyframes shortHintBlink {
+    0%,
+    100% {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    50% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .short-nav-btn:disabled {
