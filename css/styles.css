@@ -296,6 +296,12 @@ main,
     height: 20px;
 }
 
+.icon-btn .icon-text {
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1;
+}
+
 .icon-playlist {
     width: 24px;
     height: 24px;
