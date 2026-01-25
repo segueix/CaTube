@@ -17,8 +17,8 @@ let searchForm, searchInput, searchDropdown;
 let extraVideosGrid;
 let currentVideoId = null;
 let useYouTubeAPI = false;
-let selectedCategory = 'Tot';
-let historySelectedCategory = 'Tot';
+let selectedCategory = 'Novetats';
+let historySelectedCategory = 'Novetats';
 let historyFilterLiked = false;
 let currentFeedVideos = [];
 let currentFeedData = null;
@@ -789,7 +789,7 @@ function updateHero(video, source = 'static') {
 }
 
 function filterVideosByCategory(videos, feed) {
-    if (selectedCategory === 'Tot') return videos;
+    if (selectedCategory === 'Tot' || selectedCategory === 'Novetats') return videos;
     if (!feed || !Array.isArray(feed.channels)) return videos;
 
     const map = new Map();
@@ -803,6 +803,45 @@ function filterVideosByCategory(videos, feed) {
         const cats = map.get(video.channelId) || [];
         return cats.includes(wanted);
     });
+}
+
+function sortVideosByRoundRobin(videos) {
+    if (!Array.isArray(videos) || videos.length === 0) return [];
+
+    const videosByChannel = {};
+    videos.forEach(video => {
+        const channelId = video.channelId;
+        if (!videosByChannel[channelId]) {
+            videosByChannel[channelId] = [];
+        }
+        videosByChannel[channelId].push(video);
+    });
+
+    Object.values(videosByChannel).forEach(channelVideos => {
+        channelVideos.sort((a, b) => {
+            const dateA = new Date(a.publishedAt || a.uploadDate || 0);
+            const dateB = new Date(b.publishedAt || b.uploadDate || 0);
+            return dateB - dateA;
+        });
+    });
+
+    const sortedVideos = [];
+    const channelIds = Object.keys(videosByChannel);
+    let maxVideos = 0;
+
+    channelIds.forEach(id => {
+        maxVideos = Math.max(maxVideos, videosByChannel[id].length);
+    });
+
+    for (let i = 0; i < maxVideos; i++) {
+        channelIds.forEach(id => {
+            if (videosByChannel[id][i]) {
+                sortedVideos.push(videosByChannel[id][i]);
+            }
+        });
+    }
+
+    return sortedVideos;
 }
 
 function getFeedDataForFilter() {
@@ -830,11 +869,15 @@ function renderFeed() {
 
     // Don't filter by category on the Trending page
     const isTrendingPage = pageTitle?.textContent === 'Tendències';
-    const filtered = isTrendingPage
+    let filtered = isTrendingPage
         ? currentFeedVideos
         : filterVideosByCategory(currentFeedVideos, currentFeedData);
 
-    if (selectedCategory !== 'Tot' && filtered.length === 0 && !isTrendingPage) {
+    if (selectedCategory === 'Novetats' && !isTrendingPage) {
+        filtered = sortVideosByRoundRobin(filtered);
+    }
+
+    if (selectedCategory !== 'Novetats' && selectedCategory !== 'Tot' && filtered.length === 0 && !isTrendingPage) {
         updateHero(null);
         if (videosGrid) {
             videosGrid.innerHTML = `
