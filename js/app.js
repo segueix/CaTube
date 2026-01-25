@@ -34,6 +34,7 @@ let youtubeMessageListenerInitialized = false;
 let searchDropdownItems = [];
 let searchDropdownActiveIndex = -1;
 let searchDebounceTimeout = null;
+const featuredVideoBySection = new Map();
 
 const BACKGROUND_STORAGE_KEY = 'catube_background_color';
 const BACKGROUND_COLORS = [
@@ -744,6 +745,37 @@ function getNewestVideoFromList(videos) {
     }, null);
 }
 
+function getHeroSectionKey() {
+    return (pageTitle?.textContent || 'feed').trim();
+}
+
+function getFeaturedVideoForSection(videos, sectionKey) {
+    if (!Array.isArray(videos) || videos.length === 0) {
+        if (sectionKey) {
+            featuredVideoBySection.delete(sectionKey);
+        }
+        return null;
+    }
+
+    const normalizedSection = sectionKey || 'feed';
+    const usedIds = new Set();
+    featuredVideoBySection.forEach((videoId, key) => {
+        if (key !== normalizedSection) {
+            usedIds.add(String(videoId));
+        }
+    });
+
+    const available = videos.filter(video => !usedIds.has(String(video.id)));
+    const newest = getNewestVideoFromList(available);
+    if (newest?.video) {
+        featuredVideoBySection.set(normalizedSection, String(newest.video.id));
+        return newest.video;
+    }
+
+    featuredVideoBySection.delete(normalizedSection);
+    return null;
+}
+
 function updateHero(video, source = 'static') {
     if (!heroSection || !video) {
         if (heroSection) {
@@ -929,6 +961,7 @@ function renderFeed() {
     }
 
     if (selectedCategory !== 'Novetats' && selectedCategory !== 'Tot' && filtered.length === 0 && !isTrendingPage) {
+        featuredVideoBySection.delete(getHeroSectionKey());
         updateHero(null);
         if (videosGrid) {
             videosGrid.innerHTML = `
@@ -1396,6 +1429,7 @@ function navigateToSearchResults(query) {
     const results = performLocalSearch(trimmedQuery);
     showHome();
     setPageTitle(`Resultats per: "${trimmedQuery}"`);
+    featuredVideoBySection.delete(getHeroSectionKey());
     updateHero(null);
 
     if (!videosGrid) {
@@ -1491,6 +1525,7 @@ async function searchVideos(query) {
 
     if (result.error) {
         hideLoading();
+        featuredVideoBySection.delete(getHeroSectionKey());
         updateHero(null);
         // Mostrar missatge d'error
         videosGrid.innerHTML = `
@@ -1506,6 +1541,7 @@ async function searchVideos(query) {
     }
 
     if (result.items.length === 0) {
+        featuredVideoBySection.delete(getHeroSectionKey());
         updateHero(null);
         videosGrid.innerHTML = `
             <div class="search-error">
@@ -1572,8 +1608,8 @@ function renderVideos(videos) {
         }
     });
 
-    const newest = getNewestVideoFromList(videos);
-    updateHero(newest?.video, 'api');
+    const featured = getFeaturedVideoForSection(videos, getHeroSectionKey());
+    updateHero(featured, 'api');
 
     const isMobile = window.matchMedia("(max-width: 768px)").matches;
     const shorts = videos.filter(video => video.isShort);
@@ -2847,8 +2883,8 @@ function setupMiniPlayerToggle() {
 
 // Renderitzar resultats de cerca (sense estadístiques)
 function renderSearchResults(videos) {
-    const newest = getNewestVideoFromList(videos);
-    updateHero(newest?.video, 'api');
+    const featured = getFeaturedVideoForSection(videos, getHeroSectionKey());
+    updateHero(featured, 'api');
 
     const likedIds = getLikedVideoIds();
     videosGrid.innerHTML = videos.map(video => {
@@ -3285,8 +3321,8 @@ function loadVideos() {
 }
 
 function renderStaticVideos(videos) {
-    const newest = getNewestVideoFromList(videos);
-    updateHero(newest?.video, 'static');
+    const featured = getFeaturedVideoForSection(videos, getHeroSectionKey());
+    updateHero(featured, 'static');
 
     videosGrid.innerHTML = videos.map(video => createVideoCard(video)).join('');
 
@@ -3310,8 +3346,8 @@ function loadVideosByCategoryStatic(categoryId) {
     const videos = getVideosByCategory(categoryId);
     const category = CONFIG.categories.find(c => c.id === categoryId);
     setPageTitle(category ? category.name : 'Categoria');
-    const newest = getNewestVideoFromList(videos);
-    updateHero(newest?.video, 'static');
+    const featured = getFeaturedVideoForSection(videos, getHeroSectionKey());
+    updateHero(featured, 'static');
     videosGrid.innerHTML = videos.map(video => createVideoCard(video)).join('');
 
     const videoCards = document.querySelectorAll('.video-card');
