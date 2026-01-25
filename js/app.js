@@ -17,8 +17,8 @@ let searchForm, searchInput, searchDropdown;
 let extraVideosGrid;
 let currentVideoId = null;
 let useYouTubeAPI = false;
-let selectedCategory = 'Tot';
-let historySelectedCategory = 'Tot';
+let selectedCategory = 'Novetats';
+let historySelectedCategory = 'Novetats';
 let historyFilterLiked = false;
 let currentFeedVideos = [];
 let currentFeedData = null;
@@ -34,6 +34,7 @@ let youtubeMessageListenerInitialized = false;
 let searchDropdownItems = [];
 let searchDropdownActiveIndex = -1;
 let searchDebounceTimeout = null;
+const featuredVideoBySection = new Map();
 
 const BACKGROUND_STORAGE_KEY = 'catube_background_color';
 const BACKGROUND_COLORS = [
@@ -744,6 +745,37 @@ function getNewestVideoFromList(videos) {
     }, null);
 }
 
+function getHeroSectionKey() {
+    return (pageTitle?.textContent || 'feed').trim();
+}
+
+function getFeaturedVideoForSection(videos, sectionKey) {
+    if (!Array.isArray(videos) || videos.length === 0) {
+        if (sectionKey) {
+            featuredVideoBySection.delete(sectionKey);
+        }
+        return null;
+    }
+
+    const normalizedSection = sectionKey || 'feed';
+    const usedIds = new Set();
+    featuredVideoBySection.forEach((videoId, key) => {
+        if (key !== normalizedSection) {
+            usedIds.add(String(videoId));
+        }
+    });
+
+    const available = videos.filter(video => !usedIds.has(String(video.id)));
+    const newest = getNewestVideoFromList(available);
+    if (newest?.video) {
+        featuredVideoBySection.set(normalizedSection, String(newest.video.id));
+        return newest.video;
+    }
+
+    featuredVideoBySection.delete(normalizedSection);
+    return null;
+}
+
 function updateHero(video, source = 'static') {
     if (!heroSection || !video) {
         if (heroSection) {
@@ -789,7 +821,7 @@ function updateHero(video, source = 'static') {
 }
 
 function filterVideosByCategory(videos, feed) {
-    if (selectedCategory === 'Tot') return videos;
+    if (selectedCategory === 'Tot' || selectedCategory === 'Novetats') return videos;
     if (!feed || !Array.isArray(feed.channels)) return videos;
 
     const map = new Map();
@@ -803,6 +835,45 @@ function filterVideosByCategory(videos, feed) {
         const cats = map.get(video.channelId) || [];
         return cats.includes(wanted);
     });
+}
+
+function sortVideosByRoundRobin(videos) {
+    if (!Array.isArray(videos) || videos.length === 0) return [];
+
+    const videosByChannel = {};
+    videos.forEach(video => {
+        const channelId = video.channelId;
+        if (!videosByChannel[channelId]) {
+            videosByChannel[channelId] = [];
+        }
+        videosByChannel[channelId].push(video);
+    });
+
+    Object.values(videosByChannel).forEach(channelVideos => {
+        channelVideos.sort((a, b) => {
+            const dateA = new Date(a.publishedAt || a.uploadDate || 0);
+            const dateB = new Date(b.publishedAt || b.uploadDate || 0);
+            return dateB - dateA;
+        });
+    });
+
+    const sortedVideos = [];
+    const channelIds = Object.keys(videosByChannel);
+    let maxVideos = 0;
+
+    channelIds.forEach(id => {
+        maxVideos = Math.max(maxVideos, videosByChannel[id].length);
+    });
+
+    for (let i = 0; i < maxVideos; i++) {
+        channelIds.forEach(id => {
+            if (videosByChannel[id][i]) {
+                sortedVideos.push(videosByChannel[id][i]);
+            }
+        });
+    }
+
+    return sortedVideos;
 }
 
 function getFeedDataForFilter() {
@@ -825,16 +896,72 @@ function setFeedContext(videos, feedData, renderer) {
     renderFeed();
 }
 
+/**
+ * Sorts videos by Channel popularity (Views) in a Round Robin fashion.
+ * Filters out videos older than 4 months, then orders purely by views.
+ */
+function sortTrendingRoundRobinByViews(videos) {
+    if (!Array.isArray(videos) || videos.length === 0) return [];
+
+    const now = new Date();
+    const cutoffDate = new Date();
+    cutoffDate.setMonth(now.getMonth() - 4);
+
+    const getDate = (v) => new Date(v.publishedAt || v.uploadDate || 0);
+    const getViews = (v) => parseInt(v.viewCount || v.views || 0, 10);
+
+    const videosByChannel = {};
+
+    videos.forEach(video => {
+        const channelId = video.channelId;
+        if (!channelId) return;
+
+        if (getDate(video) < cutoffDate) return;
+
+        if (!videosByChannel[channelId]) {
+            videosByChannel[channelId] = [];
+        }
+        videosByChannel[channelId].push(video);
+    });
+
+    Object.values(videosByChannel).forEach(channelVideos => {
+        channelVideos.sort((a, b) => getViews(b) - getViews(a));
+    });
+
+    const sortedVideos = [];
+    const channelIds = Object.keys(videosByChannel);
+    let maxVideos = 0;
+
+    channelIds.forEach(id => {
+        maxVideos = Math.max(maxVideos, videosByChannel[id].length);
+    });
+
+    for (let i = 0; i < maxVideos; i++) {
+        channelIds.forEach(id => {
+            if (videosByChannel[id][i]) {
+                sortedVideos.push(videosByChannel[id][i]);
+            }
+        });
+    }
+
+    return sortedVideos;
+}
+
 function renderFeed() {
     if (!currentFeedRenderer) return;
 
     // Don't filter by category on the Trending page
     const isTrendingPage = pageTitle?.textContent === 'Tendències';
-    const filtered = isTrendingPage
+    let filtered = isTrendingPage
         ? currentFeedVideos
         : filterVideosByCategory(currentFeedVideos, currentFeedData);
 
-    if (selectedCategory !== 'Tot' && filtered.length === 0 && !isTrendingPage) {
+    if (selectedCategory === 'Novetats' && !isTrendingPage) {
+        filtered = sortVideosByRoundRobin(filtered);
+    }
+
+    if (selectedCategory !== 'Novetats' && selectedCategory !== 'Tot' && filtered.length === 0 && !isTrendingPage) {
+        featuredVideoBySection.delete(getHeroSectionKey());
         updateHero(null);
         if (videosGrid) {
             videosGrid.innerHTML = `
@@ -1302,6 +1429,7 @@ function navigateToSearchResults(query) {
     const results = performLocalSearch(trimmedQuery);
     showHome();
     setPageTitle(`Resultats per: "${trimmedQuery}"`);
+    featuredVideoBySection.delete(getHeroSectionKey());
     updateHero(null);
 
     if (!videosGrid) {
@@ -1397,6 +1525,7 @@ async function searchVideos(query) {
 
     if (result.error) {
         hideLoading();
+        featuredVideoBySection.delete(getHeroSectionKey());
         updateHero(null);
         // Mostrar missatge d'error
         videosGrid.innerHTML = `
@@ -1412,6 +1541,7 @@ async function searchVideos(query) {
     }
 
     if (result.items.length === 0) {
+        featuredVideoBySection.delete(getHeroSectionKey());
         updateHero(null);
         videosGrid.innerHTML = `
             <div class="search-error">
@@ -1478,8 +1608,8 @@ function renderVideos(videos) {
         }
     });
 
-    const newest = getNewestVideoFromList(videos);
-    updateHero(newest?.video, 'api');
+    const featured = getFeaturedVideoForSection(videos, getHeroSectionKey());
+    updateHero(featured, 'api');
 
     const isMobile = window.matchMedia("(max-width: 768px)").matches;
     const shorts = videos.filter(video => video.isShort);
@@ -2753,8 +2883,8 @@ function setupMiniPlayerToggle() {
 
 // Renderitzar resultats de cerca (sense estadístiques)
 function renderSearchResults(videos) {
-    const newest = getNewestVideoFromList(videos);
-    updateHero(newest?.video, 'api');
+    const featured = getFeaturedVideoForSection(videos, getHeroSectionKey());
+    updateHero(featured, 'api');
 
     const likedIds = getLikedVideoIds();
     videosGrid.innerHTML = videos.map(video => {
@@ -3191,8 +3321,8 @@ function loadVideos() {
 }
 
 function renderStaticVideos(videos) {
-    const newest = getNewestVideoFromList(videos);
-    updateHero(newest?.video, 'static');
+    const featured = getFeaturedVideoForSection(videos, getHeroSectionKey());
+    updateHero(featured, 'static');
 
     videosGrid.innerHTML = videos.map(video => createVideoCard(video)).join('');
 
@@ -3216,8 +3346,8 @@ function loadVideosByCategoryStatic(categoryId) {
     const videos = getVideosByCategory(categoryId);
     const category = CONFIG.categories.find(c => c.id === categoryId);
     setPageTitle(category ? category.name : 'Categoria');
-    const newest = getNewestVideoFromList(videos);
-    updateHero(newest?.video, 'static');
+    const featured = getFeaturedVideoForSection(videos, getHeroSectionKey());
+    updateHero(featured, 'static');
     videosGrid.innerHTML = videos.map(video => createVideoCard(video)).join('');
 
     const videoCards = document.querySelectorAll('.video-card');
