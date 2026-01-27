@@ -605,10 +605,45 @@ body.sidebar-collapsed .main-content {
     overflow-x: hidden;
 }
 
+.shorts-shelf-container {
+    grid-column: 1 / -1;
+}
+
 .shorts-title {
     font-size: 18px;
     font-weight: 600;
     margin: 0 0 8px;
+}
+
+.shorts-carousel {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 8px 0;
+    scroll-snap-type: x mandatory;
+}
+
+.shorts-carousel::-webkit-scrollbar {
+    display: none;
+}
+
+.shorts-carousel {
+    scrollbar-width: none;
+}
+
+.short-card-item {
+    flex: 0 0 auto;
+    width: 160px;
+    aspect-ratio: 9 / 16;
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    text-decoration: none;
+    scroll-snap-align: start;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
 }
 
 .shorts-row {

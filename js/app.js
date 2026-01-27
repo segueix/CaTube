@@ -1627,35 +1627,49 @@ function renderVideos(videos) {
         : videos;
 
     const standardVideos = listVideos.filter(video => !video.isShort);
-    const shortVideos = listVideos.filter(video => video.isShort);
-    const firstSlots = standardVideos.slice(0, 4);
-    const remainingStandard = standardVideos.slice(4);
-    const mixedAfterHeader = [];
-    const maxLength = Math.max(remainingStandard.length, shortVideos.length);
-    for (let i = 0; i < maxLength; i += 1) {
-        if (remainingStandard[i]) {
-            mixedAfterHeader.push(remainingStandard[i]);
-        }
-        if (shortVideos[i]) {
-            mixedAfterHeader.push(shortVideos[i]);
-        }
-    }
-    const finalList = [...firstSlots, ...mixedAfterHeader];
+    const shorts = listVideos.filter(video => video.isShort);
+    const firstBatch = standardVideos.slice(0, 6);
+    const secondBatch = standardVideos.slice(6);
+    const shortsShelf = shorts.length > 0
+        ? `
+        <div class="shorts-shelf-container">
+            <h2 class="shorts-title">Shorts</h2>
+            <div class="shorts-carousel">
+                ${shorts.map(video => `
+                    <button class="short-card-item" type="button" data-video-id="${video.id}">
+                        <img class="short-thumb" src="${video.thumbnail}" alt="${escapeHtml(video.title)}" loading="lazy">
+                        <div class="short-meta">
+                            <div class="short-title">${escapeHtml(video.title)}</div>
+                            <div class="short-channel">${escapeHtml(video.channelTitle)}</div>
+                        </div>
+                    </button>
+                `).join('')}
+            </div>
+        </div>
+    `
+        : '';
 
-    videosGrid.innerHTML = finalList.map(video => createVideoCardAPI(video)).join('');
+    const htmlParts = [
+        ...firstBatch.map(video => createVideoCardAPI(video)),
+        shortsShelf,
+        ...secondBatch.map(video => createVideoCardAPI(video))
+    ];
+
+    videosGrid.innerHTML = htmlParts.join('');
 
     // Event listeners
-    const videoById = new Map(finalList.map(video => [String(video.id), video]));
     const videoCards = document.querySelectorAll('.video-card');
     videoCards.forEach(card => {
         card.addEventListener('click', () => {
             const videoId = card.dataset.videoId;
-            const video = videoById.get(String(videoId));
-            if (video?.isShort) {
-                openShortModal(videoId);
-                return;
-            }
             showVideoFromAPI(videoId);
+        });
+    });
+    const shortCards = document.querySelectorAll('.short-card-item');
+    shortCards.forEach(card => {
+        card.addEventListener('click', () => {
+            const videoId = card.dataset.videoId;
+            openShortModal(videoId);
         });
     });
     bindChannelLinks(videosGrid);
