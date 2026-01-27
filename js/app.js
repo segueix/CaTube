@@ -1324,8 +1324,9 @@ function renderFeed() {
         ? currentFeedVideos
         : filterVideosByCategory(currentFeedVideos, currentFeedData);
 
-    const isCategoryView = selectedCategory !== 'Tot' && selectedCategory !== 'Novetats';
-    if (isCategoryView) {
+    const shouldHideWatched = selectedCategory === 'Novetats'
+        || (selectedCategory !== 'Tot' && selectedCategory !== 'Novetats');
+    if (shouldHideWatched) {
         filtered = filterOutWatchedVideos(filtered);
     }
 
