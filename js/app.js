@@ -74,16 +74,17 @@ function mergeChannelCategories(channel, categories) {
 }
 
 function resolveChannelAvatar(channelId, channelObj) {
-    if (cachedChannels[channelId]) {
-        if (cachedChannels[channelId].thumbnail) return cachedChannels[channelId].thumbnail;
-        if (cachedChannels[channelId].avatar) return cachedChannels[channelId].avatar;
-    }
-
     if (channelObj) {
-        if (channelObj.thumbnail) return channelObj.thumbnail;
         if (channelObj.avatar) return channelObj.avatar;
+        if (channelObj.thumbnail) return channelObj.thumbnail;
         if (channelObj.snippet?.thumbnails?.medium?.url) return channelObj.snippet.thumbnails.medium.url;
         if (channelObj.snippet?.thumbnails?.default?.url) return channelObj.snippet.thumbnails.default.url;
+    }
+
+    const cached = cachedChannels[channelId];
+    if (cached) {
+        if (cached.avatar) return cached.avatar;
+        if (cached.thumbnail) return cached.thumbnail;
     }
 
     const followAvatar = getFollowChannelAvatar(channelId);
