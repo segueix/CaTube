@@ -541,11 +541,11 @@ body.sidebar-collapsed .main-content {
     border-radius: 6px;
 }
 
-/* Videos Grid */
-.videos-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
+@media (max-width: 768px) {
+    .videos-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 12px;
+    }
 }
 
 .history-group-title {
