@@ -906,7 +906,17 @@ function getFeaturedVideoForSection(videos, sectionKey) {
         }
     });
 
-    const available = videos.filter(video => !usedIds.has(String(video.id)));
+    const watchedIds = getHistoryVideoIdSet();
+    const available = videos.filter(video => {
+        const videoId = String(video.id);
+        if (usedIds.has(videoId)) {
+            return false;
+        }
+        if (watchedIds.has(videoId)) {
+            return false;
+        }
+        return true;
+    });
     const newest = getNewestVideoFromList(available);
     if (newest?.video) {
         featuredVideoBySection.set(normalizedSection, String(newest.video.id));
@@ -1313,6 +1323,11 @@ function renderFeed() {
     let filtered = isTrendingPage
         ? currentFeedVideos
         : filterVideosByCategory(currentFeedVideos, currentFeedData);
+
+    const isCategoryView = selectedCategory !== 'Tot' && selectedCategory !== 'Novetats';
+    if (isCategoryView) {
+        filtered = filterOutWatchedVideos(filtered);
+    }
 
     if (!isTrendingPage) {
         if (selectedCategory === 'Novetats') {
@@ -4035,7 +4050,7 @@ function renderStaticVideos(videos) {
 
 // Carregar vídeos per categoria (estàtic)
 function loadVideosByCategoryStatic(categoryId) {
-    const videos = getVideosByCategory(categoryId);
+    const videos = filterOutWatchedVideos(getVideosByCategory(categoryId));
     const category = CONFIG.categories.find(c => c.id === categoryId);
     setPageTitle(category ? category.name : 'Categoria');
     const featured = getFeaturedVideoForSection(videos, getHeroSectionKey());
@@ -4313,6 +4328,18 @@ function getHistoryItems() {
 
 function saveHistoryItems(items) {
     localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(items));
+}
+
+function getHistoryVideoIdSet() {
+    return new Set(getHistoryItems().map(item => String(item.id)));
+}
+
+function filterOutWatchedVideos(videos) {
+    const watchedIds = getHistoryVideoIdSet();
+    if (!Array.isArray(videos) || videos.length === 0 || watchedIds.size === 0) {
+        return videos;
+    }
+    return videos.filter(video => !watchedIds.has(String(video.id)));
 }
 
 function addToHistory(video) {
