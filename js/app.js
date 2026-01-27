@@ -882,6 +882,46 @@ function sortVideosByRoundRobin(videos) {
     return sortedVideos;
 }
 
+function applyRoundRobinByPopularity(videos) {
+    if (!Array.isArray(videos) || videos.length === 0) return [];
+
+    const byChannel = {};
+    videos.forEach(video => {
+        const channelId = video.channelId;
+        if (!byChannel[channelId]) {
+            byChannel[channelId] = [];
+        }
+        byChannel[channelId].push(video);
+    });
+
+    Object.values(byChannel).forEach(channelVideos => {
+        channelVideos.sort((a, b) => {
+            const viewsA = a.viewCount || a.views || 0;
+            const viewsB = b.viewCount || b.views || 0;
+            return viewsB - viewsA;
+        });
+    });
+
+    const channelIds = Object.keys(byChannel).sort((a, b) => {
+        const topA = byChannel[a][0]?.viewCount || byChannel[a][0]?.views || 0;
+        const topB = byChannel[b][0]?.viewCount || byChannel[b][0]?.views || 0;
+        return topB - topA;
+    });
+
+    const result = [];
+    const maxVideos = Math.max(...Object.values(byChannel).map(v => v.length));
+
+    for (let i = 0; i < maxVideos; i++) {
+        channelIds.forEach(id => {
+            if (byChannel[id][i]) {
+                result.push(byChannel[id][i]);
+            }
+        });
+    }
+
+    return result;
+}
+
 function hybridCategorySort(videos) {
     const now = Date.now();
     const oneWeek = 7 * 24 * 60 * 60 * 1000;
@@ -900,12 +940,25 @@ function hybridCategorySort(videos) {
         }
     });
 
-    hot.sort((a, b) => (b.viewCount || b.views || 0) - (a.viewCount || a.views || 0));
+    const hotRoundRobin = applyRoundRobinByPopularity(hot);
+    const restRoundRobin = sortVideosByRoundRobin(rest);
+    const maxHot = Math.min(hotRoundRobin.length, 8);
 
-    const roundRobinRest = sortVideosByRoundRobin(rest);
-    const maxHot = Math.min(hot.length, 6);
+    if (
+        hotRoundRobin.length > 0
+        && restRoundRobin.length > 0
+        && hotRoundRobin[maxHot - 1]?.channelId === restRoundRobin[0]?.channelId
+    ) {
+        const nextIndex = restRoundRobin.findIndex(
+            video => video.channelId !== hotRoundRobin[maxHot - 1]?.channelId
+        );
+        if (nextIndex > 0) {
+            const rotated = restRoundRobin.splice(0, nextIndex);
+            restRoundRobin.push(...rotated);
+        }
+    }
 
-    return [...hot.slice(0, maxHot), ...roundRobinRest];
+    return [...hotRoundRobin.slice(0, maxHot), ...restRoundRobin];
 }
 
 function getFeedDataForFilter() {
