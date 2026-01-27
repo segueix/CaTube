@@ -83,8 +83,8 @@ function resolveChannelAvatar(channelId, channelObj) {
 
     const cached = cachedChannels[channelId];
     if (cached) {
-        if (cached.avatar) return cached.avatar;
         if (cached.thumbnail) return cached.thumbnail;
+        if (cached.avatar) return cached.avatar;
     }
 
     const followAvatar = getFollowChannelAvatar(channelId);
