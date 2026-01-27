@@ -2259,20 +2259,28 @@ function closeShortModal() {
 
 function getLikedVideoIds() {
     const stored = localStorage.getItem('user_liked_videos');
+    const likedVideos = getLikedVideos();
+    const storedIds = likedVideos.map(video => String(video.id));
     if (!stored) {
-        return [];
+        return storedIds;
     }
     try {
         const parsed = JSON.parse(stored);
-        return Array.isArray(parsed) ? parsed : [];
+        const legacyIds = Array.isArray(parsed) ? parsed : [];
+        return [...new Set([...legacyIds, ...storedIds])];
     } catch (error) {
         console.warn('No es pot llegir user_liked_videos', error);
-        return [];
+        return storedIds;
     }
 }
 
 function setLikedVideoIds(ids) {
-    localStorage.setItem('user_liked_videos', JSON.stringify(ids));
+    const normalizedIds = [...new Set(ids.map(id => String(id)))];
+    localStorage.setItem('user_liked_videos', JSON.stringify(normalizedIds));
+    const existing = getLikedVideos();
+    const next = normalizedIds.map(id => existing.find(video => String(video.id) === id) || normalizeLikedVideo({ id }))
+        .filter(Boolean);
+    setLikedVideos(next);
 }
 
 const HEART_TOGGLE_SVG = `
@@ -2352,6 +2360,7 @@ function toggleLikeVideo(video) {
     }
 
     setLikedVideos(likedVideos);
+    setLikedVideoIds(likedVideos.map(item => String(item.id)));
     return nowLiked;
 }
 
@@ -2867,11 +2876,17 @@ function setupVideoCardActionButtons() {
             event.stopPropagation();
             const videoId = String(button.dataset.videoId || '');
             if (!videoId) return;
-            const likedIds = getLikedVideoIds();
-            const wasLiked = likedIds.includes(videoId);
-            const next = wasLiked ? likedIds.filter(id => id !== videoId) : [...likedIds, videoId];
-            setLikedVideoIds(next);
-            button.classList.toggle('is-liked', !wasLiked);
+            let likeVideo = { id: videoId };
+            if (button.dataset.likeVideo) {
+                try {
+                    likeVideo = JSON.parse(decodeURIComponent(button.dataset.likeVideo));
+                } catch (error) {
+                    console.warn('No es pot llegir el vídeo preferit', error);
+                }
+            }
+            const nowLiked = toggleLikeVideo(likeVideo);
+            button.classList.toggle('is-liked', nowLiked);
+            button.setAttribute('aria-pressed', nowLiked ? 'true' : 'false');
         });
     });
 }
@@ -4447,6 +4462,14 @@ function createHistoryCard(video) {
     const likedIds = getLikedVideoIds();
     const isLiked = likedIds.includes(String(video.id));
     const payload = encodeURIComponent(JSON.stringify(getPlaylistVideoData(video)));
+    const likePayload = encodeURIComponent(JSON.stringify({
+        id: video.id,
+        title,
+        thumbnail,
+        channelId: video.channelId || channel?.id || '',
+        channelTitle,
+        viewCount: views
+    }));
 
     return `
         <div class="video-card" data-video-id="${video.id}" data-video-source="${source}">
@@ -4464,8 +4487,8 @@ function createHistoryCard(video) {
                     <div class="video-info-header">
                         <h3 class="video-card-title">${escapeHtml(title)}</h3>
                         <div class="video-card-actions">
-                            <button class="video-action-btn like-action${isLiked ? ' is-liked' : ''}" type="button" data-video-id="${video.id}" aria-label="Preferit">
-                                <i data-lucide="heart"></i>
+                            <button class="video-action-btn like-action heart-toggle${isLiked ? ' is-liked' : ''}" type="button" data-video-id="${video.id}" data-like-video="${likePayload}" aria-label="Preferit" aria-pressed="${isLiked ? 'true' : 'false'}">
+                                ${HEART_TOGGLE_SVG}
                             </button>
                             <button class="video-action-btn playlist-action" type="button" data-playlist-video="${payload}" aria-label="Afegir a una llista">
                                 ${PLAYLIST_ICON_SVG}
