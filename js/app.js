@@ -963,6 +963,13 @@ function updateHero(video, source = 'static') {
 
 function filterVideosByCategory(videos, feed) {
     if (selectedCategory === 'Tot' || selectedCategory === 'Novetats') return videos;
+    if (selectedCategory === 'Seguint') {
+        const followedIds = new Set(getFollowedChannelIds().map(id => String(id)));
+        if (followedIds.size === 0) {
+            return [];
+        }
+        return videos.filter(video => followedIds.has(String(video.channelId)));
+    }
     if (!feed || !Array.isArray(feed.channels)) return videos;
 
     const map = new Map();
