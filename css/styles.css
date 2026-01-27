@@ -1751,6 +1751,8 @@ button:disabled,
 .channel-profile-share-btn {
     width: 40px;
     height: 40px;
+    background: transparent;
+    color: var(--color-text);
 }
 
 .follow-grid {
@@ -1989,6 +1991,8 @@ button:disabled,
     .sidebar-channel-actions .btn-round-icon {
         width: 40px;
         height: 40px;
+        background: transparent;
+        color: var(--color-text);
     }
 
     .sidebar-channel-videos-title {
