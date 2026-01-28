@@ -1121,6 +1121,8 @@ function hideLoading() {
 
 function setPageTitle(title) {
     if (pageTitle) {
+        pageTitle.classList.remove('page-title--with-actions');
+        pageTitle.dataset.title = title;
         pageTitle.textContent = title;
     }
 }
@@ -1147,7 +1149,7 @@ function getNewestVideoFromList(videos) {
 }
 
 function getHeroSectionKey() {
-    return (pageTitle?.textContent || 'feed').trim();
+    return (pageTitle?.dataset?.title || pageTitle?.textContent || 'feed').trim();
 }
 
 function getFeaturedVideoForSection(videos, sectionKey) {
@@ -2364,38 +2366,76 @@ function handleSearchResultSelection(item) {
     hideSearchDropdown();
 }
 
-function renderSaveSearchButton(query) {
-    if (!videosGrid) {
+function renderSearchCategoryActions(query) {
+    if (!pageTitle) {
         return;
     }
     const normalizedQuery = normalizeCustomTag(query);
     if (!normalizedQuery) {
+        setPageTitle(`Resultats per: "${query}"`);
         return;
     }
-    const existing = videosGrid.querySelector('.search-save-category');
-    if (existing) {
-        existing.remove();
-    }
-    const wrapper = document.createElement('div');
-    wrapper.className = 'search-save-category';
-    wrapper.innerHTML = `
-        <button class="search-save-btn" type="button">
-            Guardar cerca com a categoria
-        </button>
+    const isSaved = isCustomCategory(normalizedQuery);
+    pageTitle.classList.add('page-title--with-actions');
+    pageTitle.dataset.title = `Resultats per: "${normalizedQuery}"`;
+    pageTitle.innerHTML = `
+        <span class="page-title__label">Resultats per:</span>
+        <span class="page-title__query">"${escapeHtml(normalizedQuery)}"</span>
+        <span class="page-title__actions">
+            <button class="search-category-btn ${isSaved ? 'is-danger' : ''}" type="button" data-action="toggle-search-category">
+                ${isSaved ? 'Eliminar' : 'Guardar'}
+            </button>
+            <button class="btn-round-icon search-category-share" type="button" data-action="share-search" aria-label="Compartir">
+                <i data-lucide="share-2"></i>
+            </button>
+        </span>
     `;
-    const button = wrapper.querySelector('button');
-    button?.addEventListener('click', () => {
-        const savedTag = addCustomTag(normalizedQuery);
-        if (!savedTag) {
-            return;
+
+    const toggleButton = pageTitle.querySelector('[data-action="toggle-search-category"]');
+    const shareButton = pageTitle.querySelector('[data-action="share-search"]');
+
+    toggleButton?.addEventListener('click', () => {
+        if (isCustomCategory(normalizedQuery)) {
+            if (removeCustomTag(normalizedQuery)) {
+                setupChipsBarOrdering();
+                alert('Categoria eliminada.');
+            }
+        } else {
+            const savedTag = addCustomTag(normalizedQuery);
+            if (!savedTag) {
+                return;
+            }
+            setupChipsBarOrdering();
+            alert('Categoria guardada.');
         }
-        setupChipsBarOrdering();
-        activateCategory(savedTag);
-        showHome();
-        renderFeed();
-        alert('Categoria guardada.');
+        renderSearchCategoryActions(normalizedQuery);
     });
-    videosGrid.prepend(wrapper);
+
+    shareButton?.addEventListener('click', async () => {
+        const shareUrl = `${window.location.origin}?add_tag=${encodeURIComponent(normalizedQuery)}`;
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'CaTube - Categoria',
+                    text: `Consulta la categoria ${normalizedQuery}`,
+                    url: shareUrl
+                });
+                return;
+            } catch (error) {
+                console.warn('Share dismissed', error);
+            }
+        }
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            alert('Enllaç copiat!');
+        } catch (error) {
+            window.prompt('Copia l’enllaç de la categoria:', shareUrl);
+        }
+    });
+
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
 }
 
 function navigateToSearchResults(query) {
@@ -2412,7 +2452,7 @@ function navigateToSearchResults(query) {
 
     const results = performLocalSearch(trimmedQuery);
     showHome();
-    setPageTitle(`Resultats per: "${trimmedQuery}"`);
+    renderSearchCategoryActions(trimmedQuery);
     featuredVideoBySection.delete(getHeroSectionKey());
     updateHero(null);
 
@@ -2427,7 +2467,6 @@ function navigateToSearchResults(query) {
                 <p>No s'han trobat resultats locals.</p>
             </div>
         `;
-        renderSaveSearchButton(trimmedQuery);
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
@@ -2469,8 +2508,6 @@ function navigateToSearchResults(query) {
         ${channelSection}
         ${videoSection}
     `;
-    renderSaveSearchButton(trimmedQuery);
-
     videosGrid.querySelectorAll('.search-channel-card').forEach(card => {
         card.addEventListener('click', (event) => {
             if (event.target.closest('[data-follow-channel]')) {
@@ -2504,7 +2541,7 @@ function navigateToSearchResults(query) {
 // Cercar vídeos
 async function searchVideos(query) {
     showLoading();
-    setPageTitle(`Resultats per: "${query}"`);
+    renderSearchCategoryActions(query);
     showHome();
 
     const result = await YouTubeAPI.searchVideos(query, CONFIG.layout.videosPerPage);
@@ -2552,7 +2589,6 @@ async function searchVideos(query) {
         renderSearchResults(result.items);
     }
 
-    renderSaveSearchButton(query);
     hideLoading();
 }
 
