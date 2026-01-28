@@ -39,6 +39,7 @@ let youtubeMessageListenerInitialized = false;
 let searchDropdownItems = [];
 let searchDropdownActiveIndex = -1;
 let searchDebounceTimeout = null;
+let installPromptEvent = null;
 const featuredVideoBySection = new Map();
 const HYBRID_CATEGORY_SORT = new Set(['Cultura', 'Humor', 'Actualitat', 'Vida', 'Gaming']);
 
@@ -381,6 +382,7 @@ function setupShareButtons() {
 document.addEventListener('DOMContentLoaded', async () => {
     initElements();
     initEventListeners();
+    initInstallPrompt();
     setupShareButtons();
     initBackgroundModal();
     initBackgroundPicker();
@@ -788,6 +790,57 @@ function initEventListeners() {
         if (!isMiniPlayerActive()) {
             updatePlayerPosition();
         }
+    });
+}
+
+function initInstallPrompt() {
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        return;
+    }
+
+    window.addEventListener('beforeinstallprompt', (event) => {
+        event.preventDefault();
+        installPromptEvent = event;
+
+        if (document.querySelector('.install-floating-btn')) {
+            return;
+        }
+
+        const floatingBtn = document.createElement('button');
+        floatingBtn.type = 'button';
+        floatingBtn.className = 'install-floating-btn';
+        floatingBtn.setAttribute('aria-label', 'Install App');
+        floatingBtn.innerHTML = '<i data-lucide="download"></i><span>Install App</span>';
+        document.body.appendChild(floatingBtn);
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        requestAnimationFrame(() => {
+            floatingBtn.classList.add('show');
+        });
+
+        const removeButton = () => {
+            if (!floatingBtn.isConnected) {
+                return;
+            }
+            floatingBtn.classList.remove('show');
+            setTimeout(() => floatingBtn.remove(), 500);
+        };
+
+        const autoHideTimeout = setTimeout(removeButton, 5000);
+
+        floatingBtn.addEventListener('click', () => {
+            clearTimeout(autoHideTimeout);
+            removeButton();
+
+            if (!installPromptEvent) {
+                return;
+            }
+            installPromptEvent.prompt();
+            installPromptEvent = null;
+        });
     });
 }
 

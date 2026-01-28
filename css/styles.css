@@ -55,6 +55,35 @@ body {
     touch-action: pan-y;
 }
 
+/* Floating Install Button */
+.install-floating-btn {
+    position: fixed;
+    bottom: calc(24px + var(--safe-bottom));
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #FF0000;
+    color: #ffffff;
+    padding: 12px 24px;
+    border-radius: 999px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    z-index: 9999;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border: none;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.02em;
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s;
+    opacity: 0;
+}
+
+.install-floating-btn.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
 img,
 video,
 iframe,
