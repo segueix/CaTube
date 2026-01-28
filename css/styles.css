@@ -645,9 +645,80 @@ body.sidebar-collapsed .main-content {
     color: #000;
 }
 
+.chip.is-custom {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
 .chip.is-dragging {
     opacity: 0.6;
     cursor: grabbing;
+}
+
+.category-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin: 12px 0 20px;
+}
+
+.category-actions.hidden {
+    display: none;
+}
+
+.category-actions__label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+.category-actions__buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.category-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.category-action-btn--danger {
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.15);
+    border-color: rgba(255, 107, 107, 0.4);
+}
+
+.category-action-btn--share {
+    background: var(--color-primary);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.search-save-category {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 16px;
+}
+
+.search-save-btn {
+    background: var(--color-primary);
+    color: #fff;
+    border: 0;
+    border-radius: 12px;
+    padding: 12px 18px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
 }
 
 .empty-state {
