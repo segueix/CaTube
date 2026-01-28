@@ -6,7 +6,7 @@ let historyPage, historyGrid, historyFilters, chipsBar;
 let playlistsPage, playlistsList, playlistNameInput, createPlaylistBtn;
 let followPage, followGrid, followTabs;
 let heroSection, heroTitle, heroDescription, heroImage, heroDuration, heroButton, heroEyebrow, heroChannel;
-let pageTitle;
+let pageTitle, categoryActions;
 let backgroundModal, backgroundBtn, backgroundOptions;
 let currentColorDisplay, expandedColorPicker, closeExpandedColorPicker;
 let fontDecreaseBtn, fontIncreaseBtn, fontSizeDisplay;
@@ -62,6 +62,7 @@ const HISTORY_LIMIT = 50;
 const PLAYLIST_STORAGE_KEY = 'catube_playlists';
 const FOLLOW_STORAGE_KEY = 'catube_follows';
 const CHIPS_ORDER_STORAGE_KEY = 'catube_chip_order';
+const CUSTOM_TAGS_STORAGE_KEY = 'catube_custom_tags';
 const WATCH_CATEGORY_VIDEOS_LIMIT = 30;
 const DESKTOP_BREAKPOINT = 1024;
 const WATCH_SIDEBAR_VIDEOS_LIMIT = 55;
@@ -216,6 +217,104 @@ function bindChannelLinks(container = document) {
             openChannelProfile(channelId);
         });
     });
+}
+
+function normalizeCustomTag(tag) {
+    if (!tag || typeof tag !== 'string') {
+        return '';
+    }
+    return tag.trim();
+}
+
+function getStandardChipLabels() {
+    const configLabels = Array.isArray(CONFIG?.categories)
+        ? CONFIG.categories.map(cat => cat.name).filter(Boolean)
+        : [];
+    return ['Novetats', 'Tendències', ...configLabels, 'Seguint'];
+}
+
+function isStandardCategory(tag) {
+    const normalized = normalizeCustomTag(tag).toLowerCase();
+    if (!normalized) {
+        return false;
+    }
+    return getStandardChipLabels().some(label => label.toLowerCase() === normalized);
+}
+
+function getCustomTags() {
+    const stored = localStorage.getItem(CUSTOM_TAGS_STORAGE_KEY);
+    if (!stored) {
+        return [];
+    }
+    try {
+        const parsed = JSON.parse(stored);
+        if (!Array.isArray(parsed)) {
+            return [];
+        }
+        return parsed
+            .map(tag => normalizeCustomTag(tag))
+            .filter(tag => tag);
+    } catch (error) {
+        console.warn('No es pot llegir catube_custom_tags', error);
+        return [];
+    }
+}
+
+function saveCustomTags(tags) {
+    if (!Array.isArray(tags)) {
+        return;
+    }
+    localStorage.setItem(CUSTOM_TAGS_STORAGE_KEY, JSON.stringify(tags));
+}
+
+function addCustomTag(tag) {
+    const normalized = normalizeCustomTag(tag);
+    if (!normalized) {
+        return null;
+    }
+    if (isStandardCategory(normalized)) {
+        return normalized;
+    }
+    const tags = getCustomTags();
+    const exists = tags.some(existing => existing.toLowerCase() === normalized.toLowerCase());
+    if (exists) {
+        return tags.find(existing => existing.toLowerCase() === normalized.toLowerCase()) || normalized;
+    }
+    const nextTags = [...tags, normalized];
+    saveCustomTags(nextTags);
+
+    const storedOrder = getStoredChipOrder();
+    if (storedOrder && !storedOrder.some(value => value.toLowerCase() === normalized.toLowerCase())) {
+        saveChipOrder([...storedOrder, normalized]);
+    }
+    return normalized;
+}
+
+function removeCustomTag(tag) {
+    const normalized = normalizeCustomTag(tag);
+    if (!normalized) {
+        return false;
+    }
+    const tags = getCustomTags();
+    const nextTags = tags.filter(existing => existing.toLowerCase() !== normalized.toLowerCase());
+    if (nextTags.length === tags.length) {
+        return false;
+    }
+    saveCustomTags(nextTags);
+
+    const storedOrder = getStoredChipOrder();
+    if (storedOrder) {
+        saveChipOrder(storedOrder.filter(value => value.toLowerCase() !== normalized.toLowerCase()));
+    }
+    return true;
+}
+
+function isCustomCategory(category) {
+    const normalized = normalizeCustomTag(category).toLowerCase();
+    if (!normalized) {
+        return false;
+    }
+    return getCustomTags().some(tag => tag.toLowerCase() === normalized);
 }
 
 // Function to handle custom sharing logic
@@ -392,6 +491,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     initBackgroundModal();
     initBackgroundPicker();
     initFontSizeControls();
+    const urlParams = new URLSearchParams(window.location.search);
+    const addTagParam = urlParams.get('add_tag');
+    if (addTagParam) {
+        const normalizedTag = normalizeCustomTag(addTagParam);
+        if (normalizedTag) {
+            if (isStandardCategory(normalizedTag)) {
+                selectedCategory = normalizedTag;
+            } else {
+                const addedTag = addCustomTag(normalizedTag);
+                selectedCategory = addedTag || selectedCategory;
+            }
+        }
+        urlParams.delete('add_tag');
+        const nextQuery = urlParams.toString();
+        const newUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash || ''}`;
+        history.replaceState({}, '', newUrl);
+    }
     loadCategories();
     renderPlaylistsPage();
     initYouTubeMessageListener();
@@ -409,7 +525,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Carregar vídeo des de URL si hi ha paràmetre ?v=
-    const urlParams = new URLSearchParams(window.location.search);
     const videoParam = urlParams.get('v');
     if (videoParam) {
         setTimeout(() => {
@@ -475,6 +590,7 @@ function initElements() {
     heroEyebrow = document.getElementById('heroEyebrow');
     heroChannel = document.getElementById('heroChannel');
     pageTitle = document.getElementById('pageTitle');
+    categoryActions = document.getElementById('categoryActions');
     playlistModal = document.getElementById('playlistModal');
     playlistModalBody = document.getElementById('playlistModalBody');
     videoPlayer = document.getElementById('videoPlayer');
@@ -1112,6 +1228,20 @@ function updateHero(video, source = 'static') {
 
 function filterVideosByCategory(videos, feed) {
     if (selectedCategory === 'Tot' || selectedCategory === 'Novetats') return videos;
+    if (isCustomCategory(selectedCategory)) {
+        const query = selectedCategory.toLowerCase();
+        if (!query) {
+            return videos;
+        }
+        return videos.filter(video => {
+            const title = video.title || video.snippet?.title || '';
+            const description = video.description || video.snippet?.description || '';
+            const tagsValue = video.tags || video.snippet?.tags || [];
+            const tagsText = Array.isArray(tagsValue) ? tagsValue.join(' ') : String(tagsValue || '');
+            const haystack = `${title} ${description} ${tagsText}`.toLowerCase();
+            return haystack.includes(query);
+        });
+    }
     if (selectedCategory === 'Seguint') {
         const followedIds = new Set(getFollowedChannelIds().map(id => String(id)));
         if (followedIds.size === 0) {
@@ -1496,6 +1626,10 @@ function getVideoDurationSeconds(video) {
 
 function renderFeed() {
     if (!currentFeedRenderer) return;
+    renderCategoryActions();
+    if (isCustomCategory(selectedCategory)) {
+        setPageTitle(getCategoryPageTitle(selectedCategory));
+    }
 
     // Don't filter by category on the Trending page
     const isTrendingPage = pageTitle?.textContent === 'Tendències';
@@ -1588,11 +1722,18 @@ function setupChipsBarOrdering() {
         return;
     }
 
-    const defaultChips = Array.from(chipsBar.querySelectorAll('.chip')).map(chip => ({
-        label: chip.textContent.trim(),
-        value: chip.dataset.cat || chip.textContent.trim(),
-        isActive: chip.classList.contains('is-active')
-    }));
+    const defaultChips = [
+        ...getStandardChipLabels().map(label => ({
+            label,
+            value: label,
+            isCustom: false
+        })),
+        ...getCustomTags().map(tag => ({
+            label: tag,
+            value: tag,
+            isCustom: true
+        }))
+    ];
 
     if (defaultChips.length === 0) {
         return;
@@ -1624,11 +1765,11 @@ function setupChipsBarOrdering() {
     orderedChips.forEach((chip) => {
         const button = document.createElement('button');
         button.type = 'button';
-        button.className = 'chip';
+        button.className = chip.isCustom ? 'chip is-custom' : 'chip';
         button.dataset.cat = chip.value;
         button.textContent = chip.label;
         button.draggable = true;
-        const isActive = chip.value === activeValue || chip.isActive;
+        const isActive = chip.value === activeValue;
         button.classList.toggle('is-active', isActive);
         button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
         chipsBar.appendChild(button);
@@ -1671,6 +1812,85 @@ function getChipOrderFromDom() {
         return [];
     }
     return Array.from(chipsBar.querySelectorAll('.chip')).map(chip => chip.dataset.cat || chip.textContent.trim());
+}
+
+function activateCategory(category) {
+    selectedCategory = category;
+    setPageTitle(getCategoryPageTitle(category));
+    if (!chipsBar) {
+        return;
+    }
+    chipsBar.querySelectorAll('.chip').forEach((chip) => {
+        const isActive = (chip.dataset.cat || chip.textContent.trim()) === category;
+        chip.classList.toggle('is-active', isActive);
+        chip.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+}
+
+function renderCategoryActions() {
+    if (!categoryActions) {
+        return;
+    }
+
+    if (!isCustomCategory(selectedCategory)) {
+        categoryActions.classList.add('hidden');
+        categoryActions.innerHTML = '';
+        return;
+    }
+
+    categoryActions.classList.remove('hidden');
+    categoryActions.innerHTML = `
+        <div class="category-actions__label">Category Actions</div>
+        <div class="category-actions__buttons">
+            <button class="category-action-btn category-action-btn--danger" type="button" data-action="delete-category">
+                <i data-lucide="trash-2"></i>
+                Eliminar categoria
+            </button>
+            <button class="category-action-btn category-action-btn--share" type="button" data-action="share-category">
+                <i data-lucide="share-2"></i>
+                Compartir categoria
+            </button>
+        </div>
+    `;
+
+    const deleteBtn = categoryActions.querySelector('[data-action="delete-category"]');
+    const shareBtn = categoryActions.querySelector('[data-action="share-category"]');
+
+    deleteBtn?.addEventListener('click', () => {
+        const tagToRemove = selectedCategory;
+        if (removeCustomTag(tagToRemove)) {
+            setupChipsBarOrdering();
+            activateCategory('Novetats');
+            renderFeed();
+            alert('Categoria eliminada.');
+        }
+    });
+
+    shareBtn?.addEventListener('click', async () => {
+        const shareUrl = `${window.location.origin}?add_tag=${encodeURIComponent(selectedCategory)}`;
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'CaTube - Categoria',
+                    text: `Consulta la categoria ${selectedCategory}`,
+                    url: shareUrl
+                });
+                return;
+            } catch (error) {
+                console.warn('Share dismissed', error);
+            }
+        }
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            alert('Enllaç copiat!');
+        } catch (error) {
+            window.prompt('Copia l’enllaç de la categoria:', shareUrl);
+        }
+    });
+
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
 }
 
 let draggedChip = null;
@@ -2126,6 +2346,40 @@ function handleSearchResultSelection(item) {
     hideSearchDropdown();
 }
 
+function renderSaveSearchButton(query) {
+    if (!videosGrid) {
+        return;
+    }
+    const normalizedQuery = normalizeCustomTag(query);
+    if (!normalizedQuery) {
+        return;
+    }
+    const existing = videosGrid.querySelector('.search-save-category');
+    if (existing) {
+        existing.remove();
+    }
+    const wrapper = document.createElement('div');
+    wrapper.className = 'search-save-category';
+    wrapper.innerHTML = `
+        <button class="search-save-btn" type="button">
+            Guardar cerca com a categoria
+        </button>
+    `;
+    const button = wrapper.querySelector('button');
+    button?.addEventListener('click', () => {
+        const savedTag = addCustomTag(normalizedQuery);
+        if (!savedTag) {
+            return;
+        }
+        setupChipsBarOrdering();
+        activateCategory(savedTag);
+        showHome();
+        renderFeed();
+        alert('Categoria guardada.');
+    });
+    videosGrid.prepend(wrapper);
+}
+
 function navigateToSearchResults(query) {
     const trimmedQuery = query.trim();
     if (!trimmedQuery) {
@@ -2155,6 +2409,7 @@ function navigateToSearchResults(query) {
                 <p>No s'han trobat resultats locals.</p>
             </div>
         `;
+        renderSaveSearchButton(trimmedQuery);
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
@@ -2196,6 +2451,7 @@ function navigateToSearchResults(query) {
         ${channelSection}
         ${videoSection}
     `;
+    renderSaveSearchButton(trimmedQuery);
 
     videosGrid.querySelectorAll('.search-channel-card').forEach(card => {
         card.addEventListener('click', (event) => {
@@ -2278,6 +2534,7 @@ async function searchVideos(query) {
         renderSearchResults(result.items);
     }
 
+    renderSaveSearchButton(query);
     hideLoading();
 }
 
