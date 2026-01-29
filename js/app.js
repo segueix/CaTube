@@ -2362,7 +2362,6 @@ function renderSearchCategoryActions(query) {
         if (isCustomCategory(normalizedQuery)) {
             if (removeCustomTag(normalizedQuery)) {
                 setupChipsBarOrdering();
-                alert('Categoria eliminada.');
             }
         } else {
             const savedTag = addCustomTag(normalizedQuery);
@@ -2370,7 +2369,6 @@ function renderSearchCategoryActions(query) {
                 return;
             }
             setupChipsBarOrdering();
-            alert('Categoria guardada.');
         }
         renderSearchCategoryActions(normalizedQuery);
     });
@@ -2435,7 +2433,6 @@ function renderCategoryActions(category) {
         if (isCustomCategory(normalizedCategory)) {
             if (removeCustomTag(normalizedCategory)) {
                 setupChipsBarOrdering();
-                alert('Categoria eliminada.');
             }
         } else {
             const savedTag = addCustomTag(normalizedCategory);
@@ -2443,7 +2440,6 @@ function renderCategoryActions(category) {
                 return;
             }
             setupChipsBarOrdering();
-            alert('Categoria guardada.');
         }
         renderCategoryActions(normalizedCategory);
     });
