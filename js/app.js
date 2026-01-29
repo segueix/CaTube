@@ -1673,7 +1673,15 @@ function getVideoDurationSeconds(video) {
 function renderFeed() {
     if (!currentFeedRenderer) return;
     if (isCustomCategory(selectedCategory)) {
-        renderCategoryActions(getCategoryPageTitle(selectedCategory));
+        const query = normalizeCustomTag(selectedCategory);
+        if (query) {
+            if (useYouTubeAPI) {
+                searchVideos(query);
+            } else {
+                navigateToSearchResults(query);
+            }
+        }
+        return;
     }
 
     // Don't filter by category on the Trending page
