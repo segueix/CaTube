@@ -18,7 +18,7 @@ let historyPage, historyGrid, historyFilters, chipsBar;
 let playlistsPage, playlistsList, playlistNameInput, createPlaylistBtn;
 let followPage, followGrid, followTabs;
 let heroSection, heroTitle, heroDescription, heroImage, heroDuration, heroButton, heroEyebrow, heroChannel;
-let pageTitle, categoryActions;
+let pageTitle;
 let backgroundModal, backgroundBtn, backgroundOptions;
 let currentColorDisplay, expandedColorPicker, closeExpandedColorPicker;
 let fontDecreaseBtn, fontIncreaseBtn, fontSizeDisplay;
@@ -633,7 +633,6 @@ function initElements() {
     heroEyebrow = document.getElementById('heroEyebrow');
     heroChannel = document.getElementById('heroChannel');
     pageTitle = document.getElementById('pageTitle');
-    categoryActions = document.getElementById('categoryActions');
     playlistModal = document.getElementById('playlistModal');
     playlistModalBody = document.getElementById('playlistModalBody');
     videoPlayer = document.getElementById('videoPlayer');
@@ -1673,7 +1672,6 @@ function getVideoDurationSeconds(video) {
 
 function renderFeed() {
     if (!currentFeedRenderer) return;
-    renderCategoryActions();
     if (isCustomCategory(selectedCategory)) {
         setPageTitle(getCategoryPageTitle(selectedCategory));
     }
@@ -1874,68 +1872,6 @@ function activateCategory(category) {
     });
 }
 
-function renderCategoryActions() {
-    if (!categoryActions) {
-        return;
-    }
-
-    if (!isCustomCategory(selectedCategory)) {
-        categoryActions.classList.add('hidden');
-        categoryActions.innerHTML = '';
-        return;
-    }
-
-    categoryActions.classList.remove('hidden');
-    categoryActions.innerHTML = `
-        <div class="category-actions__label">Category Actions</div>
-        <div class="category-actions__buttons">
-            <button class="category-action-btn category-action-btn--danger" type="button" data-action="delete-category">
-                <i data-lucide="trash-2"></i>
-                Eliminar categoria
-            </button>
-            <button class="category-action-btn category-action-btn--share" type="button" data-action="share-category">
-                <i data-lucide="share-2"></i>
-                Compartir categoria
-            </button>
-        </div>
-    `;
-
-    const deleteBtn = categoryActions.querySelector('[data-action="delete-category"]');
-    const shareBtn = categoryActions.querySelector('[data-action="share-category"]');
-
-    deleteBtn?.addEventListener('click', () => {
-        const tagToRemove = selectedCategory;
-        if (removeCustomTag(tagToRemove)) {
-            setupChipsBarOrdering();
-            activateCategory('Novetats');
-            renderFeed();
-            alert('Categoria eliminada.');
-        }
-    });
-
-    shareBtn?.addEventListener('click', async () => {
-        const shareUrl = `${window.location.origin}?add_tag=${encodeURIComponent(selectedCategory)}`;
-        const { data: shareData, text: shareText } = await buildShareData(selectedCategory, shareUrl, 'CaTube - Categoria');
-        if (navigator.share) {
-            try {
-                await navigator.share(shareData);
-                return;
-            } catch (error) {
-                console.warn('Share dismissed', error);
-            }
-        }
-        try {
-            await navigator.clipboard.writeText(shareText);
-            alert('Text copiat!');
-        } catch (error) {
-            window.prompt('Copia el text per compartir la categoria:', shareText);
-        }
-    });
-
-    if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-    }
-}
 
 let draggedChip = null;
 
