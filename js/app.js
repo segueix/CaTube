@@ -15,6 +15,7 @@ function isMatch(text, query) {
 // Elements del DOM
 let sidebar, menuBtn, videosGrid, homePage, watchPage, loading, mainContent;
 let historyPage, historyGrid, historyFilters, chipsBar;
+let customCategoryModal, customCategoryInput, customCategoryAddBtn, customCategoryModalClose;
 let playlistsPage, playlistsList, playlistNameInput, createPlaylistBtn;
 let followPage, followGrid, followTabs;
 let heroSection, heroTitle, heroDescription, heroImage, heroDuration, heroButton, heroEyebrow, heroChannel;
@@ -300,6 +301,14 @@ function addCustomTag(tag) {
         saveChipOrder([...storedOrder, normalized]);
     }
     return normalized;
+}
+
+function isCustomCategoryTag(tag) {
+    const normalized = normalizeCustomTag(tag).toLowerCase();
+    if (!normalized) {
+        return false;
+    }
+    return getCustomTags().some(existing => existing.toLowerCase() === normalized);
 }
 
 function removeCustomTag(tag) {
@@ -618,6 +627,10 @@ function initElements() {
     backgroundModal = document.getElementById('backgroundModal');
     backgroundBtn = document.getElementById('backgroundBtn');
     backgroundOptions = document.getElementById('backgroundOptions');
+    customCategoryModal = document.getElementById('customCategoryModal');
+    customCategoryInput = document.getElementById('customCategoryInput');
+    customCategoryAddBtn = document.getElementById('customCategoryAddBtn');
+    customCategoryModalClose = document.getElementById('customCategoryModalClose');
     currentColorDisplay = document.getElementById('currentColorDisplay');
     expandedColorPicker = document.getElementById('expandedColorPicker');
     closeExpandedColorPicker = document.getElementById('closeExpandedColorPicker');
@@ -887,6 +900,9 @@ function initEventListeners() {
         if (event.key === 'Escape' && playlistModal && !playlistModal.classList.contains('hidden')) {
             closePlaylistModal();
         }
+        if (event.key === 'Escape' && customCategoryModal?.classList.contains('active')) {
+            closeCustomCategoryModal();
+        }
     });
 
     if (heroButton) {
@@ -929,6 +945,10 @@ function initEventListeners() {
 
         const chip = e.target.closest('.chip');
         if (chip && !chip.closest('#historyPage')) {
+            if (chip.classList.contains('chip-add')) {
+                openCustomCategoryModal();
+                return;
+            }
             selectedCategory = chip.dataset.cat || 'Tot';
             document.querySelectorAll('.chip').forEach((item) => item.classList.remove('is-active'));
             chip.classList.add('is-active');
@@ -962,6 +982,35 @@ function initEventListeners() {
             updatePlayerPosition();
         }
     });
+
+    if (customCategoryModal) {
+        customCategoryModal.addEventListener('click', (event) => {
+            if (event.target === customCategoryModal) {
+                closeCustomCategoryModal();
+            }
+        });
+    }
+
+    if (customCategoryModalClose) {
+        customCategoryModalClose.addEventListener('click', () => {
+            closeCustomCategoryModal();
+        });
+    }
+
+    if (customCategoryAddBtn) {
+        customCategoryAddBtn.addEventListener('click', () => {
+            handleCustomCategoryCreation();
+        });
+    }
+
+    if (customCategoryInput) {
+        customCategoryInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                handleCustomCategoryCreation();
+            }
+        });
+    }
 }
 
 function initInstallPrompt() {
@@ -1140,6 +1189,57 @@ function closeBackgroundModal() {
     backgroundModal.classList.remove('active');
 }
 
+function openCustomCategoryModal() {
+    if (!customCategoryModal) {
+        return;
+    }
+    customCategoryModal.classList.add('active');
+    customCategoryModal.setAttribute('aria-hidden', 'false');
+    if (customCategoryInput) {
+        customCategoryInput.value = '';
+        requestAnimationFrame(() => {
+            customCategoryInput.focus();
+        });
+    }
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+}
+
+function closeCustomCategoryModal() {
+    if (!customCategoryModal) {
+        return;
+    }
+    customCategoryModal.classList.remove('active');
+    customCategoryModal.setAttribute('aria-hidden', 'true');
+}
+
+function handleCustomCategoryCreation() {
+    if (!customCategoryInput) {
+        return;
+    }
+    const normalized = normalizeCustomTag(customCategoryInput.value);
+    if (!normalized) {
+        return;
+    }
+    const addedTag = addCustomTag(normalized);
+    if (!addedTag) {
+        return;
+    }
+    selectedCategory = addedTag;
+    setupChipsBarOrdering();
+    closeCustomCategoryModal();
+
+    const basePath = window.location.pathname.replace(/\/index\.html$/, '/');
+    history.pushState({}, '', basePath);
+    if (!isMiniPlayerActive()) {
+        stopVideoPlayback();
+    }
+    showHome();
+    renderCategoryActions(getCategoryPageTitle(selectedCategory));
+    renderFeed();
+}
+
 // Mostrar/amagar loading
 function showLoading() {
     loading.classList.add('active');
@@ -1270,6 +1370,21 @@ function updateHero(video, source = 'static') {
     }
 }
 
+function getChannelSearchMeta(channelId) {
+    if (!channelId) {
+        return { name: '', description: '' };
+    }
+    const normalizedId = String(channelId);
+    const feedChannels = Array.isArray(YouTubeAPI?.feedChannels) ? YouTubeAPI.feedChannels : [];
+    const feedChannel = feedChannels.find(channel => String(channel?.id) === normalizedId);
+    const cached = cachedChannels[normalizedId] || cachedChannels[channelId] || {};
+    const staticChannel = typeof getChannelById === 'function' ? getChannelById(channelId) : null;
+    return {
+        name: feedChannel?.name || feedChannel?.title || cached.name || cached.title || staticChannel?.name || '',
+        description: feedChannel?.description || cached.description || staticChannel?.description || ''
+    };
+}
+
 function filterVideosByCategory(videos, feed) {
     if (selectedCategory === 'Tot' || selectedCategory === 'Novetats') return videos;
     if (isCustomCategory(selectedCategory)) {
@@ -1280,9 +1395,15 @@ function filterVideosByCategory(videos, feed) {
         return videos.filter(video => {
             const title = video.title || video.snippet?.title || '';
             const description = video.description || video.snippet?.description || '';
+            const channelMeta = getChannelSearchMeta(video.channelId);
+            const channelName = channelMeta.name || video.channelTitle || video.snippet?.channelTitle || '';
+            const channelDescription = channelMeta.description || '';
             const tagsValue = video.tags ?? video.snippet?.tags;
             const tags = Array.isArray(tagsValue) ? tagsValue : (tagsValue ? [String(tagsValue)] : []);
-            if (isMatch(title, categoryName) || isMatch(description, categoryName)) {
+            if (isMatch(title, categoryName)
+                || isMatch(description, categoryName)
+                || isMatch(channelName, categoryName)
+                || isMatch(channelDescription, categoryName)) {
                 return true;
             }
             return tags.some(tag => isMatch(tag, categoryName));
@@ -1708,9 +1829,28 @@ function renderFeed() {
         featuredVideoBySection.delete(getHeroSectionKey());
         updateHero(null);
         if (videosGrid) {
-            videosGrid.innerHTML = `
-                <div class="empty-state">No hi ha vídeos per aquesta categoria.</div>
-            `;
+            if (isCustomCategoryTag(selectedCategory)) {
+                videosGrid.innerHTML = `
+                    <div class="empty-state empty-state-custom">
+                        <button class="empty-state-action" type="button" data-follow-cta>
+                            Afegeix aquesta categoria als teus Youtubers preferits
+                        </button>
+                        <button class="empty-state-plus" type="button" data-follow-cta aria-label="Afegir categoria a Segueix!">+</button>
+                    </div>
+                `;
+                const followCtas = videosGrid.querySelectorAll('[data-follow-cta]');
+                followCtas.forEach((followCta) => {
+                    followCta.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        setActiveNavItem('follow');
+                        showFollow('all');
+                    });
+                });
+            } else {
+                videosGrid.innerHTML = `
+                    <div class="empty-state">No hi ha vídeos per aquesta categoria.</div>
+                `;
+            }
         }
         return;
     }
@@ -1819,6 +1959,13 @@ function setupChipsBarOrdering() {
         button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
         chipsBar.appendChild(button);
     });
+    const addButton = document.createElement('button');
+    addButton.type = 'button';
+    addButton.className = 'chip chip-add';
+    addButton.setAttribute('aria-label', 'Afegir una categoria personalitzada');
+    addButton.textContent = '+';
+    addButton.draggable = false;
+    chipsBar.appendChild(addButton);
 
     saveChipOrder(getChipOrderFromDom());
 
@@ -1856,7 +2003,9 @@ function getChipOrderFromDom() {
     if (!chipsBar) {
         return [];
     }
-    return Array.from(chipsBar.querySelectorAll('.chip')).map(chip => chip.dataset.cat || chip.textContent.trim());
+    return Array.from(chipsBar.querySelectorAll('.chip'))
+        .filter(chip => !chip.classList.contains('chip-add'))
+        .map(chip => chip.dataset.cat || chip.textContent.trim());
 }
 
 function activateCategory(category) {
@@ -1870,6 +2019,15 @@ function activateCategory(category) {
         chip.classList.toggle('is-active', isActive);
         chip.setAttribute('aria-pressed', isActive ? 'true' : 'false');
     });
+}
+
+function setActiveNavItem(page) {
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(nav => nav.classList.remove('active'));
+    const matchingNav = document.querySelector(`.nav-item[data-page="${page}"]`);
+    if (matchingNav) {
+        matchingNav.classList.add('active');
+    }
 }
 
 
@@ -5297,7 +5455,7 @@ function showPlaylists() {
     window.scrollTo(0, 0);
 }
 
-function showFollow() {
+function showFollow(tab = 'following') {
     handlePlayerVisibilityOnNavigation();
     exitPlaylistMode();
     if (mainContent) {
@@ -5318,7 +5476,7 @@ function showFollow() {
     if (chipsBar) {
         chipsBar.classList.add('hidden');
     }
-    setActiveFollowTab('following');
+    setActiveFollowTab(tab);
     window.scrollTo(0, 0);
 }
 

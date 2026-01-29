@@ -336,6 +336,32 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="customCategoryModal" aria-hidden="true">
+        <div class="modal modal-small" role="dialog" aria-modal="true" aria-labelledby="customCategoryModalTitle">
+            <div class="modal-header">
+                <h2 class="modal-title" id="customCategoryModalTitle">
+                    <i data-lucide="plus-circle"></i>
+                    Nova categoria
+                </h2>
+                <button class="modal-close" id="customCategoryModalClose" type="button" aria-label="Tancar modal">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="category-create">
+                    <input
+                        class="playlist-input"
+                        id="customCategoryInput"
+                        type="text"
+                        placeholder="Nom de la categoria"
+                        autocomplete="off"
+                        aria-label="Nom de la categoria nova">
+                    <button class="category-create-btn" id="customCategoryAddBtn" type="button" aria-label="Afegir categoria">+</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="js/config.js"></script>
     <script src="js/youtube.js"></script>
