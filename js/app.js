@@ -2346,7 +2346,7 @@ function renderSearchCategoryActions(query) {
         <span class="page-title__label">Resultats per:</span>
         <span class="page-title__query">"${escapeHtml(normalizedQuery)}"</span>
         <span class="page-title__actions">
-            <button class="btn-round-icon search-category-toggle ${isSaved ? 'is-danger' : ''}" type="button" data-action="toggle-search-category" aria-label="${isSaved ? 'Eliminar' : 'Guardar'}">
+            <button class="btn-round-icon category-toggle ${isSaved ? 'is-danger' : ''}" type="button" data-action="toggle-search-category" aria-label="${isSaved ? 'Eliminar' : 'Guardar'}">
                 <i data-lucide="${isSaved ? 'minus' : 'plus'}"></i>
             </button>
             <button class="btn-round-icon search-category-share" type="button" data-action="share-search" aria-label="Compartir">
@@ -2419,13 +2419,9 @@ function renderCategoryActions(category) {
     pageTitle.innerHTML = `
         <span class="page-title__query">${escapeHtml(normalizedCategory)}</span>
         <span class="page-title__actions">
-            ${isSaved
-                ? `<button class="btn-round-icon" type="button" data-action="toggle-category">
-                        <i data-lucide="minus"></i>
-                   </button>`
-                : `<button class="search-category-btn" type="button" data-action="toggle-category">
-                        Guardar
-                   </button>`}
+            <button class="btn-round-icon category-toggle ${isSaved ? 'is-danger' : ''}" type="button" data-action="toggle-category" aria-label="${isSaved ? 'Eliminar' : 'Guardar'}">
+                <i data-lucide="${isSaved ? 'minus' : 'plus'}"></i>
+            </button>
             <button class="btn-round-icon search-category-share" type="button" data-action="share-category" aria-label="Compartir">
                 <i data-lucide="share-2"></i>
             </button>
