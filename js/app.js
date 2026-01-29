@@ -2498,6 +2498,10 @@ function navigateToSearchResults(query) {
         return;
     }
 
+    const normalizedQuery = normalizeCustomTag(trimmedQuery);
+    const tagQuery = normalizedQuery || trimmedQuery;
+    const safeQuery = escapeHtml(tagQuery).replace(/'/g, '&#39;');
+
     const channelSection = results.channels.length ? `
         <section class="search-results-section">
             <h2 class="search-results-title">Canals</h2>
@@ -2530,6 +2534,11 @@ function navigateToSearchResults(query) {
     ` : '';
 
     videosGrid.innerHTML = `
+        <div style="grid-column: 1 / -1; margin-bottom: 1rem; display: flex; justify-content: center;">
+            <button class="btn-action-pill btn-save-search" onclick="addCustomTag('${safeQuery}')">
+                <i data-lucide="plus-circle"></i> Guardar cerca com a pestanya
+            </button>
+        </div>
         ${channelSection}
         ${videoSection}
     `;
