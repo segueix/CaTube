@@ -2362,7 +2362,6 @@ function renderSearchCategoryActions(query) {
         if (isCustomCategory(normalizedQuery)) {
             if (removeCustomTag(normalizedQuery)) {
                 setupChipsBarOrdering();
-                alert('Categoria eliminada.');
             }
         } else {
             const savedTag = addCustomTag(normalizedQuery);
@@ -2370,7 +2369,6 @@ function renderSearchCategoryActions(query) {
                 return;
             }
             setupChipsBarOrdering();
-            alert('Categoria guardada.');
         }
         renderSearchCategoryActions(normalizedQuery);
     });
