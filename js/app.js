@@ -403,7 +403,7 @@ async function shareVideo(videoData) {
                         <button class="hero-button" onclick="window.open('https://wa.me/?text=${encodeURIComponent(shareText)}', '_blank')">
                             <i data-lucide="message-circle" style="width:18px; display:inline-block; vertical-align:middle;"></i> Compartir
                         </button>
-                        <button class="hero-button" style="background:#333; color:white;" onclick="navigator.clipboard.writeText('${shareUrl}'); alert('Enllaç copiat!'); this.closest('.modal-overlay').remove();">
+                        <button class="hero-button" style="background:#333; color:white;" onclick="navigator.clipboard.writeText('${shareUrl}'); this.closest('.modal-overlay').remove();">
                             <i data-lucide="link" style="width:18px; display:inline-block; vertical-align:middle;"></i> Copiar Link
                         </button>
                     </div>
@@ -470,7 +470,7 @@ async function shareChannelProfile(channelId, fallback = {}) {
                         <button class="hero-button" onclick="window.open('https://wa.me/?text=${encodeURIComponent(shareText)}', '_blank')">
                             <i data-lucide="message-circle" style="width:18px; display:inline-block; vertical-align:middle;"></i> Compartir
                         </button>
-                        <button class="hero-button" style="background:#333; color:white;" onclick="navigator.clipboard.writeText('${shareUrl}'); alert('Enllaç copiat!'); this.closest('.modal-overlay').remove();">
+                        <button class="hero-button" style="background:#333; color:white;" onclick="navigator.clipboard.writeText('${shareUrl}'); this.closest('.modal-overlay').remove();">
                             <i data-lucide="link" style="width:18px; display:inline-block; vertical-align:middle;"></i> Copiar Link
                         </button>
                     </div>
@@ -2386,9 +2386,8 @@ function renderSearchCategoryActions(query) {
         }
         try {
             await navigator.clipboard.writeText(shareText);
-            alert('Text copiat!');
         } catch (error) {
-            window.prompt('Copia el text per compartir la categoria:', shareText);
+            console.warn('Clipboard copy failed', error);
         }
     });
 
@@ -2437,7 +2436,6 @@ function renderCategoryActions(category) {
         if (isCustomCategory(normalizedCategory)) {
             if (removeCustomTag(normalizedCategory)) {
                 setupChipsBarOrdering();
-                alert('Categoria eliminada.');
             }
         } else {
             const savedTag = addCustomTag(normalizedCategory);
@@ -2445,7 +2443,6 @@ function renderCategoryActions(category) {
                 return;
             }
             setupChipsBarOrdering();
-            alert('Categoria guardada.');
         }
         renderCategoryActions(normalizedCategory);
     });
@@ -2463,9 +2460,8 @@ function renderCategoryActions(category) {
         }
         try {
             await navigator.clipboard.writeText(shareText);
-            alert('Text copiat!');
         } catch (error) {
-            window.prompt('Copia el text per compartir la categoria:', shareText);
+            console.warn('Clipboard copy failed', error);
         }
     });
 
