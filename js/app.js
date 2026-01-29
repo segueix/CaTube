@@ -79,6 +79,7 @@ const CUSTOM_TAGS_STORAGE_KEY = 'catube_custom_tags';
 const WATCH_CATEGORY_VIDEOS_LIMIT = 30;
 const DESKTOP_BREAKPOINT = 1024;
 const WATCH_SIDEBAR_VIDEOS_LIMIT = 55;
+const CHANNEL_CUSTOM_CATEGORIES_KEY = 'catube_channel_custom_categories';
 
 // Cache de canals carregats de l'API
 let cachedChannels = {};
@@ -86,6 +87,7 @@ let cachedChannels = {};
 // Cache de vídeos carregats de l'API
 let cachedAPIVideos = [];
 let activeFollowTab = 'following';
+let channelCategoryPickerCleanup = null;
 
 function mergeChannelCategories(channel, categories) {
     if (!channel || !Array.isArray(categories) || categories.length === 0) {
@@ -301,6 +303,198 @@ function addCustomTag(tag) {
         saveChipOrder([...storedOrder, normalized]);
     }
     return normalized;
+}
+
+function getChannelCustomCategories(channelId) {
+    if (!channelId) {
+        return [];
+    }
+    const stored = localStorage.getItem(CHANNEL_CUSTOM_CATEGORIES_KEY);
+    if (!stored) {
+        return [];
+    }
+    try {
+        const parsed = JSON.parse(stored);
+        if (!parsed || typeof parsed !== 'object') {
+            return [];
+        }
+        const saved = parsed[String(channelId)];
+        if (!Array.isArray(saved)) {
+            return [];
+        }
+        return saved
+            .map(tag => normalizeCustomTag(tag))
+            .filter(tag => tag);
+    } catch (error) {
+        console.warn('No es pot llegir catube_channel_custom_categories', error);
+        return [];
+    }
+}
+
+function saveChannelCustomCategories(channelId, categories) {
+    if (!channelId) {
+        return;
+    }
+    const stored = localStorage.getItem(CHANNEL_CUSTOM_CATEGORIES_KEY);
+    let parsed = {};
+    if (stored) {
+        try {
+            parsed = JSON.parse(stored) || {};
+        } catch (error) {
+            console.warn('No es pot llegir catube_channel_custom_categories', error);
+            parsed = {};
+        }
+    }
+    if (!Array.isArray(categories) || categories.length === 0) {
+        delete parsed[String(channelId)];
+    } else {
+        parsed[String(channelId)] = categories;
+    }
+    localStorage.setItem(CHANNEL_CUSTOM_CATEGORIES_KEY, JSON.stringify(parsed));
+}
+
+function addChannelCustomCategory(channelId, category) {
+    if (!channelId) {
+        return [];
+    }
+    const normalized = normalizeCustomTag(category);
+    if (!normalized) {
+        return getChannelCustomCategories(channelId);
+    }
+    const current = getChannelCustomCategories(channelId);
+    const exists = current.some(item => item.toLowerCase() === normalized.toLowerCase());
+    if (exists) {
+        return current;
+    }
+    const next = [...current, normalized];
+    saveChannelCustomCategories(channelId, next);
+    return next;
+}
+
+function getCategoryLabel(category) {
+    const normalized = normalizeCustomTag(category);
+    if (!normalized) {
+        return '';
+    }
+    const matched = Array.isArray(CONFIG?.categories)
+        ? CONFIG.categories.find(cat => cat.id.toLowerCase() === normalized.toLowerCase()
+            || cat.name.toLowerCase() === normalized.toLowerCase())
+        : null;
+    return matched ? matched.name : normalized;
+}
+
+function renderChannelProfileCategories(channel, channelId) {
+    if (!channelProfileTags) {
+        return;
+    }
+    const baseCategories = Array.isArray(channel?.categories) ? channel.categories : [];
+    const baseLabels = baseCategories.map(getCategoryLabel).filter(Boolean);
+    const customAssignments = getChannelCustomCategories(channelId);
+    const customLabels = customAssignments.map(getCategoryLabel).filter(Boolean);
+    const seen = new Set();
+    const uniqueBaseLabels = baseLabels.filter(label => {
+        const key = label.toLowerCase();
+        if (seen.has(key)) {
+            return false;
+        }
+        seen.add(key);
+        return true;
+    });
+    const uniqueCustomLabels = customLabels.filter(label => {
+        const key = label.toLowerCase();
+        if (seen.has(key)) {
+            return false;
+        }
+        seen.add(key);
+        return true;
+    });
+
+    const addButtonHtml = `
+        <button class="channel-category-add" type="button" data-action="add-channel-category" aria-label="Afegir categoria personalitzada">+</button>
+    `;
+
+    const baseButtonsHtml = uniqueBaseLabels
+        .map((label, index) => `
+            <button class="channel-category-btn" type="button">${escapeHtml(label)}</button>
+            ${index === 0 ? addButtonHtml : ''}
+        `)
+        .join('');
+
+    const customButtonsHtml = uniqueCustomLabels
+        .map(label => `
+            <button class="channel-category-btn channel-category-btn--custom" type="button">${escapeHtml(label)}</button>
+        `)
+        .join('');
+
+    const availableCustomTags = getCustomTags()
+        .filter(tag => !seen.has(tag.toLowerCase()))
+        .sort((a, b) => a.localeCompare(b));
+
+    const pickerOptionsHtml = availableCustomTags.length > 0
+        ? availableCustomTags.map(tag => `
+            <button class="channel-category-option" type="button" data-channel-category-option="${escapeHtml(tag)}">${escapeHtml(tag)}</button>
+        `).join('')
+        : '<span class="channel-category-empty">No hi ha categories personalitzades.</span>';
+
+    const shouldShowAdd = uniqueBaseLabels.length > 0 || availableCustomTags.length > 0;
+    const addButtonFallback = uniqueBaseLabels.length === 0 && shouldShowAdd ? addButtonHtml : '';
+
+    channelProfileTags.classList.toggle('hidden', uniqueBaseLabels.length === 0 && uniqueCustomLabels.length === 0 && !shouldShowAdd);
+    channelProfileTags.innerHTML = `
+        <div class="channel-profile-categories">
+            ${baseButtonsHtml}
+            ${addButtonFallback}
+            ${customButtonsHtml}
+            <div class="channel-category-picker hidden" data-channel-category-picker>
+                ${pickerOptionsHtml}
+            </div>
+        </div>
+    `;
+
+    const addButton = channelProfileTags.querySelector('[data-action="add-channel-category"]');
+    const picker = channelProfileTags.querySelector('[data-channel-category-picker]');
+    const optionButtons = channelProfileTags.querySelectorAll('[data-channel-category-option]');
+
+    if (channelCategoryPickerCleanup) {
+        channelCategoryPickerCleanup();
+        channelCategoryPickerCleanup = null;
+    }
+
+    const closePicker = () => {
+        picker?.classList.add('hidden');
+        addButton?.setAttribute('aria-expanded', 'false');
+    };
+
+    addButton?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        if (!picker) {
+            return;
+        }
+        const isOpen = !picker.classList.contains('hidden');
+        picker.classList.toggle('hidden', isOpen);
+        addButton.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+    });
+
+    optionButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const selected = button.dataset.channelCategoryOption;
+            if (!selected) {
+                return;
+            }
+            addChannelCustomCategory(channelId, selected);
+            renderChannelProfileCategories(channel, channelId);
+        });
+    });
+
+    const onDocumentClick = (event) => {
+        if (!channelProfileTags.contains(event.target)) {
+            closePicker();
+        }
+    };
+    document.addEventListener('click', onDocumentClick);
+    channelCategoryPickerCleanup = () => {
+        document.removeEventListener('click', onDocumentClick);
+    };
 }
 
 function isCustomCategoryTag(tag) {
@@ -5552,16 +5746,7 @@ function openChannelProfile(channelId) {
         channelProfileDescription.textContent = channel?.description || 'No hi ha descripció disponible.';
     }
     if (channelProfileTags) {
-        const topTags = Array.isArray(channel?.topTags) ? channel.topTags : [];
-        channelProfileTags.innerHTML = '';
-        if (topTags.length > 0) {
-            channelProfileTags.classList.remove('hidden');
-            channelProfileTags.innerHTML = topTags
-                .map(tag => `<span class="tag-pill">${escapeHtml(tag)}</span>`)
-                .join('');
-        } else {
-            channelProfileTags.classList.add('hidden');
-        }
+        renderChannelProfileCategories(channel, normalizedId);
     }
     if (channelProfileFollowBtn) {
         channelProfileFollowBtn.dataset.followChannel = normalizedId;
