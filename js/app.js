@@ -56,6 +56,7 @@ let searchDropdownActiveIndex = -1;
 let searchDebounceTimeout = null;
 let installPromptEvent = null;
 let currentFontSize = null;
+let userGridPreference = '4';
 const featuredVideoBySection = new Map();
 const HYBRID_CATEGORY_SORT = new Set(['Cultura', 'Humor', 'Actualitat', 'Vida', 'Gaming']);
 
@@ -76,6 +77,7 @@ const PLAYLIST_STORAGE_KEY = 'catube_playlists';
 const FOLLOW_STORAGE_KEY = 'catube_follows';
 const CHIPS_ORDER_STORAGE_KEY = 'catube_chip_order';
 const CUSTOM_TAGS_STORAGE_KEY = 'catube_custom_tags';
+const GRID_LAYOUT_STORAGE_KEY = 'catube_grid_layout';
 const WATCH_CATEGORY_VIDEOS_LIMIT = 30;
 const DESKTOP_BREAKPOINT = 1024;
 const WATCH_SIDEBAR_VIDEOS_LIMIT = 55;
@@ -118,6 +120,72 @@ function resolveChannelAvatar(channelId, channelObj) {
 
 function isDesktopView() {
     return window.innerWidth > DESKTOP_BREAKPOINT;
+}
+
+function loadGridLayoutPreference() {
+    const storedPreference = localStorage.getItem(GRID_LAYOUT_STORAGE_KEY);
+    userGridPreference = storedPreference === '3' || storedPreference === '4' ? storedPreference : '4';
+}
+
+function updateGridLayoutControlState() {
+    const controls = homePage?.querySelector('.grid-layout-controls');
+    if (!controls) {
+        return;
+    }
+    controls.querySelectorAll('[data-grid-layout]').forEach(button => {
+        const isActive = button.dataset.gridLayout === userGridPreference;
+        button.classList.toggle('is-active', isActive);
+        button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+}
+
+function applyGridLayoutPreference() {
+    if (!videosGrid) {
+        return;
+    }
+    videosGrid.classList.toggle('cols-3', userGridPreference === '3');
+    updateGridLayoutControlState();
+}
+
+function ensureGridLayoutControls() {
+    if (!videosGrid || !homePage) {
+        return;
+    }
+    let controls = homePage.querySelector('.grid-layout-controls');
+    if (!controls) {
+        const controlsMarkup = `
+            <div class="grid-layout-controls" aria-label="Distribució de la graella">
+                <button class="grid-layout-button" type="button" data-grid-layout="3" aria-pressed="false" aria-label="Veure 3 columnes">
+                    <i data-lucide="grid-3x3"></i>
+                </button>
+                <button class="grid-layout-button" type="button" data-grid-layout="4" aria-pressed="false" aria-label="Veure 4 columnes">
+                    <i data-lucide="grid-2x2"></i>
+                </button>
+            </div>
+        `;
+        videosGrid.insertAdjacentHTML('beforebegin', controlsMarkup);
+        controls = homePage.querySelector('.grid-layout-controls');
+    }
+    if (controls && controls.dataset.bound !== 'true') {
+        controls.dataset.bound = 'true';
+        controls.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-grid-layout]');
+            if (!button) {
+                return;
+            }
+            const preference = button.dataset.gridLayout;
+            if (preference !== '3' && preference !== '4') {
+                return;
+            }
+            userGridPreference = preference;
+            localStorage.setItem(GRID_LAYOUT_STORAGE_KEY, userGridPreference);
+            applyGridLayoutPreference();
+        });
+    }
+    updateGridLayoutControlState();
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
 }
 
 function getFollowedChannelIds() {
@@ -730,6 +798,8 @@ function setupShareButtons() {
 // Inicialitzar l'aplicació
 document.addEventListener('DOMContentLoaded', async () => {
     initElements();
+    loadGridLayoutPreference();
+    applyGridLayoutPreference();
     initEventListeners();
     initInstallPrompt();
     setupShareButtons();
@@ -3027,6 +3097,8 @@ async function fetchVideoDetails(videoIds) {
 
 // Renderitzar vídeos de l'API
 function renderVideos(videos) {
+    ensureGridLayoutControls();
+    applyGridLayoutPreference();
     // Guardar vídeos i canals a la cache
     videos.forEach(video => {
         if (!cachedAPIVideos.find(v => v.id === video.id)) {
@@ -5100,6 +5172,8 @@ function loadVideos() {
 }
 
 function renderStaticVideos(videos) {
+    ensureGridLayoutControls();
+    applyGridLayoutPreference();
     const featured = getFeaturedVideoForSection(videos, getHeroSectionKey());
     updateHero(featured, 'static');
 
@@ -5122,6 +5196,8 @@ function renderStaticVideos(videos) {
 
 // Carregar vídeos per categoria (estàtic)
 function loadVideosByCategoryStatic(categoryId) {
+    ensureGridLayoutControls();
+    applyGridLayoutPreference();
     const videos = filterOutWatchedVideos(getVideosByCategory(categoryId));
     const category = CONFIG.categories.find(c => c.id === categoryId);
     renderCategoryActions(category ? category.name : 'Categoria');
