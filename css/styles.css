@@ -1728,9 +1728,7 @@ button:disabled,
 .video-metadata-bar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 12px;
-    flex-wrap: nowrap;
     padding-top: 0;
     margin-bottom: 0;
     width: 100%;
@@ -3402,25 +3400,33 @@ button:disabled,
 /* Comment on YouTube button */
 .btn-comment-youtube {
     display: inline-block;
-    background-color: white;
-    color: black;
-    padding: 0.4rem 1rem;
-    border-radius: 20px;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-weight: 500;
     font-size: 0.85rem;
-    text-decoration: none;
-    transition: all 0.2s ease;
-    margin-top: 0.25rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    max-width: 120px;
 }
 
-.btn-comment-youtube:hover {
-    background-color: rgba(255, 255, 255, 0.9);
-    transform: scale(1.02);
-}
+@media (min-width: 1024px) {
+    .btn-comment-youtube {
+        background-color: transparent;
+        color: var(--color-text-secondary);
+        border: none;
+        padding: 0;
+        margin-top: 0;
+        margin-left: 8px;
+        margin-right: auto;
+        max-width: none;
+    }
 
-.btn-comment-youtube:active {
-    transform: scale(0.98);
+    .btn-comment-youtube:hover {
+        color: var(--color-text);
+        text-decoration: underline;
+        background-color: transparent;
+        transform: none;
+    }
 }
 
 .btn-round-icon {

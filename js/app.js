@@ -4841,7 +4841,9 @@ async function showVideoFromAPI(videoId) {
                         <a href="${channelUrl}" target="_blank" rel="noopener noreferrer" class="btn-pill-red">
                             Canal Youtube
                         </a>
-                        
+                        <a href="${watchUrl}" target="_blank" class="btn-comment-youtube">
+                            Comenta a Youtube
+                        </a>
                         <div class="action-group">
                             <button class="btn-round-icon" id="playlistBtn" title="Llista de reproducció">
                                 <i data-lucide="list-video"></i>
@@ -4854,10 +4856,6 @@ async function showVideoFromAPI(videoId) {
                             </button>
                         </div>
                     </div>
-
-                    <a href="${watchUrl}" target="_blank" class="btn-comment-youtube">
-                        Comenta a Youtube
-                    </a>
 
                     <div class="video-description"></div>
 
@@ -4947,7 +4945,9 @@ async function showVideoFromAPI(videoId) {
                             <a href="${channelUrl}" target="_blank" rel="noopener noreferrer" class="btn-pill-red">
                                 Canal Youtube
                             </a>
-                            
+                            <a href="${watchUrl}" target="_blank" class="btn-comment-youtube">
+                                Comenta a Youtube
+                            </a>
                             <div class="action-group">
                                 <button class="btn-round-icon" id="playlistBtn" title="Llista de reproducció">
                                     <i data-lucide="list-video"></i>
@@ -4960,10 +4960,6 @@ async function showVideoFromAPI(videoId) {
                                 </button>
                             </div>
                         </div>
-
-                        <a href="${watchUrl}" target="_blank" class="btn-comment-youtube">
-                            Comenta a Youtube
-                        </a>
 
                         <div class="video-description">
                             ${escapeHtml(video.description || '').substring(0, 500)}${video.description?.length > 500 ? '...' : ''}
@@ -5335,7 +5331,9 @@ function showVideo(videoId) {
                 <a href="${channelUrl}" target="_blank" rel="noopener noreferrer" class="btn-pill-red">
                     Canal Youtube
                 </a>
-                
+                <a href="${watchUrl}" target="_blank" class="btn-comment-youtube">
+                    Comenta a Youtube
+                </a>
                 <div class="action-group">
                     <button class="btn-round-icon" id="playlistBtn" title="Llista de reproducció">
                         <i data-lucide="list-video"></i>
@@ -5348,10 +5346,6 @@ function showVideo(videoId) {
                     </button>
                 </div>
             </div>
-
-            <a href="${watchUrl}" target="_blank" class="btn-comment-youtube">
-                Comenta a Youtube
-            </a>
 
             <div class="video-description">
                 ${escapeHtml(video.description || '').substring(0, 500)}${video.description?.length > 500 ? '...' : ''}
