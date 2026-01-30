@@ -57,6 +57,7 @@ let searchDebounceTimeout = null;
 let installPromptEvent = null;
 let currentFontSize = null;
 let userGridPreference = '4';
+let userWatchGridPreference = '3';
 const featuredVideoBySection = new Map();
 const HYBRID_CATEGORY_SORT = new Set(['Cultura', 'Humor', 'Actualitat', 'Vida', 'Gaming']);
 
@@ -78,6 +79,7 @@ const FOLLOW_STORAGE_KEY = 'catube_follows';
 const CHIPS_ORDER_STORAGE_KEY = 'catube_chip_order';
 const CUSTOM_TAGS_STORAGE_KEY = 'catube_custom_tags';
 const GRID_LAYOUT_STORAGE_KEY = 'catube_grid_layout';
+const WATCH_GRID_LAYOUT_STORAGE_KEY = 'catube_watch_grid_layout';
 const WATCH_CATEGORY_VIDEOS_LIMIT = 30;
 const DESKTOP_BREAKPOINT = 1024;
 const WATCH_SIDEBAR_VIDEOS_LIMIT = 55;
@@ -127,6 +129,11 @@ function loadGridLayoutPreference() {
     userGridPreference = storedPreference === '3' || storedPreference === '4' ? storedPreference : '4';
 }
 
+function loadWatchGridLayoutPreference() {
+    const storedPreference = localStorage.getItem(WATCH_GRID_LAYOUT_STORAGE_KEY);
+    userWatchGridPreference = storedPreference === '2' || storedPreference === '3' ? storedPreference : '3';
+}
+
 function updateGridLayoutControlState() {
     const controls = homePage?.querySelector('.grid-layout-controls');
     if (!controls) {
@@ -150,6 +157,32 @@ function applyGridLayoutPreference() {
         videosGrid.classList.add('cols-4');
     }
     updateGridLayoutControlState();
+}
+
+function updateWatchGridLayoutControlState() {
+    const controls = watchPage?.querySelector('.watch-grid-controls');
+    if (!controls) {
+        return;
+    }
+    controls.querySelectorAll('[data-watch-grid-layout]').forEach(button => {
+        const isActive = button.dataset.watchGridLayout === userWatchGridPreference;
+        button.classList.toggle('is-active', isActive);
+        button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+}
+
+function applyWatchGridLayoutPreference() {
+    const extraContainer = extraVideosGrid || document.getElementById('extraVideosGrid');
+    if (!extraContainer) {
+        return;
+    }
+    extraContainer.classList.remove('cols-2', 'cols-3');
+    if (userWatchGridPreference === '2') {
+        extraContainer.classList.add('cols-2');
+    } else {
+        extraContainer.classList.add('cols-3');
+    }
+    updateWatchGridLayoutControlState();
 }
 
 function ensureGridLayoutControls() {
@@ -197,6 +230,70 @@ function ensureGridLayoutControls() {
         });
     }
     updateGridLayoutControlState();
+}
+
+function ensureWatchGridLayoutControls() {
+    const extraContainer = extraVideosGrid || document.getElementById('extraVideosGrid');
+    if (!extraContainer || !watchPage) {
+        return;
+    }
+
+    const title = watchPage.querySelector('.extra-related-title');
+    let header = watchPage.querySelector('.extra-related-header');
+
+    if (!header && title) {
+        header = document.createElement('div');
+        header.className = 'extra-related-header';
+        extraContainer.parentNode?.insertBefore(header, extraContainer);
+        header.appendChild(title);
+    } else if (header && title && title.parentNode !== header) {
+        header.appendChild(title);
+    }
+
+    if (!header) {
+        return;
+    }
+
+    let controls = header.querySelector('.watch-grid-controls');
+    if (!controls) {
+        const controlsMarkup = `
+            <div class="watch-grid-controls" aria-label="Opcions de columnes">
+                <button class="grid-layout-button" type="button" data-watch-grid-layout="2" aria-pressed="false" aria-label="Veure 2 columnes" title="2 Columnes">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <rect x="4" y="4" width="7" height="16" rx="1" />
+                        <rect x="13" y="4" width="7" height="16" rx="1" />
+                    </svg>
+                </button>
+                <button class="grid-layout-button" type="button" data-watch-grid-layout="3" aria-pressed="false" aria-label="Veure 3 columnes" title="3 Columnes">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="3" y="4" width="4" height="16" rx="1" />
+                        <rect x="10" y="4" width="4" height="16" rx="1" />
+                        <rect x="17" y="4" width="4" height="16" rx="1" />
+                    </svg>
+                </button>
+            </div>
+        `;
+        header.insertAdjacentHTML('beforeend', controlsMarkup);
+        controls = header.querySelector('.watch-grid-controls');
+    }
+
+    if (controls && controls.dataset.bound !== 'true') {
+        controls.dataset.bound = 'true';
+        controls.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-watch-grid-layout]');
+            if (!button) {
+                return;
+            }
+            const preference = button.dataset.watchGridLayout;
+            if (preference !== '2' && preference !== '3') {
+                return;
+            }
+            userWatchGridPreference = preference;
+            localStorage.setItem(WATCH_GRID_LAYOUT_STORAGE_KEY, userWatchGridPreference);
+            applyWatchGridLayoutPreference();
+        });
+    }
+    updateWatchGridLayoutControlState();
 }
 
 function getFollowedChannelIds() {
@@ -810,7 +907,9 @@ function setupShareButtons() {
 document.addEventListener('DOMContentLoaded', async () => {
     initElements();
     loadGridLayoutPreference();
+    loadWatchGridLayoutPreference();
     applyGridLayoutPreference();
+    applyWatchGridLayoutPreference();
     initEventListeners();
     initInstallPrompt();
     setupShareButtons();
@@ -4806,6 +4905,8 @@ function renderCategoryVideosBelow(currentChannelId, currentVideoId) {
     }
 
     extraContainer.innerHTML = videos.map(video => createVideoCardAPI(video)).join('');
+    ensureWatchGridLayoutControls();
+    applyWatchGridLayoutPreference();
 
     extraContainer.querySelectorAll('.video-card').forEach(card => {
         card.addEventListener('click', () => {
@@ -5148,6 +5249,10 @@ async function loadRelatedVideosFromAPI(videoId) {
 
     if (extraContainer) {
         extraContainer.innerHTML = extraVideos.map(video => createVideoCardAPI(video)).join('');
+        if (extraVideos.length > 0) {
+            ensureWatchGridLayoutControls();
+            applyWatchGridLayoutPreference();
+        }
     }
 
     // Event listeners
@@ -5956,6 +6061,10 @@ function loadRelatedVideos(currentVideoId) {
         extraContainer.innerHTML = extraVideos
             .map(video => createVideoCardAPI(mapStaticVideoToCardData(video)))
             .join('');
+        if (extraVideos.length > 0) {
+            ensureWatchGridLayoutControls();
+            applyWatchGridLayoutPreference();
+        }
     }
 
     const relatedVideoElements = document.querySelectorAll('.related-video');
