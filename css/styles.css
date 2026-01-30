@@ -3660,3 +3660,65 @@ html[style*="--color-background: #224262"] .btn-round-icon {
         border: none !important;
     }
 }
+
+/* === PERSONALITZACIÓ DE BOTONS (Color Fosc) === */
+/* 1. Icones del menú principal (Casa, Biblioteca, Historial, Segueix, Configuració) */
+.app-header .icon-btn {
+    background-color: var(--color-button-custom, #1a1a1a) !important;
+    color: #ffffff !important;
+    border-color: transparent !important;
+}
+
+/* 2. Botons de Categories (Xips: Novetats, Tendències, etc.) */
+.chip {
+    background-color: var(--color-button-custom, #1a1a1a) !important;
+    color: #ffffff !important;
+    border: none !important;
+}
+
+/* Estat actiu de la categoria: Invertim o mantenim destacat (exemple: blanc) */
+.chip.is-active {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-weight: 700;
+}
+
+/* 3. Icones del Reproductor i Accions (Llista, Compartir, Mini-player) */
+/* Botons rodons sota el títol del vídeo */
+.btn-round-icon {
+    background-color: var(--color-button-custom, #1a1a1a) !important;
+    color: #ffffff !important;
+}
+
+/* 4. Botons d'acció dins les targetes de vídeo (+ Llista, Cor) */
+.video-action-btn {
+    background-color: var(--color-button-custom, #1a1a1a) !important;
+    color: #ffffff !important;
+    border-color: transparent !important;
+}
+
+/* 5. Botons de gestió de categories i cerca (+, -, compartir al títol) */
+.category-toggle,
+.search-category-share {
+    background-color: var(--color-button-custom, #1a1a1a) !important;
+    color: #ffffff !important;
+}
+
+/* 6. Botó Flotant d'instal·lació (si n'hi ha) */
+.install-floating-btn {
+    background-color: var(--color-button-custom, #1a1a1a) !important;
+    color: #ffffff !important;
+}
+
+/* 7. Botons de creació (Crear llista, Afegir categoria modal) */
+.playlist-create-btn,
+.category-create-btn {
+    background-color: var(--color-button-custom, #1a1a1a) !important;
+    color: #ffffff !important;
+}
+
+/* 8. Botó de reproduir llista (sobre la miniatura) */
+.playlist-play-btn {
+    background-color: var(--color-button-custom, #1a1a1a) !important;
+    backdrop-filter: none !important;
+}
