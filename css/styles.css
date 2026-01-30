@@ -641,16 +641,9 @@ body.sidebar-collapsed .main-content {
     gap: 16px;
 }
 
-.videos-grid.cols-3 {
-    grid-template-columns: repeat(3, 1fr);
-}
-
+/* Grid Layout Controls - Desktop Only */
 .grid-layout-controls {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 8px;
-    margin: 6px 0 16px;
+    display: none;
 }
 
 .grid-layout-button {
@@ -683,12 +676,26 @@ body.sidebar-collapsed .main-content {
 }
 
 @media (max-width: 1024px) {
-    .grid-layout-controls {
-        display: none;
-    }
-
     .videos-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1025px) {
+    .grid-layout-controls {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .videos-grid.cols-3 {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+
+    .videos-grid.cols-4 {
+        grid-template-columns: repeat(4, 1fr) !important;
     }
 }
 

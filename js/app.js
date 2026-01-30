@@ -143,7 +143,12 @@ function applyGridLayoutPreference() {
     if (!videosGrid) {
         return;
     }
-    videosGrid.classList.toggle('cols-3', userGridPreference === '3');
+    videosGrid.classList.remove('cols-3', 'cols-4');
+    if (userGridPreference === '3') {
+        videosGrid.classList.add('cols-3');
+    } else {
+        videosGrid.classList.add('cols-4');
+    }
     updateGridLayoutControlState();
 }
 
@@ -154,12 +159,21 @@ function ensureGridLayoutControls() {
     let controls = homePage.querySelector('.grid-layout-controls');
     if (!controls) {
         const controlsMarkup = `
-            <div class="grid-layout-controls" aria-label="Distribució de la graella">
-                <button class="grid-layout-button" type="button" data-grid-layout="3" aria-pressed="false" aria-label="Veure 3 columnes">
-                    <i data-lucide="grid-3x3"></i>
+            <div class="grid-layout-controls" aria-label="Grid Layout Options">
+                <button class="grid-layout-button" type="button" data-grid-layout="3" aria-pressed="false" aria-label="View 3 columns" title="3 Columns">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="3" y="4" width="4" height="16" rx="1" />
+                        <rect x="10" y="4" width="4" height="16" rx="1" />
+                        <rect x="17" y="4" width="4" height="16" rx="1" />
+                    </svg>
                 </button>
-                <button class="grid-layout-button" type="button" data-grid-layout="4" aria-pressed="false" aria-label="Veure 4 columnes">
-                    <i data-lucide="grid-2x2"></i>
+                <button class="grid-layout-button" type="button" data-grid-layout="4" aria-pressed="false" aria-label="View 4 columns" title="4 Columns">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="2" y="4" width="3" height="16" rx="0.5" />
+                        <rect x="7.5" y="4" width="3" height="16" rx="0.5" />
+                        <rect x="13" y="4" width="3" height="16" rx="0.5" />
+                        <rect x="18.5" y="4" width="3" height="16" rx="0.5" />
+                    </svg>
                 </button>
             </div>
         `;
@@ -183,9 +197,6 @@ function ensureGridLayoutControls() {
         });
     }
     updateGridLayoutControlState();
-    if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-    }
 }
 
 function getFollowedChannelIds() {
