@@ -2650,8 +2650,8 @@ function showSearchDropdown(results) {
                     const channelName = video.channelTitle || '';
                     const viewCount = video.viewCount ?? video.views ?? 0;
                     const meta = channelName
-                        ? `${escapeHtml(channelName)} • ${formatViews(viewCount)} visualitzacions`
-                        : `${formatViews(viewCount)} visualitzacions`;
+                        ? `${escapeHtml(channelName)} • ${formatViews(viewCount)} vis.`
+                        : `${formatViews(viewCount)} vis.`;
                     return `
                         <button type="button" class="search-result-item" data-result-type="video" data-video-id="${video.id}" data-video-source="${video.source || 'api'}">
                             <img class="search-result-thumb" src="${video.thumbnail}" alt="${escapeHtml(video.title)}">
@@ -4569,6 +4569,8 @@ function renderSearchResults(videos) {
                     <div class="video-metadata">
                         <div class="channel-name channel-link" data-channel-id="${video.channelId}">${escapeHtml(video.channelTitle)}</div>
                         <div class="video-stats">
+                            <!-- Si hi ha comptador de vistes, fes servir "vis." -->
+                            <!-- Exemple si s'afegeix: <span>${formatViews(video.viewCount)} vis.</span> -->
                             <span>${formatDate(video.publishedAt)}</span>
                         </div>
                     </div>
@@ -4617,7 +4619,7 @@ function createVideoCardAPI(video) {
                         <div class="channel-name channel-link" data-channel-id="${video.channelId}">${escapeHtml(video.channelTitle)}</div>
                         <div class="video-stats">
                             <i data-lucide="eye" style="width: 12px; height: 12px;"></i>
-                            <span>${formatViews(video.viewCount || 0)} visualitzacions</span>
+                            <span>${formatViews(video.viewCount || 0)} vis.</span>
                             <span>•</span>
                             <span>${formatDate(video.publishedAt)}</span>
                         </div>
@@ -5061,7 +5063,7 @@ async function loadRelatedVideosFromAPI(videoId) {
                 <div class="related-title-text">${escapeHtml(video.title)}</div>
                 <div class="related-channel">${escapeHtml(video.channelTitle)}</div>
                 <div class="related-stats">
-                    ${video.viewCount ? formatViews(video.viewCount) + ' visualitzacions • ' : ''}${formatDate(video.publishedAt)}
+                    ${video.viewCount ? formatViews(video.viewCount) + ' vis. • ' : ''}${formatDate(video.publishedAt)}
                 </div>
             </div>
         </div>
@@ -5176,7 +5178,7 @@ function createVideoCard(video) {
                         <div class="channel-name channel-link" data-channel-id="${channel.id}">${channel.name}</div>
                         <div class="video-stats">
                             <i data-lucide="eye" style="width: 12px; height: 12px;"></i>
-                            <span>${formatViews(video.views)} visualitzacions</span>
+                            <span>${formatViews(video.views)} vis.</span>
                             <span>•</span>
                             <span>${formatDate(video.uploadDate)}</span>
                         </div>
@@ -5559,7 +5561,7 @@ function createHistoryCard(video) {
                         <div class="channel-name channel-link" data-channel-id="${video.channelId || channel?.id || ''}">${escapeHtml(channelTitle)}</div>
                         <div class="video-stats">
                             <i data-lucide="eye" style="width: 12px; height: 12px;"></i>
-                            <span>${formatViews(views)} visualitzacions</span>
+                            <span>${formatViews(views)} vis.</span>
                         </div>
                     </div>
                 </div>
@@ -5865,7 +5867,7 @@ function loadRelatedVideos(currentVideoId) {
                     <div class="related-title-text">${video.title}</div>
                     <div class="related-channel">${channel.name}</div>
                     <div class="related-stats">
-                        ${formatViews(video.views)} visualitzacions • ${formatDate(video.uploadDate)}
+                        ${formatViews(video.views)} vis. • ${formatDate(video.uploadDate)}
                     </div>
                 </div>
             </div>
