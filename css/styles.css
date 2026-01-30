@@ -3499,30 +3499,41 @@ html[style*="--color-background: #224262"] .btn-round-icon {
     margin-bottom: 0;
 }
 
-/* Forçar pantalla completa real en mode horitzontal (landscape) */
+/* Forçar pantalla completa real en mode horitzontal (landscape) - Versió Anti-Zoom */
 @media (orientation: landscape) and (max-width: 1024px) {
-    /* El contenidor principal ocupa tota la finestra sense marges */
     #videoPlayer {
+        /* Fixem la posició respecte a la finestra, no al document */
         position: fixed !important;
+        
+        /* En lloc de definir width/height, el clavem a les 4 coordenades */
         top: 0 !important;
         left: 0 !important;
         right: 0 !important;
         bottom: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
+        
+        /* Assegurem que ocupi l'espai disponible entre les coordenades */
+        width: auto !important;
+        height: auto !important;
+        
         margin: 0 !important;
         padding: 0 !important;
         background-color: #000 !important;
-        z-index: 9999 !important;
+        z-index: 2147483647 !important; /* Màxim Z-Index possible */
+        
+        /* Truc per evitar errors de renderitzat amb zoom */
+        transform: translate3d(0,0,0) !important;
+        -webkit-transform: translate3d(0,0,0) !important;
     }
 
-    /* El wrapper i l'iframe també s'han d'estirar al màxim */
+    /* Assegurem que el contingut intern s'adapti al contenidor clavat */
     #videoPlayer .video-embed-wrap,
     #videoPlayer iframe {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
         width: 100% !important;
         height: 100% !important;
-        max-width: none !important; /* Anul·la el límit de 960px */
-        margin: 0 !important;
-        padding: 0 !important;
+        max-width: none !important;
+        border: none !important;
     }
 }
