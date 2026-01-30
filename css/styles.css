@@ -50,9 +50,34 @@ body {
     line-height: 1.6;
     overflow-x: hidden;
     margin: 0;
+    touch-action: pan-y;
+}
+
+/* 2. Afegeix aquestes regles noves just a sota del body */
+/* Apliquem el marge de seguretat (safe-area) específicament a cada contenidor */
+
+/* Per la barra de navegació superior (manté els 14px originals + seguretat) */
+.app-header {
+    padding-left: calc(14px + var(--safe-left));
+    padding-right: calc(14px + var(--safe-right));
+}
+
+/* Per la barra de categories (manté els 24px originals + seguretat) */
+.chips-bar {
+    padding-left: calc(24px + var(--safe-left));
+    padding-right: calc(24px + var(--safe-right));
+}
+
+/* Pel contingut principal (manté els 24px originals + seguretat) */
+.main-content {
+    padding-left: calc(24px + var(--safe-left));
+    padding-right: calc(24px + var(--safe-right));
+}
+
+/* Per la barra lateral (si es fa servir en mòbil/tablet) */
+.sidebar {
     padding-left: var(--safe-left);
     padding-right: var(--safe-right);
-    touch-action: pan-y;
 }
 
 /* Floating Install Button */
