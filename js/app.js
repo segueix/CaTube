@@ -5073,12 +5073,22 @@ function renderCategoryVideosBelow(currentChannelId, currentVideoId) {
         return;
     }
 
-    let videos = currentFeedVideos || [];
-
+    let videos = [];
     if (selectedCategory && selectedCategory !== 'Novetats' && selectedCategory !== 'Tot') {
-        videos = filterVideosByCategory(videos, currentFeedData);
+        const uniqueVideosMap = new Map();
+        if (Array.isArray(currentFeedVideos)) {
+            currentFeedVideos.forEach(video => uniqueVideosMap.set(String(video.id), video));
+        }
+        if (Array.isArray(cachedAPIVideos)) {
+            cachedAPIVideos.forEach(video => uniqueVideosMap.set(String(video.id), video));
+        }
+        const candidates = Array.from(uniqueVideosMap.values());
+        videos = filterVideosByCategory(candidates, currentFeedData);
+    } else {
+        videos = currentFeedVideos || [];
     }
 
+    videos = filterOutWatchedVideos(videos);
     videos = videos.filter(v =>
         String(v.channelId) !== String(currentChannelId)
         && String(v.id) !== String(currentVideoId)
@@ -5406,6 +5416,71 @@ async function loadRelatedVideosFromAPI(videoId) {
     const relatedContainer = document.getElementById('relatedVideos');
     const extraContainer = extraVideosGrid || document.getElementById('extraVideosGrid');
     const sidebarLimit = 8;
+
+    if (selectedCategory && selectedCategory !== 'Novetats' && selectedCategory !== 'Tot') {
+        const uniqueVideosMap = new Map();
+        if (Array.isArray(currentFeedVideos)) {
+            currentFeedVideos.forEach(video => uniqueVideosMap.set(String(video.id), video));
+        }
+        if (Array.isArray(cachedAPIVideos)) {
+            cachedAPIVideos.forEach(video => uniqueVideosMap.set(String(video.id), video));
+        }
+
+        let candidates = Array.from(uniqueVideosMap.values());
+        let categoryVideos = filterVideosByCategory(candidates, currentFeedData);
+        categoryVideos = filterOutWatchedVideos(categoryVideos);
+        categoryVideos = categoryVideos.filter(video => String(video.id) !== String(videoId));
+
+        if (categoryVideos.length > 0) {
+            const sidebarVideos = categoryVideos.slice(0, sidebarLimit);
+            const extraVideos = categoryVideos.slice(sidebarLimit);
+
+            relatedContainer.innerHTML = sidebarVideos.map(video => `
+                <div class="related-video" data-video-id="${video.id}">
+                    <div class="related-thumbnail">
+                        <img src="${video.thumbnail}" alt="${escapeHtml(video.title)}" loading="lazy">
+                        ${video.duration ? `<span class="video-duration">${video.duration}</span>` : ''}
+                    </div>
+                    <div class="related-info">
+                        <div class="related-title-text">${escapeHtml(video.title)}</div>
+                        <div class="related-channel">${escapeHtml(video.channelTitle)}</div>
+                        <div class="related-stats">
+                            ${video.viewCount ? formatViews(video.viewCount) + ' vis. • ' : ''}${formatDate(video.publishedAt)}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            if (extraContainer) {
+                extraContainer.innerHTML = extraVideos.map(video => createVideoCardAPI(video)).join('');
+                if (extraVideos.length > 0) {
+                    ensureWatchGridLayoutControls();
+                    applyWatchGridLayoutPreference();
+                }
+            }
+
+            relatedContainer.querySelectorAll('.related-video').forEach(element => {
+                element.addEventListener('click', () => {
+                    showVideoFromAPI(element.dataset.videoId);
+                });
+            });
+
+            if (extraContainer) {
+                extraContainer.querySelectorAll('.video-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        showVideoFromAPI(card.dataset.videoId);
+                    });
+                });
+                bindChannelLinks(extraContainer);
+            }
+
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+            setupVideoCardActionButtons();
+            return;
+        }
+    }
 
     // La API de vídeos relacionats pot no funcionar, fem fallback a vídeos populars
     let result = await YouTubeAPI.getRelatedVideos(videoId, 20);
