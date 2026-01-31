@@ -5074,7 +5074,9 @@ function renderCategoryVideosBelow(currentChannelId, currentVideoId) {
     }
 
     let videos = [];
-    if (selectedCategory && selectedCategory !== 'Novetats' && selectedCategory !== 'Tot') {
+    const isTrendingPage = pageTitle?.textContent === 'Tendències';
+    const useCategoryContext = (selectedCategory && selectedCategory !== 'Tot') || isTrendingPage;
+    if (useCategoryContext) {
         const uniqueVideosMap = new Map();
         if (Array.isArray(currentFeedVideos)) {
             currentFeedVideos.forEach(video => uniqueVideosMap.set(String(video.id), video));
@@ -5083,7 +5085,9 @@ function renderCategoryVideosBelow(currentChannelId, currentVideoId) {
             cachedAPIVideos.forEach(video => uniqueVideosMap.set(String(video.id), video));
         }
         const candidates = Array.from(uniqueVideosMap.values());
-        videos = filterVideosByCategory(candidates, currentFeedData);
+        videos = isTrendingPage && Array.isArray(currentFeedVideos) && currentFeedVideos.length > 0
+            ? currentFeedVideos
+            : filterVideosByCategory(candidates, currentFeedData);
     } else {
         videos = currentFeedVideos || [];
     }
@@ -5417,7 +5421,9 @@ async function loadRelatedVideosFromAPI(videoId) {
     const extraContainer = extraVideosGrid || document.getElementById('extraVideosGrid');
     const sidebarLimit = 8;
 
-    if (selectedCategory && selectedCategory !== 'Novetats' && selectedCategory !== 'Tot') {
+    const isTrendingPage = pageTitle?.textContent === 'Tendències';
+    const useCategoryContext = (selectedCategory && selectedCategory !== 'Tot') || isTrendingPage;
+    if (useCategoryContext) {
         const uniqueVideosMap = new Map();
         if (Array.isArray(currentFeedVideos)) {
             currentFeedVideos.forEach(video => uniqueVideosMap.set(String(video.id), video));
@@ -5427,7 +5433,9 @@ async function loadRelatedVideosFromAPI(videoId) {
         }
 
         let candidates = Array.from(uniqueVideosMap.values());
-        let categoryVideos = filterVideosByCategory(candidates, currentFeedData);
+        let categoryVideos = isTrendingPage && Array.isArray(currentFeedVideos) && currentFeedVideos.length > 0
+            ? currentFeedVideos
+            : filterVideosByCategory(candidates, currentFeedData);
         categoryVideos = filterOutWatchedVideos(categoryVideos);
         categoryVideos = categoryVideos.filter(video => String(video.id) !== String(videoId));
 
