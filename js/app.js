@@ -59,6 +59,8 @@ let currentFontSize = null;
 let userGridPreference = '4';
 let userWatchGridPreference = '3';
 const featuredVideoBySection = new Map();
+const customCategorySearchCache = new Map();
+const customCategorySearchInFlight = new Map();
 const HYBRID_CATEGORY_SORT = new Set(['Cultura', 'Humor', 'Actualitat', 'Vida', 'Gaming', 'Mitjans']);
 
 const BACKGROUND_STORAGE_KEY = 'catube_background_color';
@@ -1353,6 +1355,14 @@ function initEventListeners() {
             showHome();
             renderCategoryActions(getCategoryPageTitle(selectedCategory));
             renderFeed();
+            if (isCustomCategory(selectedCategory)) {
+                const activeCategory = selectedCategory;
+                refreshCustomCategorySearch(activeCategory).then(() => {
+                    if (selectedCategory === activeCategory) {
+                        renderFeed();
+                    }
+                });
+            }
             return;
         }
 
@@ -1659,6 +1669,14 @@ function handleCustomCategoryCreation() {
     showHome();
     renderCategoryActions(getCategoryPageTitle(selectedCategory));
     renderFeed();
+    if (isCustomCategory(selectedCategory)) {
+        const activeCategory = selectedCategory;
+        refreshCustomCategorySearch(activeCategory).then(() => {
+            if (selectedCategory === activeCategory) {
+                renderFeed();
+            }
+        });
+    }
 }
 
 // Mostrar/amagar loading
@@ -1806,6 +1824,101 @@ function getChannelSearchMeta(channelId) {
     };
 }
 
+function getCustomCategorySearchKey(category) {
+    const normalized = normalizeCustomTag(category);
+    if (!normalized) {
+        return '';
+    }
+    return normalized.toLowerCase();
+}
+
+function getCustomCategorySearchResults(category) {
+    const key = getCustomCategorySearchKey(category);
+    if (!key) {
+        return [];
+    }
+    const cached = customCategorySearchCache.get(key);
+    return Array.isArray(cached) ? cached : [];
+}
+
+function setCustomCategorySearchResults(category, videos) {
+    const key = getCustomCategorySearchKey(category);
+    if (!key) {
+        return;
+    }
+    customCategorySearchCache.set(key, Array.isArray(videos) ? videos : []);
+}
+
+function mergeUniqueVideos(primary, secondary) {
+    const seen = new Set();
+    const merged = [];
+    [...primary, ...secondary].forEach(video => {
+        if (!video?.id) {
+            return;
+        }
+        const key = String(video.id);
+        if (seen.has(key)) {
+            return;
+        }
+        seen.add(key);
+        merged.push(video);
+    });
+    return merged;
+}
+
+function matchesCustomCategory(video, categoryName) {
+    const channelCustomCategories = getChannelCustomCategories(video.channelId);
+    const hasChannelCategory = channelCustomCategories
+        .some(cat => cat.toLowerCase() === categoryName.toLowerCase());
+    if (hasChannelCategory) {
+        return true;
+    }
+    const title = video.title || video.snippet?.title || '';
+    const description = video.description || video.snippet?.description || '';
+    const channelMeta = getChannelSearchMeta(video.channelId);
+    const channelName = channelMeta.name || video.channelTitle || video.snippet?.channelTitle || '';
+    const channelDescription = channelMeta.description || '';
+    const tagsValue = video.tags ?? video.snippet?.tags;
+    const tags = Array.isArray(tagsValue) ? tagsValue : (tagsValue ? [String(tagsValue)] : []);
+    if (isMatch(title, categoryName)
+        || isMatch(description, categoryName)
+        || isMatch(channelName, categoryName)
+        || isMatch(channelDescription, categoryName)) {
+        return true;
+    }
+    return tags.some(tag => isMatch(tag, categoryName));
+}
+
+async function refreshCustomCategorySearch(category) {
+    const key = getCustomCategorySearchKey(category);
+    if (!key) {
+        return null;
+    }
+    if (customCategorySearchInFlight.has(key)) {
+        return customCategorySearchInFlight.get(key);
+    }
+    const task = (async () => {
+        let videos = [];
+        if (useYouTubeAPI && typeof YouTubeAPI?.searchVideos === 'function') {
+            const result = await YouTubeAPI.searchVideos(key, CONFIG.layout.videosPerPage);
+            if (!result?.error && Array.isArray(result.items)) {
+                videos = result.items;
+            }
+        } else {
+            const results = performLocalSearch(key);
+            videos = Array.isArray(results?.videos) ? results.videos : [];
+        }
+        setCustomCategorySearchResults(key, videos);
+        return videos;
+    })();
+    customCategorySearchInFlight.set(key, task);
+    try {
+        return await task;
+    } finally {
+        customCategorySearchInFlight.delete(key);
+    }
+}
+
 function filterVideosByCategory(videos, feed) {
     if (selectedCategory === 'Tot' || selectedCategory === 'Novetats') return videos;
     if (isCustomCategory(selectedCategory)) {
@@ -1813,28 +1926,9 @@ function filterVideosByCategory(videos, feed) {
         if (!categoryName) {
             return videos;
         }
-        return videos.filter(video => {
-            const channelCustomCategories = getChannelCustomCategories(video.channelId);
-            const hasChannelCategory = channelCustomCategories
-                .some(cat => cat.toLowerCase() === categoryName.toLowerCase());
-            if (hasChannelCategory) {
-                return true;
-            }
-            const title = video.title || video.snippet?.title || '';
-            const description = video.description || video.snippet?.description || '';
-            const channelMeta = getChannelSearchMeta(video.channelId);
-            const channelName = channelMeta.name || video.channelTitle || video.snippet?.channelTitle || '';
-            const channelDescription = channelMeta.description || '';
-            const tagsValue = video.tags ?? video.snippet?.tags;
-            const tags = Array.isArray(tagsValue) ? tagsValue : (tagsValue ? [String(tagsValue)] : []);
-            if (isMatch(title, categoryName)
-                || isMatch(description, categoryName)
-                || isMatch(channelName, categoryName)
-                || isMatch(channelDescription, categoryName)) {
-                return true;
-            }
-            return tags.some(tag => isMatch(tag, categoryName));
-        });
+        const matched = videos.filter(video => matchesCustomCategory(video, categoryName));
+        const searchResults = getCustomCategorySearchResults(categoryName);
+        return mergeUniqueVideos(searchResults, matched);
     }
     if (selectedCategory === 'Seguint') {
         const followedIds = new Set(getFollowedChannelIds().map(id => String(id)));
