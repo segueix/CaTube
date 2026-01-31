@@ -322,6 +322,26 @@ function isChannelFollowed(channelId) {
     return getFollowedChannelIds().some(id => String(id) === normalizedId);
 }
 
+function isMitjansChannel(channelId) {
+    if (!channelId) {
+        return false;
+    }
+    const normalizedId = String(channelId);
+    let feedCats = [];
+    if (cachedChannels[normalizedId]?.categories) {
+        feedCats = cachedChannels[normalizedId].categories;
+    } else if (typeof YouTubeAPI !== 'undefined' && Array.isArray(YouTubeAPI.feedChannels)) {
+        const feedChannel = YouTubeAPI.feedChannels.find(channel => String(channel.id) === normalizedId);
+        if (feedChannel?.categories) {
+            feedCats = feedChannel.categories;
+        }
+    }
+
+    const customCats = getChannelCustomCategories(normalizedId);
+    const allCats = [...feedCats, ...customCats];
+    return allCats.some(cat => String(cat).toLowerCase() === 'mitjans');
+}
+
 function toggleFollowChannel(channelId) {
     if (!channelId) {
         return false;
@@ -3103,15 +3123,21 @@ function navigateToSearchResults(query) {
             <div class="follow-grid search-channel-grid">
                 ${results.channels.map(channel => {
                     const avatar = channel.avatar || getFollowChannelAvatar(channel.id) || 'img/icon-192.png';
+                    const isMitjans = isMitjansChannel(channel.id);
+                    const followButtonHtml = isMitjans
+                        ? ''
+                        : `
+                            <button class="follow-toggle-btn" type="button" data-follow-channel="${channel.id}" aria-pressed="false">
+                                Segueix
+                            </button>
+                        `;
                     return `
                         <div class="follow-card search-channel-card" data-channel-id="${channel.id}">
                             <div class="follow-avatar-wrap">
                                 <img class="follow-avatar" src="${avatar}" alt="${escapeHtml(channel.name || 'Canal')}" loading="lazy">
                             </div>
                             <div class="follow-name">${escapeHtml(channel.name || 'Canal')}</div>
-                            <button class="follow-toggle-btn" type="button" data-follow-channel="${channel.id}" aria-pressed="false">
-                                Segueix
-                            </button>
+                            ${followButtonHtml}
                         </div>
                     `;
                 }).join('')}
@@ -3900,15 +3926,21 @@ async function renderFollowPage() {
     followGrid.innerHTML = sortedChannels.map(channel => {
         const name = channel.name || 'Canal';
         const avatar = channel.avatar || channel.thumbnail || getFollowChannelAvatar(channel.id) || 'img/icon-192.png';
+        const isMitjans = isMitjansChannel(channel.id);
+        const followButtonHtml = isMitjans
+            ? ''
+            : `
+                <button class="follow-toggle-btn" type="button" data-follow-channel="${channel.id}" aria-pressed="false">
+                    Segueix
+                </button>
+            `;
         return `
             <div class="follow-card" data-channel-id="${channel.id}">
                 <div class="follow-avatar-wrap">
                     <img class="follow-avatar" src="${avatar}" alt="${escapeHtml(name)}" loading="lazy">
                 </div>
                 <div class="follow-name">${escapeHtml(name)}</div>
-                <button class="follow-toggle-btn" type="button" data-follow-channel="${channel.id}" aria-pressed="false">
-                    Segueix
-                </button>
+                ${followButtonHtml}
             </div>
         `;
     }).join('');
@@ -4860,6 +4892,14 @@ function renderDesktopSidebar(channel, channelVideos, currentVideoId) {
     const description = channel.description || 'Sense descripció disponible.';
 
     const channelName = channel.title || channel.name || 'Canal';
+    const isMitjans = isMitjansChannel(channel.id);
+    const followButtonHtml = isMitjans
+        ? ''
+        : `
+            <button class="follow-channel-btn" type="button" data-follow-channel="${channel.id}" aria-pressed="false">
+                Segueix
+            </button>
+        `;
     channelInfoContainer.innerHTML = `
         <div class="sidebar-channel-header channel-link" data-channel-id="${channel.id}">
             <img class="sidebar-channel-avatar" src="${avatar}" alt="${escapeHtml(channelName)}">
@@ -4870,9 +4910,7 @@ function renderDesktopSidebar(channel, channelVideos, currentVideoId) {
         </div>
         <div class="sidebar-channel-description">${escapeHtml(description)}</div>
         <div class="sidebar-channel-actions">
-            <button class="follow-channel-btn" type="button" data-follow-channel="${channel.id}" aria-pressed="false">
-                Segueix
-            </button>
+            ${followButtonHtml}
             <button class="btn-round-icon" type="button" data-share-channel-id="${channel.id}" data-share-channel-name="${encodeURIComponent(channelName)}" data-share-channel-description="${encodeURIComponent(description)}" title="Compartir canal">
                 <i data-lucide="share-2"></i>
             </button>
@@ -5028,6 +5066,14 @@ async function showVideoFromAPI(videoId) {
             const subsText = channel.subscriberCount
                 ? formatViews(channel.subscriberCount) + ' subscriptors'
                 : 'Subscriptors ocults';
+            const isMitjans = isMitjansChannel(channel.id);
+            const followButtonHtml = isMitjans
+                ? ''
+                : `
+                            <button class="follow-btn-pill" type="button" data-follow-channel="${channel.id}" aria-pressed="false">
+                                Segueix
+                            </button>
+                        `;
             channelInfo.innerHTML = `
                 <div class="video-info-modern">
                     <div class="channel-header-row">
@@ -5041,9 +5087,7 @@ async function showVideoFromAPI(videoId) {
                             </div>
                         </div>
                         <div class="channel-actions-inline">
-                            <button class="follow-btn-pill" type="button" data-follow-channel="${channel.id}" aria-pressed="false">
-                                Segueix
-                            </button>
+                            ${followButtonHtml}
                             <button class="btn-heart" id="likeToggle" type="button" aria-label="M'agrada" aria-pressed="false">
                                 <i data-lucide="heart"></i>
                             </button>
@@ -5131,6 +5175,14 @@ async function showVideoFromAPI(videoId) {
                 const subsText = channel.subscriberCount
                     ? formatViews(channel.subscriberCount) + ' subscriptors'
                     : 'Subscriptors ocults';
+                const isMitjans = isMitjansChannel(channel.id);
+                const followButtonHtml = isMitjans
+                    ? ''
+                    : `
+                            <button class="follow-btn-pill" type="button" data-follow-channel="${channel.id}" aria-pressed="false">
+                                Segueix
+                            </button>
+                        `;
                 channelInfo.innerHTML = `
                     <div class="video-info-modern">
                         <div class="channel-header-row">
@@ -5144,9 +5196,7 @@ async function showVideoFromAPI(videoId) {
                                 </div>
                         </div>
                         <div class="channel-actions-inline">
-                            <button class="follow-btn-pill" type="button" data-follow-channel="${channel.id}" aria-pressed="false">
-                                Segueix
-                            </button>
+                            ${followButtonHtml}
                             <button class="btn-heart" id="likeToggle" type="button" aria-label="M'agrada" aria-pressed="false">
                                 <i data-lucide="heart"></i>
                             </button>
@@ -5524,6 +5574,14 @@ function showVideo(videoId) {
     const subsText = channel.subscriberCount
         ? formatViews(channel.subscriberCount) + ' subscriptors'
         : 'Subscriptors ocults';
+    const isMitjans = isMitjansChannel(channel.id);
+    const followButtonHtml = isMitjans
+        ? ''
+        : `
+                    <button class="follow-btn-pill" type="button" data-follow-channel="${channel.id}" aria-pressed="false">
+                        Segueix
+                    </button>
+                `;
     channelInfo.innerHTML = `
         <div class="video-info-modern">
             <div class="channel-header-row">
@@ -5537,9 +5595,7 @@ function showVideo(videoId) {
                     </div>
                 </div>
                 <div class="channel-actions-inline">
-                    <button class="follow-btn-pill" type="button" data-follow-channel="${channel.id}" aria-pressed="false">
-                        Segueix
-                    </button>
+                    ${followButtonHtml}
                     <button class="btn-heart" id="likeToggle" type="button" aria-label="M'agrada" aria-pressed="false">
                         <i data-lucide="heart"></i>
                     </button>
@@ -5998,6 +6054,11 @@ function openChannelProfile(channelId) {
     if (channelProfileFollowBtn) {
         channelProfileFollowBtn.dataset.followChannel = normalizedId;
         channelProfileFollowBtn.dataset.followBound = 'false';
+        if (isMitjansChannel(normalizedId)) {
+            channelProfileFollowBtn.classList.add('hidden');
+        } else {
+            channelProfileFollowBtn.classList.remove('hidden');
+        }
     }
     if (channelProfileShareBtn) {
         channelProfileShareBtn.dataset.shareChannelId = normalizedId;
