@@ -3992,6 +3992,7 @@ function renderPlaylistsPage() {
     }
 
     playlistsList.innerHTML = playlists.map(list => {
+        const playlistName = list.name;
         const firstVideo = list.videos[0];
         const thumbnail = firstVideo?.thumbnail || 'img/icon-512.png';
         const videoCount = list.videos.length;
@@ -4020,6 +4021,9 @@ function renderPlaylistsPage() {
                     <div class="playlist-play-btn" style="pointer-events:none;">
                         <i data-lucide="play" style="width:16px; height:16px; margin-right:4px;"></i> Reproduir
                     </div>
+                    <button onclick="shareSegueixPlaylist('${playlistName}')" title="Share this playlist" style="background:none; border:none; cursor:pointer; font-size:1.2em;">
+                       🔗
+                    </button>
                     <button class="playlist-delete" type="button" data-playlist-id="${list.id}" aria-label="Esborrar llista" onclick="event.stopPropagation(); removePlaylist('${list.id}'); renderPlaylistsPage();">×</button>
                 </div>
                 <div class="playlist-card-body">
