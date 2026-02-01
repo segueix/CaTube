@@ -4021,7 +4021,7 @@ function renderPlaylistsPage() {
                     <div class="playlist-play-btn" style="pointer-events:none;">
                         <i data-lucide="play" style="width:16px; height:16px; margin-right:4px;"></i> Reproduir
                     </div>
-                    <button onclick="shareSegueixPlaylist('${playlistName}')" title="Share this playlist" style="background:none; border:none; cursor:pointer; font-size:1.2em;">
+                    <button onclick="event.stopPropagation(); shareSegueixPlaylist('${playlistName}')" title="Share this playlist" style="background:none; border:none; cursor:pointer; font-size:1.2em; position:relative; z-index:2;">
                        🔗
                     </button>
                     <button class="playlist-delete" type="button" data-playlist-id="${list.id}" aria-label="Esborrar llista" onclick="event.stopPropagation(); removePlaylist('${list.id}'); renderPlaylistsPage();">×</button>
