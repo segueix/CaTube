@@ -11,6 +11,9 @@ const OUTPUT_FEED_JSON = path.join(process.cwd(), 'data', 'feed.json');
 const OUTPUT_FEED_JS = 'feed_updates.js';
 const VIDEOS_PER_CHANNEL = Number.parseInt(process.env.VIDEOS_PER_CHANNEL ?? '50', 10);
 const FETCH_PER_CHANNEL = 50; // Maximum allowed by YouTube API per request
+const BATCH_SIZE = 5;      // Process 5 channels at a time
+const BATCH_DELAY = 2000;  // Wait 2 seconds between batches
+const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * Funció per descarregar dades que sap seguir TOTES les redireccions (301, 302, 307, 308)
@@ -136,25 +139,59 @@ async function main() {
 
         console.log(`✅ S'han trobat ${channels.length} canals vàlids.`);
 
-        const playlistRequests = channels.map(async (channel) => {
-            let uploadPlaylistId = '';
-            if (channel.id.startsWith('@')) {
-                const hUrl = `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&forHandle=${encodeURIComponent(channel.id)}&key=${API_KEY}`;
-                const hData = await fetchYouTubeData(hUrl);
-                if (hData.items?.length > 0) uploadPlaylistId = hData.items[0].contentDetails.relatedPlaylists.uploads;
-            } else if (channel.id.startsWith('UC')) {
-                uploadPlaylistId = channel.id.replace('UC', 'UU');
+        let allPlaylistItems = [];
+        const channelChunks = chunkArray(channels, BATCH_SIZE);
+        console.log(`🔄 Starting processing in ${channelChunks.length} batches...`);
+
+        for (let i = 0; i < channelChunks.length; i++) {
+            const chunk = channelChunks[i];
+            console.log(`   🔸 Processing batch ${i + 1}/${channelChunks.length}...`);
+
+            const batchPromises = chunk.map(async (channel) => {
+                try {
+                    let uploadPlaylistId = '';
+                    
+                    // Optimization: Convert UC ID to UU ID directly to save quota
+                    if (channel.id.startsWith('UC')) {
+                        uploadPlaylistId = channel.id.replace('UC', 'UU');
+                    } 
+                    // Only fetch for Handles (@)
+                    else if (channel.id.startsWith('@')) {
+                        const hUrl = `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&forHandle=${encodeURIComponent(channel.id)}&key=${API_KEY}`;
+                        const hData = await fetchYouTubeData(hUrl);
+                        if (hData.items?.length > 0) uploadPlaylistId = hData.items[0].contentDetails.relatedPlaylists.uploads;
+                    }
+
+                    if (!uploadPlaylistId) {
+                        console.warn(`⚠️ No playlist found for: ${channel.name || channel.id}`);
+                        return null;
+                    }
+
+                    const maxResults = Math.min(FETCH_PER_CHANNEL, 50);
+                    const vUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadPlaylistId}&maxResults=${maxResults}&key=${API_KEY}`;
+                    const vData = await fetchYouTubeData(vUrl);
+                    
+                    return { items: vData.items || [], channelInfo: channel };
+
+                } catch (err) {
+                    console.error(`❌ Error processing channel ${channel.name || channel.id}:`, err.message);
+                    return null;
+                }
+            });
+
+            const batchResults = await Promise.all(batchPromises);
+            
+            batchResults.forEach(res => {
+                if (res) allPlaylistItems.push(res);
+            });
+
+            if (i < channelChunks.length - 1) {
+                await wait(BATCH_DELAY);
             }
-
-            if (!uploadPlaylistId) return null;
-
-            const maxResults = Math.min(FETCH_PER_CHANNEL, 50);
-            const vUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadPlaylistId}&maxResults=${maxResults}&key=${API_KEY}`;
-            const vData = await fetchYouTubeData(vUrl);
-            return { items: vData.items || [], channelInfo: channel };
-        });
-
-        const results = await Promise.all(playlistRequests);
+        }
+        
+        // Rename 'results' to 'allPlaylistItems' in the subsequent code loop
+        const results = allPlaylistItems;
         let baseVideos = [];
         let videoIdsForDetails = [];
 
