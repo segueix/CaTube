@@ -3312,9 +3312,15 @@ async function searchVideos(query) {
     const detailsResult = await fetchVideoDetails(videoIds);
 
     if (detailsResult.length > 0) {
-        const nonShortResults = detailsResult.filter(video => !video.isShort);
-        if (nonShortResults.length > 0) {
-            renderVideos(nonShortResults);
+        const filteredResults = detailsResult.filter(video => {
+            if (video.isShort) {
+                return false;
+            }
+            const seconds = getVideoDurationSeconds(video);
+            return Number.isFinite(seconds) && seconds >= 180;
+        });
+        if (filteredResults.length > 0) {
+            renderVideos(filteredResults);
         } else {
             featuredVideoBySection.delete(getHeroSectionKey());
             updateHero(null);
