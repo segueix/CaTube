@@ -298,6 +298,69 @@ function ensureWatchGridLayoutControls() {
     updateWatchGridLayoutControlState();
 }
 
+const DEFAULT_EXTRA_RELATED_TITLE = 'Altres vídeos relacionats';
+
+function setExtraRelatedTitle(text) {
+    if (!watchPage) {
+        return;
+    }
+    const title = watchPage.querySelector('.extra-related-title');
+    if (title) {
+        title.textContent = text || DEFAULT_EXTRA_RELATED_TITLE;
+    }
+}
+
+function getPlaylistSearchKeywords(playlistName) {
+    return String(playlistName || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}]+/gu, ' ')
+        .split(/\s+/)
+        .filter(word => word.length > 2);
+}
+
+function getPlaylistSearchVideos(playlistName) {
+    const trimmedName = String(playlistName || '').trim();
+    if (!trimmedName) {
+        return [];
+    }
+
+    const keywords = getPlaylistSearchKeywords(trimmedName);
+    const queries = keywords.length > 0 ? keywords : [trimmedName.toLowerCase()];
+    const videosMap = new Map();
+
+    queries.forEach(query => {
+        const results = performLocalSearch(query);
+        if (!Array.isArray(results?.videos)) {
+            return;
+        }
+        results.videos.forEach(video => {
+            const normalizedId = String(video.id);
+            const existing = videosMap.get(normalizedId);
+            const score = Number.isFinite(video.score) ? video.score : 0;
+            if (existing) {
+                existing.score = (existing.score || 0) + score;
+            } else {
+                videosMap.set(normalizedId, { ...video, score });
+            }
+        });
+    });
+
+    return Array.from(videosMap.values())
+        .filter(video => !video.isShort)
+        .sort((a, b) => {
+            if ((b.score || 0) !== (a.score || 0)) {
+                return (b.score || 0) - (a.score || 0);
+            }
+            const viewA = a.viewCount ?? a.views ?? 0;
+            const viewB = b.viewCount ?? b.views ?? 0;
+            if (viewA !== viewB) {
+                return viewB - viewA;
+            }
+            return (a.title || '').localeCompare((b.title || ''), 'ca', { sensitivity: 'base' });
+        });
+}
+
 function getFollowedChannelIds() {
     const stored = localStorage.getItem(FOLLOW_STORAGE_KEY);
     if (!stored) {
@@ -3830,52 +3893,22 @@ function renderPlaylistsPage() {
         const videoCount = list.videos.length;
         return `
             <div class="playlist-card">
-                <div class="playlist-card-thumb">
+                <div class="playlist-card-thumb" onclick="startPlaylistPlayback('${list.id}')" title="Reproduir llista">
                     <img src="${thumbnail}" alt="${escapeHtml(list.name)}" loading="lazy">
-                    <button class="playlist-play-btn" type="button" data-playlist-id="${list.id}" aria-label="Reproduir tota la llista">
-                        Reproduir tot
-                    </button>
-                    <button class="playlist-delete" type="button" data-playlist-id="${list.id}" aria-label="Esborrar llista">×</button>
+                    <div class="playlist-play-btn" style="pointer-events:none;">
+                        <i data-lucide="play" style="width:16px; height:16px; margin-right:4px;"></i> Reproduir
+                    </div>
+                    <button class="playlist-delete" type="button" data-playlist-id="${list.id}" aria-label="Esborrar llista" onclick="event.stopPropagation(); removePlaylist('${list.id}'); renderPlaylistsPage();">×</button>
                 </div>
                 <div class="playlist-card-body">
                     <div class="playlist-card-title">${escapeHtml(list.name)}</div>
                     <div class="playlist-card-meta">${videoCount} vídeos</div>
-                    <div class="playlist-video-list">
-                        ${list.videos.length > 0
-                            ? list.videos.map(video => `
-                                <div class="playlist-video-row" data-playlist-id="${list.id}" data-video-id="${video.id}">
-                                    <img class="playlist-video-thumb" src="${video.thumbnail || 'img/icon-192.png'}" alt="${escapeHtml(video.title)}" loading="lazy">
-                                    <span class="playlist-video-title">${escapeHtml(video.title)}</span>
-                                    <button class="playlist-video-remove" type="button" data-playlist-id="${list.id}" data-video-id="${video.id}" aria-label="Eliminar vídeo">×</button>
-                                </div>
-                            `).join('')
-                            : `<div class="playlist-video-empty">Encara no hi ha vídeos.</div>`}
-                    </div>
                 </div>
             </div>
         `;
     }).join('');
 
-    playlistsList.querySelectorAll('.playlist-delete').forEach(button => {
-        button.addEventListener('click', () => {
-            removePlaylist(button.dataset.playlistId);
-            renderPlaylistsPage();
-        });
-    });
-
-    playlistsList.querySelectorAll('.playlist-play-btn').forEach(button => {
-        button.addEventListener('click', () => {
-            startPlaylistPlayback(button.dataset.playlistId);
-        });
-    });
-
-    playlistsList.querySelectorAll('.playlist-video-remove').forEach(button => {
-        button.addEventListener('click', (event) => {
-            event.stopPropagation();
-            removeVideoFromPlaylist(button.dataset.playlistId, button.dataset.videoId);
-            renderPlaylistsPage();
-        });
-    });
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 async function renderFollowPage() {
@@ -4030,7 +4063,7 @@ function handlePlaylistVideoEnded() {
         currentPlaylistIndex += 1;
         loadVideoInSequence();
     } else {
-        exitPlaylistMode();
+        exitPlaylistMode({ showQueueMessage: true });
     }
 }
 
@@ -4056,13 +4089,28 @@ function updatePlaylistModeBadge() {
     }
 }
 
-function exitPlaylistMode() {
+function exitPlaylistMode({ showQueueMessage = false } = {}) {
     isPlaylistMode = false;
     activePlaylistQueue = [];
     currentPlaylistIndex = 0;
     activePlaylistId = null;
     activePlaylistName = '';
     updatePlaylistModeBadge();
+    const queueContainer = document.getElementById('playlistQueueContainer');
+    const relatedContainer = document.getElementById('relatedVideos');
+
+    if (queueContainer) {
+        if (showQueueMessage) {
+            queueContainer.innerHTML = '<div class="playlist-queue-title">No hi ha més vídeos en aquesta llista</div>';
+            queueContainer.classList.remove('hidden');
+        } else {
+            queueContainer.innerHTML = '';
+            queueContainer.classList.add('hidden');
+        }
+    }
+    if (relatedContainer) {
+        relatedContainer.style.display = 'block';
+    }
 }
 
 function openPlaylistModal(video) {
@@ -4091,19 +4139,21 @@ function renderPlaylistModal() {
             <div class="playlist-modal-buttons">
                 ${playlists.map(list => `
                     <button class="playlist-select-btn" type="button" data-playlist-id="${list.id}">
-                        ${escapeHtml(list.name)}
+                        <span>${escapeHtml(list.name)}</span>
+                        <span class="playlist-count-badge">${list.videos.length} vídeos</span>
                     </button>
                 `).join('')}
             </div>
         `
-        : `<p class="modal-description">Crea una llista per començar.</p>`;
+        : `<p class="modal-description" style="text-align:center; opacity:0.7;">No tens llistes creades.</p>`;
 
     playlistModalBody.innerHTML = `
         ${listSection}
-        <div class="playlist-modal-create">
-            <div class="modal-description">Crea una llista</div>
-            <input class="playlist-input" type="text" id="playlistModalInput" placeholder="Nom de la llista">
-            <button class="playlist-create-btn" type="button" id="playlistModalCreateBtn">OK</button>
+        <div class="playlist-modal-create" style="margin-top:15px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.1); display:flex; gap:10px;">
+            <input class="playlist-input" type="text" id="playlistModalInput" placeholder="Nom nova llista..." autocomplete="off">
+            <button class="playlist-create-btn" type="button" id="playlistModalCreateBtn">
+                <i data-lucide="plus"></i>
+            </button>
         </div>
     `;
 
@@ -4119,23 +4169,26 @@ function renderPlaylistModal() {
 
     const modalInput = playlistModalBody.querySelector('#playlistModalInput');
     const modalCreateBtn = playlistModalBody.querySelector('#playlistModalCreateBtn');
-    if (modalCreateBtn) {
-        modalCreateBtn.addEventListener('click', () => {
-            const name = modalInput?.value?.trim();
-            if (!name || !activePlaylistVideo) return;
-            createPlaylist(name, activePlaylistVideo);
-            renderPlaylistsPage();
-            closePlaylistModal();
-        });
-    }
+    const createAction = () => {
+        const name = modalInput?.value?.trim();
+        if (!name || !activePlaylistVideo) return;
+        createPlaylist(name, activePlaylistVideo);
+        renderPlaylistsPage();
+        closePlaylistModal();
+    };
+
+    if (modalCreateBtn) modalCreateBtn.addEventListener('click', createAction);
     if (modalInput) {
         modalInput.addEventListener('keydown', (event) => {
             if (event.key === 'Enter') {
                 event.preventDefault();
-                modalCreateBtn?.click();
+                createAction();
             }
         });
+        requestAnimationFrame(() => modalInput.focus());
     }
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function getPlaylistVideoData(video) {
@@ -4145,6 +4198,7 @@ function getPlaylistVideoData(video) {
         title: video.title || video.snippet?.title || '',
         thumbnail: getPreferredThumbnail(video),
         channelTitle: video.channelTitle || video.snippet?.channelTitle || '',
+        channelId: video.channelId || video.snippet?.channelId || '',
         duration: video.duration || video.contentDetails?.duration || '',
         source
     };
@@ -4203,38 +4257,63 @@ function setVideoTitleText(title) {
 }
 
 function renderPlaylistQueue() {
+    const queueContainer = document.getElementById('playlistQueueContainer');
     const relatedContainer = document.getElementById('relatedVideos');
-    if (!relatedContainer) {
-        return;
+
+    if (relatedContainer && window.innerWidth > 1024) {
+        relatedContainer.style.display = 'block';
     }
+
+    if (!queueContainer) return;
+
     if (!isPlaylistMode || activePlaylistQueue.length === 0) {
+        queueContainer.classList.add('hidden');
         return;
     }
-    relatedContainer.innerHTML = `
-        <div class="playlist-queue">
-            <div class="playlist-queue-title">Cua de la llista</div>
-            <div class="playlist-queue-list">
-                ${activePlaylistQueue.map((video, index) => `
-                    <button class="playlist-queue-item${index === currentPlaylistIndex ? ' is-active' : ''}" type="button" data-queue-index="${index}">
-                        <img src="${video.thumbnail || 'img/icon-192.png'}" alt="${escapeHtml(video.title)}" loading="lazy">
-                        <div class="playlist-queue-meta">
-                            <div class="playlist-queue-name">${escapeHtml(video.title)}</div>
+
+    queueContainer.classList.remove('hidden');
+
+    queueContainer.innerHTML = `
+        <div class="playlist-queue-title">
+            <span>Reprodueix: ${escapeHtml(activePlaylistName)}</span>
+            <span style="font-size:0.85rem; opacity:0.7;">${currentPlaylistIndex + 1} / ${activePlaylistQueue.length}</span>
+        </div>
+        <div class="playlist-queue-list">
+            ${activePlaylistQueue.map((video, index) => {
+                const isActive = index === currentPlaylistIndex;
+                return `
+                <div class="playlist-queue-item${isActive ? ' is-active' : ''}" 
+                     onclick="playVideoFromPlaylistIndex(${index})">
+                    <div style="position:relative; flex-shrink:0;">
+                        <img src="${video.thumbnail || 'img/icon-192.png'}" alt="">
+                        ${isActive ? '<div style="position:absolute; inset:0; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center;"><i data-lucide="bar-chart-2" style="color:white;"></i></div>' : ''}
+                    </div>
+                    <div class="playlist-queue-meta" style="min-width:0;">
+                        <div style="font-weight:600; font-size:0.9rem; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            ${escapeHtml(video.title)}
                         </div>
-                    </button>
-                `).join('')}
-            </div>
+                        <div style="font-size:0.75rem; color:var(--color-text-secondary);">
+                            ${escapeHtml(video.channelTitle || '')}
+                        </div>
+                    </div>
+                </div>
+            `}).join('')}
         </div>
     `;
-    relatedContainer.querySelectorAll('.playlist-queue-item').forEach(item => {
-        item.addEventListener('click', () => {
-            const index = Number(item.dataset.queueIndex || 0);
-            if (Number.isNaN(index)) {
-                return;
-            }
-            currentPlaylistIndex = index;
-            loadVideoInSequence();
-        });
-    });
+
+    const activeItem = queueContainer.querySelector('.is-active');
+    if (activeItem) {
+        activeItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function playVideoFromPlaylistIndex(index) {
+    if (index >= 0 && index < activePlaylistQueue.length) {
+        currentPlaylistIndex = index;
+        loadVideoInSequence();
+    }
 }
 
 function updatePlayerPosition() {
@@ -4933,11 +5012,60 @@ function renderDesktopSidebar(channel, channelVideos, currentVideoId) {
     });
 }
 
+function getStaticChannelVideos(channelId) {
+    const localVideos = typeof VIDEOS !== 'undefined' && Array.isArray(VIDEOS) ? VIDEOS : [];
+    return localVideos
+        .filter(video => String(video.channelId) === String(channelId) && !video.isShort)
+        .map(video => ({
+            id: video.id,
+            title: video.title,
+            thumbnail: video.thumbnail || 'img/icon-192.png',
+            viewCount: video.views,
+            publishedAt: video.uploadDate
+        }));
+}
+
+function renderChannelSidebarFromApi(channelId, currentVideoId, channelResult, fallbackTitle = '') {
+    if (!isDesktopView()) {
+        return;
+    }
+    const channelList = Array.isArray(YouTubeAPI?.getAllChannels?.())
+        ? YouTubeAPI.getAllChannels()
+        : [];
+    const matchedChannel = channelList.find(channelItem => String(channelItem.id) === String(channelId));
+    const channelData = matchedChannel
+        ? { ...channelResult?.channel, ...matchedChannel }
+        : channelResult?.channel
+        || cachedChannels[channelId]
+        || { id: channelId, title: fallbackTitle };
+
+    const feedVideos = Array.isArray(YouTubeAPI?.feedVideos) ? YouTubeAPI.feedVideos : [];
+    const channelVideos = [...feedVideos, ...cachedAPIVideos]
+        .filter(v => String(v.channelId) === String(channelId) && !v.isShort);
+
+    renderDesktopSidebar(channelData, channelVideos, currentVideoId);
+}
+
+function renderChannelSidebarFromStatic(channel, currentVideoId) {
+    if (!isDesktopView() || !channel) {
+        return;
+    }
+    const channelData = {
+        ...channel,
+        title: channel.name,
+        subscriberCount: channel.subscribers,
+        avatar: channel.avatar
+    };
+    const channelVideos = getStaticChannelVideos(channel.id);
+    renderDesktopSidebar(channelData, channelVideos, currentVideoId);
+}
+
 function renderCategoryVideosBelow(currentChannelId, currentVideoId) {
     const extraContainer = extraVideosGrid || document.getElementById('extraVideosGrid');
     if (!extraContainer) {
         return;
     }
+    setExtraRelatedTitle(DEFAULT_EXTRA_RELATED_TITLE);
 
     let videos = currentFeedVideos || [];
 
@@ -4989,6 +5117,49 @@ function renderCategoryVideosBelow(currentChannelId, currentVideoId) {
     extraContainer.querySelectorAll('.video-card').forEach(card => {
         card.addEventListener('click', () => {
             showVideoFromAPI(card.dataset.videoId);
+        });
+    });
+    bindChannelLinks(extraContainer);
+
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+    setupVideoCardActionButtons();
+}
+
+async function renderPlaylistRelatedVideos(playlistName) {
+    const extraContainer = extraVideosGrid || document.getElementById('extraVideosGrid');
+    if (!extraContainer) {
+        return;
+    }
+    const trimmedName = String(playlistName || '').trim();
+    if (!trimmedName) {
+        extraContainer.innerHTML = '<div class="empty-state">No hi ha vídeos relacionats.</div>';
+        return;
+    }
+
+    setExtraRelatedTitle(`Resultats de la llista: ${trimmedName}`);
+
+    const videos = getPlaylistSearchVideos(trimmedName);
+
+    if (videos.length === 0) {
+        extraContainer.innerHTML = '<div class="empty-state">No hi ha vídeos relacionats.</div>';
+        return;
+    }
+
+    extraContainer.innerHTML = videos.map(video => createVideoCardAPI(video)).join('');
+    ensureWatchGridLayoutControls();
+    applyWatchGridLayoutPreference();
+
+    extraContainer.querySelectorAll('.video-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const videoId = card.dataset.videoId;
+            const video = videos.find(item => String(item.id) === String(videoId));
+            if (video?.source === 'static') {
+                showVideo(videoId);
+            } else {
+                showVideoFromAPI(videoId);
+            }
         });
     });
     bindChannelLinks(extraContainer);
@@ -5256,28 +5427,18 @@ async function showVideoFromAPI(videoId) {
     }
 
     // Carregar vídeos relacionats o cua de la llista
+    const channelId = video?.channelId || cachedVideo?.channelId;
     if (isPlaylistMode) {
         renderPlaylistQueue();
+        if (channelId) {
+            renderChannelSidebarFromApi(channelId, videoId, channelResult, video?.channelTitle || cachedVideo?.channelTitle || '');
+        }
+        renderPlaylistRelatedVideos(activePlaylistName);
     } else if (CONFIG.features.recommendations) {
-        const channelId = video?.channelId || cachedVideo?.channelId;
-        if (isDesktopView()) {
-            const channelList = Array.isArray(YouTubeAPI?.getAllChannels?.())
-                ? YouTubeAPI.getAllChannels()
-                : [];
-            const matchedChannel = channelList.find(channelItem => String(channelItem.id) === String(channelId));
-            const channelData = matchedChannel
-                ? { ...channelResult?.channel, ...matchedChannel }
-                : channelResult?.channel
-                || cachedChannels[channelId]
-                || { id: channelId, title: video?.channelTitle || cachedVideo?.channelTitle };
-
-            const feedVideos = Array.isArray(YouTubeAPI?.feedVideos) ? YouTubeAPI.feedVideos : [];
-            const channelVideos = [...feedVideos, ...cachedAPIVideos]
-                .filter(v => String(v.channelId) === String(channelId) && !v.isShort);
-
-            renderDesktopSidebar(channelData, channelVideos, videoId);
+        if (channelId && isDesktopView()) {
+            renderChannelSidebarFromApi(channelId, videoId, channelResult, video?.channelTitle || cachedVideo?.channelTitle || '');
             renderCategoryVideosBelow(channelId, videoId);
-        } else {
+        } else if (channelId) {
             renderCategoryVideosBelow(channelId, videoId);
         }
     }
@@ -5296,6 +5457,7 @@ async function loadRelatedVideosFromAPI(videoId) {
     const relatedContainer = document.getElementById('relatedVideos');
     const extraContainer = extraVideosGrid || document.getElementById('extraVideosGrid');
     const sidebarLimit = 8;
+    setExtraRelatedTitle(DEFAULT_EXTRA_RELATED_TITLE);
 
     // La API de vídeos relacionats pot no funcionar, fem fallback a vídeos populars
     let result = await YouTubeAPI.getRelatedVideos(videoId, 20);
@@ -5658,6 +5820,8 @@ function showVideo(videoId) {
 
     if (isPlaylistMode) {
         renderPlaylistQueue();
+        renderChannelSidebarFromStatic(channel, videoId);
+        renderPlaylistRelatedVideos(activePlaylistName);
     } else if (CONFIG.features.recommendations) {
         loadRelatedVideos(videoId);
     }
@@ -6129,6 +6293,7 @@ function mapStaticVideoToCardData(video) {
 }
 // Carregar vídeos relacionats (estàtic)
 function loadRelatedVideos(currentVideoId) {
+    setExtraRelatedTitle(DEFAULT_EXTRA_RELATED_TITLE);
     const relatedVideos = VIDEOS
         .filter(v => v.id !== parseInt(currentVideoId) && !v.isShort)
         .slice(0, 20);
