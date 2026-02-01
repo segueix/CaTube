@@ -3830,52 +3830,22 @@ function renderPlaylistsPage() {
         const videoCount = list.videos.length;
         return `
             <div class="playlist-card">
-                <div class="playlist-card-thumb">
+                <div class="playlist-card-thumb" onclick="startPlaylistPlayback('${list.id}')" title="Reproduir llista">
                     <img src="${thumbnail}" alt="${escapeHtml(list.name)}" loading="lazy">
-                    <button class="playlist-play-btn" type="button" data-playlist-id="${list.id}" aria-label="Reproduir tota la llista">
-                        Reproduir tot
-                    </button>
-                    <button class="playlist-delete" type="button" data-playlist-id="${list.id}" aria-label="Esborrar llista">×</button>
+                    <div class="playlist-play-btn" style="pointer-events:none;">
+                        <i data-lucide="play" style="width:16px; height:16px; margin-right:4px;"></i> Reproduir
+                    </div>
+                    <button class="playlist-delete" type="button" data-playlist-id="${list.id}" aria-label="Esborrar llista" onclick="event.stopPropagation(); removePlaylist('${list.id}'); renderPlaylistsPage();">×</button>
                 </div>
                 <div class="playlist-card-body">
                     <div class="playlist-card-title">${escapeHtml(list.name)}</div>
                     <div class="playlist-card-meta">${videoCount} vídeos</div>
-                    <div class="playlist-video-list">
-                        ${list.videos.length > 0
-                            ? list.videos.map(video => `
-                                <div class="playlist-video-row" data-playlist-id="${list.id}" data-video-id="${video.id}">
-                                    <img class="playlist-video-thumb" src="${video.thumbnail || 'img/icon-192.png'}" alt="${escapeHtml(video.title)}" loading="lazy">
-                                    <span class="playlist-video-title">${escapeHtml(video.title)}</span>
-                                    <button class="playlist-video-remove" type="button" data-playlist-id="${list.id}" data-video-id="${video.id}" aria-label="Eliminar vídeo">×</button>
-                                </div>
-                            `).join('')
-                            : `<div class="playlist-video-empty">Encara no hi ha vídeos.</div>`}
-                    </div>
                 </div>
             </div>
         `;
     }).join('');
 
-    playlistsList.querySelectorAll('.playlist-delete').forEach(button => {
-        button.addEventListener('click', () => {
-            removePlaylist(button.dataset.playlistId);
-            renderPlaylistsPage();
-        });
-    });
-
-    playlistsList.querySelectorAll('.playlist-play-btn').forEach(button => {
-        button.addEventListener('click', () => {
-            startPlaylistPlayback(button.dataset.playlistId);
-        });
-    });
-
-    playlistsList.querySelectorAll('.playlist-video-remove').forEach(button => {
-        button.addEventListener('click', (event) => {
-            event.stopPropagation();
-            removeVideoFromPlaylist(button.dataset.playlistId, button.dataset.videoId);
-            renderPlaylistsPage();
-        });
-    });
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 async function renderFollowPage() {
@@ -4063,6 +4033,16 @@ function exitPlaylistMode() {
     activePlaylistId = null;
     activePlaylistName = '';
     updatePlaylistModeBadge();
+    const queueContainer = document.getElementById('playlistQueueContainer');
+    const relatedContainer = document.getElementById('relatedVideos');
+
+    if (queueContainer) {
+        queueContainer.innerHTML = '';
+        queueContainer.classList.add('hidden');
+    }
+    if (relatedContainer) {
+        relatedContainer.style.display = 'block';
+    }
 }
 
 function openPlaylistModal(video) {
@@ -4091,19 +4071,21 @@ function renderPlaylistModal() {
             <div class="playlist-modal-buttons">
                 ${playlists.map(list => `
                     <button class="playlist-select-btn" type="button" data-playlist-id="${list.id}">
-                        ${escapeHtml(list.name)}
+                        <span>${escapeHtml(list.name)}</span>
+                        <span class="playlist-count-badge">${list.videos.length} vídeos</span>
                     </button>
                 `).join('')}
             </div>
         `
-        : `<p class="modal-description">Crea una llista per començar.</p>`;
+        : `<p class="modal-description" style="text-align:center; opacity:0.7;">No tens llistes creades.</p>`;
 
     playlistModalBody.innerHTML = `
         ${listSection}
-        <div class="playlist-modal-create">
-            <div class="modal-description">Crea una llista</div>
-            <input class="playlist-input" type="text" id="playlistModalInput" placeholder="Nom de la llista">
-            <button class="playlist-create-btn" type="button" id="playlistModalCreateBtn">OK</button>
+        <div class="playlist-modal-create" style="margin-top:15px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.1); display:flex; gap:10px;">
+            <input class="playlist-input" type="text" id="playlistModalInput" placeholder="Nom nova llista..." autocomplete="off">
+            <button class="playlist-create-btn" type="button" id="playlistModalCreateBtn">
+                <i data-lucide="plus"></i>
+            </button>
         </div>
     `;
 
@@ -4119,23 +4101,26 @@ function renderPlaylistModal() {
 
     const modalInput = playlistModalBody.querySelector('#playlistModalInput');
     const modalCreateBtn = playlistModalBody.querySelector('#playlistModalCreateBtn');
-    if (modalCreateBtn) {
-        modalCreateBtn.addEventListener('click', () => {
-            const name = modalInput?.value?.trim();
-            if (!name || !activePlaylistVideo) return;
-            createPlaylist(name, activePlaylistVideo);
-            renderPlaylistsPage();
-            closePlaylistModal();
-        });
-    }
+    const createAction = () => {
+        const name = modalInput?.value?.trim();
+        if (!name || !activePlaylistVideo) return;
+        createPlaylist(name, activePlaylistVideo);
+        renderPlaylistsPage();
+        closePlaylistModal();
+    };
+
+    if (modalCreateBtn) modalCreateBtn.addEventListener('click', createAction);
     if (modalInput) {
         modalInput.addEventListener('keydown', (event) => {
             if (event.key === 'Enter') {
                 event.preventDefault();
-                modalCreateBtn?.click();
+                createAction();
             }
         });
+        requestAnimationFrame(() => modalInput.focus());
     }
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function getPlaylistVideoData(video) {
@@ -4203,38 +4188,63 @@ function setVideoTitleText(title) {
 }
 
 function renderPlaylistQueue() {
+    const queueContainer = document.getElementById('playlistQueueContainer');
     const relatedContainer = document.getElementById('relatedVideos');
-    if (!relatedContainer) {
-        return;
+
+    if (relatedContainer && window.innerWidth > 1024) {
+        relatedContainer.style.display = 'block';
     }
+
+    if (!queueContainer) return;
+
     if (!isPlaylistMode || activePlaylistQueue.length === 0) {
+        queueContainer.classList.add('hidden');
         return;
     }
-    relatedContainer.innerHTML = `
-        <div class="playlist-queue">
-            <div class="playlist-queue-title">Cua de la llista</div>
-            <div class="playlist-queue-list">
-                ${activePlaylistQueue.map((video, index) => `
-                    <button class="playlist-queue-item${index === currentPlaylistIndex ? ' is-active' : ''}" type="button" data-queue-index="${index}">
-                        <img src="${video.thumbnail || 'img/icon-192.png'}" alt="${escapeHtml(video.title)}" loading="lazy">
-                        <div class="playlist-queue-meta">
-                            <div class="playlist-queue-name">${escapeHtml(video.title)}</div>
+
+    queueContainer.classList.remove('hidden');
+
+    queueContainer.innerHTML = `
+        <div class="playlist-queue-title">
+            <span>Reprodueix: ${escapeHtml(activePlaylistName)}</span>
+            <span style="font-size:0.85rem; opacity:0.7;">${currentPlaylistIndex + 1} / ${activePlaylistQueue.length}</span>
+        </div>
+        <div class="playlist-queue-list">
+            ${activePlaylistQueue.map((video, index) => {
+                const isActive = index === currentPlaylistIndex;
+                return `
+                <div class="playlist-queue-item${isActive ? ' is-active' : ''}" 
+                     onclick="playVideoFromPlaylistIndex(${index})">
+                    <div style="position:relative; flex-shrink:0;">
+                        <img src="${video.thumbnail || 'img/icon-192.png'}" alt="">
+                        ${isActive ? '<div style="position:absolute; inset:0; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center;"><i data-lucide="bar-chart-2" style="color:white;"></i></div>' : ''}
+                    </div>
+                    <div class="playlist-queue-meta" style="min-width:0;">
+                        <div style="font-weight:600; font-size:0.9rem; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            ${escapeHtml(video.title)}
                         </div>
-                    </button>
-                `).join('')}
-            </div>
+                        <div style="font-size:0.75rem; color:var(--color-text-secondary);">
+                            ${escapeHtml(video.channelTitle || '')}
+                        </div>
+                    </div>
+                </div>
+            `}).join('')}
         </div>
     `;
-    relatedContainer.querySelectorAll('.playlist-queue-item').forEach(item => {
-        item.addEventListener('click', () => {
-            const index = Number(item.dataset.queueIndex || 0);
-            if (Number.isNaN(index)) {
-                return;
-            }
-            currentPlaylistIndex = index;
-            loadVideoInSequence();
-        });
-    });
+
+    const activeItem = queueContainer.querySelector('.is-active');
+    if (activeItem) {
+        activeItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function playVideoFromPlaylistIndex(index) {
+    if (index >= 0 && index < activePlaylistQueue.length) {
+        currentPlaylistIndex = index;
+        loadVideoInSequence();
+    }
 }
 
 function updatePlayerPosition() {
