@@ -639,7 +639,7 @@ const YouTubeAPI = {
 
         try {
             const response = await fetch(
-                `${this.BASE_URL}/search?part=snippet&type=video&q=${encodeURIComponent(query)}&maxResults=${maxResults}&relevanceLanguage=${this.language}&regionCode=${this.regionCode}&key=${apiKey}`
+                `${this.BASE_URL}/search?part=snippet&type=video&videoDuration=long&q=${encodeURIComponent(query)}&maxResults=${maxResults}&relevanceLanguage=${this.language}&regionCode=${this.regionCode}&key=${apiKey}`
             );
 
             if (!response.ok) {
