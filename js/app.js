@@ -298,6 +298,69 @@ function ensureWatchGridLayoutControls() {
     updateWatchGridLayoutControlState();
 }
 
+const DEFAULT_EXTRA_RELATED_TITLE = 'Altres vídeos relacionats';
+
+function setExtraRelatedTitle(text) {
+    if (!watchPage) {
+        return;
+    }
+    const title = watchPage.querySelector('.extra-related-title');
+    if (title) {
+        title.textContent = text || DEFAULT_EXTRA_RELATED_TITLE;
+    }
+}
+
+function getPlaylistSearchKeywords(playlistName) {
+    return String(playlistName || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}]+/gu, ' ')
+        .split(/\s+/)
+        .filter(word => word.length > 2);
+}
+
+function getPlaylistSearchVideos(playlistName) {
+    const trimmedName = String(playlistName || '').trim();
+    if (!trimmedName) {
+        return [];
+    }
+
+    const keywords = getPlaylistSearchKeywords(trimmedName);
+    const queries = keywords.length > 0 ? keywords : [trimmedName.toLowerCase()];
+    const videosMap = new Map();
+
+    queries.forEach(query => {
+        const results = performLocalSearch(query);
+        if (!Array.isArray(results?.videos)) {
+            return;
+        }
+        results.videos.forEach(video => {
+            const normalizedId = String(video.id);
+            const existing = videosMap.get(normalizedId);
+            const score = Number.isFinite(video.score) ? video.score : 0;
+            if (existing) {
+                existing.score = (existing.score || 0) + score;
+            } else {
+                videosMap.set(normalizedId, { ...video, score });
+            }
+        });
+    });
+
+    return Array.from(videosMap.values())
+        .filter(video => !video.isShort)
+        .sort((a, b) => {
+            if ((b.score || 0) !== (a.score || 0)) {
+                return (b.score || 0) - (a.score || 0);
+            }
+            const viewA = a.viewCount ?? a.views ?? 0;
+            const viewB = b.viewCount ?? b.views ?? 0;
+            if (viewA !== viewB) {
+                return viewB - viewA;
+            }
+            return (a.title || '').localeCompare((b.title || ''), 'ca', { sensitivity: 'base' });
+        });
+}
+
 function getFollowedChannelIds() {
     const stored = localStorage.getItem(FOLLOW_STORAGE_KEY);
     if (!stored) {
@@ -5002,6 +5065,7 @@ function renderCategoryVideosBelow(currentChannelId, currentVideoId) {
     if (!extraContainer) {
         return;
     }
+    setExtraRelatedTitle(DEFAULT_EXTRA_RELATED_TITLE);
 
     let videos = currentFeedVideos || [];
 
@@ -5069,23 +5133,14 @@ async function renderPlaylistRelatedVideos(playlistName) {
         return;
     }
     const trimmedName = String(playlistName || '').trim();
-    if (!trimmedName || typeof YouTubeAPI?.searchVideos !== 'function') {
+    if (!trimmedName) {
         extraContainer.innerHTML = '<div class="empty-state">No hi ha vídeos relacionats.</div>';
         return;
     }
 
-    extraContainer.innerHTML = '<div class="empty-state">Carregant vídeos...</div>';
+    setExtraRelatedTitle(`Resultats de la llista: ${trimmedName}`);
 
-    const result = await YouTubeAPI.searchVideos(trimmedName, CONFIG.layout.videosPerPage);
-    if (result.error || !result.items?.length) {
-        extraContainer.innerHTML = '<div class="empty-state">No hi ha vídeos relacionats.</div>';
-        return;
-    }
-
-    const videoIds = result.items.map(item => item.id).join(',');
-    const details = videoIds ? await fetchVideoDetails(videoIds) : [];
-    let videos = details.length > 0 ? details : result.items;
-    videos = videos.filter(video => !video.isShort);
+    const videos = getPlaylistSearchVideos(trimmedName);
 
     if (videos.length === 0) {
         extraContainer.innerHTML = '<div class="empty-state">No hi ha vídeos relacionats.</div>';
@@ -5402,6 +5457,7 @@ async function loadRelatedVideosFromAPI(videoId) {
     const relatedContainer = document.getElementById('relatedVideos');
     const extraContainer = extraVideosGrid || document.getElementById('extraVideosGrid');
     const sidebarLimit = 8;
+    setExtraRelatedTitle(DEFAULT_EXTRA_RELATED_TITLE);
 
     // La API de vídeos relacionats pot no funcionar, fem fallback a vídeos populars
     let result = await YouTubeAPI.getRelatedVideos(videoId, 20);
@@ -6237,6 +6293,7 @@ function mapStaticVideoToCardData(video) {
 }
 // Carregar vídeos relacionats (estàtic)
 function loadRelatedVideos(currentVideoId) {
+    setExtraRelatedTitle(DEFAULT_EXTRA_RELATED_TITLE);
     const relatedVideos = VIDEOS
         .filter(v => v.id !== parseInt(currentVideoId) && !v.isShort)
         .slice(0, 20);
