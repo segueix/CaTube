@@ -81,6 +81,8 @@ function parseCSV(csvText) {
     const nameIdx = headers.indexOf('name');
     const catIdx = headers.indexOf('category');
     const accumulateIdx = normalizedHeaders.indexOf('acumular historic?');
+    const accumulateFallbackIdx = normalizedHeaders.indexOf('accumulate history?');
+    const languageFilterIdx = normalizedHeaders.indexOf('filtre idioma');
 
     if (idIdx === -1) {
         console.error("❌ No s'ha trobat la columna 'ID'. Capçaleres detectades:", headers);
@@ -94,12 +96,14 @@ function parseCSV(csvText) {
 
     return lines.slice(1).map(line => {
         const values = line.split(separator);
-        const shouldAccumulateValue = values[accumulateIdx]?.trim().toLowerCase();
+        const shouldAccumulateValue = values[accumulateIdx >= 0 ? accumulateIdx : accumulateFallbackIdx]?.trim().toLowerCase();
+        const languageFilterValue = values[languageFilterIdx]?.trim().toLowerCase();
         return {
             id: values[idIdx]?.trim(),
             name: values[nameIdx]?.trim(),
             categories: parseCategories(values[catIdx]),
-            shouldAccumulate: shouldAccumulateValue === 'si'
+            shouldAccumulate: shouldAccumulateValue === 'si',
+            languageFilter: languageFilterValue === 'auto' ? 'auto' : ''
         };
     }).filter(c => c.id && c.id !== ''); 
 }
@@ -129,6 +133,39 @@ function truncateText(text, maxLength = 300) {
     if (!text) return '';
     if (text.length <= maxLength) return text;
     return `${text.slice(0, maxLength).trim()}...`;
+}
+
+function countMarkerMatches(text, markers) {
+    const markerSet = new Set(markers);
+    return text
+        .split(/[^\p{L}]+/u)
+        .filter(Boolean)
+        .reduce((count, word) => count + (markerSet.has(word) ? 1 : 0), 0);
+}
+
+function isCatalan(video) {
+    const defaultAudioLanguage = video?.defaultAudioLanguage?.toLowerCase();
+    const defaultLanguage = video?.defaultLanguage?.toLowerCase();
+
+    if (defaultAudioLanguage === 'ca' || defaultLanguage === 'ca') {
+        return true;
+    }
+    if (defaultAudioLanguage === 'es' || defaultLanguage === 'es') {
+        return false;
+    }
+
+    const text = `${video?.title || ''} ${video?.description || ''}`.toLowerCase();
+    if (!text.trim()) {
+        return true;
+    }
+
+    const catalanMarkers = ['amb', 'els', 'les', 'i', 'dels', 'pel', 'per', 'això', 'avui', 'demà', 'nosaltres'];
+    const spanishMarkers = ['con', 'los', 'las', 'y', 'del', 'por', 'para', 'esto', 'hoy', 'mañana', 'nosotros'];
+
+    const catalanScore = countMarkerMatches(text, catalanMarkers);
+    const spanishScore = countMarkerMatches(text, spanishMarkers);
+
+    return spanishScore <= catalanScore;
 }
 
 async function main() {
@@ -220,6 +257,7 @@ async function main() {
                     const video = {
                         id: item.snippet.resourceId.videoId,
                         title: item.snippet.title,
+                        description: item.snippet.description || '',
                         thumbnail: item.snippet.thumbnails.maxres?.url
                             || item.snippet.thumbnails.standard?.url
                             || item.snippet.thumbnails.high?.url
@@ -264,12 +302,15 @@ async function main() {
                                 || v.snippet?.thumbnails?.default?.url
                                 || '',
                             channelId: v.snippet?.channelId || '',
-                            channelTitle: v.snippet?.channelTitle || '',
-                            publishedAt: v.snippet?.publishedAt || '',
-                            tags: v.snippet?.tags || [],
-                            duration,
-                            durationSeconds,
-                            isShort: durationSeconds > 0 && durationSeconds <= 120,
+                        channelTitle: v.snippet?.channelTitle || '',
+                        publishedAt: v.snippet?.publishedAt || '',
+                        description: v.snippet?.description || '',
+                        defaultAudioLanguage: v.snippet?.defaultAudioLanguage || '',
+                        defaultLanguage: v.snippet?.defaultLanguage || '',
+                        tags: v.snippet?.tags || [],
+                        duration,
+                        durationSeconds,
+                        isShort: durationSeconds > 0 && durationSeconds <= 120,
                             viewCount: Number(v.statistics?.viewCount || 0),
                             likeCount: Number(v.statistics?.likeCount || 0),
                             commentCount: Number(v.statistics?.commentCount || 0)
@@ -283,13 +324,19 @@ async function main() {
         const finalVideos = baseVideos.map(video => {
             const details = detailsById.get(video.id);
             if (!details) {
-                return video;
+                const durationSeconds = Number(video.durationSeconds || 0);
+                return {
+                    ...video,
+                    isShort: durationSeconds > 0 && durationSeconds <= 120
+                };
             }
+            const durationSeconds = Number(details.durationSeconds || 0);
             return {
                 ...video,
                 ...details,
                 categories: video.categories,
-                sourceChannelId: video.sourceChannelId
+                sourceChannelId: video.sourceChannelId,
+                isShort: durationSeconds > 0 && durationSeconds <= 120
             };
         });
 
@@ -306,10 +353,20 @@ async function main() {
 
         channels.forEach((channel) => {
             const channelVideos = videosByChannel.get(channel.id) || [];
-            const newestVideos = channelVideos
+            console.log(`📺 Canal ${channel.name || channel.id}: ${channelVideos.length} vídeos nous.`);
+
+            const filteredVideos = channel.languageFilter === 'auto'
+                ? channelVideos.filter(video => {
+                    const keep = isCatalan(video);
+                    if (!keep) {
+                        console.log(`🚫 Skipped Spanish content: ${video.title || video.id}`);
+                    }
+                    return keep;
+                })
+                : channelVideos;
+            const newestVideos = filteredVideos
                 .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
                 .slice(0, FETCH_PER_CHANNEL);
-            console.log(`📺 Canal ${channel.name || channel.id}: ${channelVideos.length} vídeos nous.`);
 
             if (!channel.shouldAccumulate) {
                 const idsToRemove = [];
