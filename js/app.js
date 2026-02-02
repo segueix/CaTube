@@ -6758,8 +6758,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);
     if (params.has('list')) {
         const listId = params.get('list');
+
+        // 1. IMMEDIATE NAVIGATION TO LIBRARY
+        // This gives context to the user that they are adding to their library
+        if (typeof showPlaylists === 'function') {
+            showPlaylists();
+            // Update Navigation UI manually to ensure 'active' state is correct
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            const libNav = document.querySelector('.nav-item[data-page="playlists"]');
+            if (libNav) libNav.classList.add('active');
+        }
         
-        // 1. Initial Loading Modal
+        // 2. Initial Loading Modal
         const modal = document.createElement('div');
         modal.className = 'modal-overlay active';
         modal.id = 'importPlaylistModal';
@@ -6769,47 +6779,55 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="modal-header">
                     <h2 class="modal-title">
                         <div class="spinner" style="width:20px;height:20px;border-width:2px;margin-right:10px;"></div>
-                        Carregant...
+                        Carregant Llista...
                     </h2>
                 </div>
                 <div class="modal-body" style="text-align:center; padding: 40px 20px;">
-                    <p class="modal-description">Descarregant informació de la llista...</p>
+                    <p class="modal-description">Connectant amb el servidor...</p>
                 </div>
             </div>
         `;
         document.body.appendChild(modal);
 
-        // Clean URL
+        // Clean URL immediately
         window.history.replaceState({}, document.title, window.location.pathname);
 
         (async () => {
             try {
-                // 2. Fetch Playlist IDs from Server
+                // 3. Fetch Playlist Data from Sheet
                 const res = await fetch(`${SEGUEIX_API_URL}?id=${listId}`);
                 const data = await res.json();
 
                 if (data.status === 'success') {
-                    const idsRaw = data.ids.split(',');
-                    const ids = idsRaw.map(id => id.trim()).filter(id => id.length > 0);
-                    const playlistName = data.nom;
+                    let ids = [];
+                    
+                    // ROBUST ID EXTRACTION
+                    if (data.urls && typeof data.urls === 'string') {
+                        ids = data.urls.split(',').map(url => {
+                            const match = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/);
+                            return match ? match[1] : url.trim(); 
+                        }).filter(id => id && id.length > 0);
+                    } else if (data.ids && typeof data.ids === 'string') {
+                        ids = data.ids.split(',').map(id => id.trim()).filter(id => id.length > 0);
+                    }
 
-                    modal.querySelector('.modal-description').textContent = `Processant ${ids.length} vídeos...`;
+                    if (ids.length === 0) throw new Error("La llista està buida.");
 
-                    // 3. RESOLVE VIDEOS
+                    const playlistName = data.nom || 'Llista Compartida';
+                    modal.querySelector('.modal-description').textContent = `Obtenint dades de ${ids.length} vídeos...`;
+
+                    // 4. PREPARE LOCAL DATA SOURCES (Prioritize Feed & Cache)
+                    const feedVideos = (typeof YouTubeAPI !== 'undefined' && Array.isArray(YouTubeAPI.feedVideos)) ? YouTubeAPI.feedVideos : [];
+                    const allKnownVideos = [
+                        ...feedVideos, 
+                        ...(window.cachedAPIVideos || []), 
+                        ...(window.VIDEOS || [])
+                    ];
+
+                    // 5. RESOLVE VIDEOS
                     const resolvedVideos = [];
                     const missingIds = [];
                     
-                    // Helper to check API Key
-                    const getApiKey = () => {
-                        return (typeof YouTubeAPI !== 'undefined' && YouTubeAPI.getApiKey) 
-                            ? YouTubeAPI.getApiKey() 
-                            : localStorage.getItem('youtube_api_key');
-                    };
-                    const apiKey = getApiKey();
-
-                    const allKnownVideos = [...(window.cachedAPIVideos || []), ...(window.VIDEOS || [])];
-
-                    // Check local cache first
                     ids.forEach(id => {
                         const found = allKnownVideos.find(v => String(v.id) === String(id));
                         if (found) {
@@ -6819,68 +6837,62 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
                     });
 
-                    // Fetch missing from API if Key exists
-                    if (missingIds.length > 0 && apiKey) {
-                        try {
-                            // Fetch in chunks
-                            for (let i = 0; i < missingIds.length; i += 50) {
-                                const chunk = missingIds.slice(i, i + 50).join(',');
-                                const ytRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${chunk}&key=${apiKey}`);
-                                
-                                if (ytRes.ok) {
-                                    const ytData = await ytRes.json();
-                                    if (ytData.items) {
-                                        // Use YouTubeAPI helper if available, otherwise manual map
-                                        let newItems = [];
-                                        if (typeof YouTubeAPI !== 'undefined' && YouTubeAPI.transformVideoResults) {
-                                            newItems = YouTubeAPI.transformVideoResults(ytData.items);
-                                        } else {
-                                            // Manual fallback mapping
-                                            newItems = ytData.items.map(item => ({
+                    // 6. FETCH MISSING FROM API
+                    if (missingIds.length > 0) {
+                        let apiKey = null;
+                        if (typeof YouTubeAPI !== 'undefined' && YouTubeAPI.getApiKey) apiKey = YouTubeAPI.getApiKey();
+                        if (!apiKey) apiKey = localStorage.getItem('catube_api_key') || localStorage.getItem('youtube_api_key');
+
+                        if (apiKey) {
+                            try {
+                                for (let i = 0; i < missingIds.length; i += 50) {
+                                    const chunk = missingIds.slice(i, i + 50).join(',');
+                                    const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${chunk}&key=${apiKey}`;
+                                    
+                                    const ytRes = await fetch(apiUrl);
+                                    if (ytRes.ok) {
+                                        const ytData = await ytRes.json();
+                                        if (ytData.items) {
+                                            const newItems = ytData.items.map(item => ({
                                                 id: item.id,
                                                 title: item.snippet.title,
-                                                thumbnail: item.snippet.thumbnails?.medium?.url || '',
+                                                thumbnail: item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url || 'img/icon-192.png',
                                                 channelTitle: item.snippet.channelTitle,
                                                 source: 'api'
                                             }));
-                                        }
 
-                                        if (!window.cachedAPIVideos) window.cachedAPIVideos = [];
-                                        window.cachedAPIVideos.push(...newItems);
-                                        
-                                        newItems.forEach(item => {
-                                            resolvedVideos.push(getPlaylistVideoData(item));
-                                        });
+                                            if (!window.cachedAPIVideos) window.cachedAPIVideos = [];
+                                            window.cachedAPIVideos.push(...newItems);
+                                            
+                                            newItems.forEach(item => resolvedVideos.push(getPlaylistVideoData(item)));
+                                        }
                                     }
                                 }
+                            } catch (e) {
+                                console.error("Error fetching YouTube details:", e);
                             }
-                        } catch (e) {
-                            console.error("Error fetching YouTube details:", e);
                         }
                     }
 
-                    // 4. CONSTRUCT FINAL LIST (Robust Fallback)
+                    // 7. CONSTRUCT FINAL LIST
                     const orderedVideos = [];
                     ids.forEach(id => {
                         let v = resolvedVideos.find(rv => String(rv.id) === String(id));
-                        
-                        // CRITICAL FIX: Even if fallback, ensure source is 'api' so it's playable
                         if (!v) {
                             v = {
                                 id: id,
-                                title: `Vídeo ${id}`,
+                                title: `Video ${id}`, 
                                 thumbnail: 'img/icon-192.png', 
                                 channelTitle: 'Informació no disponible',
                                 source: 'api'
                             };
                         } else {
-                            // Ensure source is set on found videos too
                             if (!v.source) v.source = 'api';
                         }
                         orderedVideos.push(v);
                     });
 
-                    // 5. AUTO-SAVE
+                    // 8. SAVE TO PLAYLISTS
                     const playlists = getPlaylists();
                     const newId = `shared_${listId}`;
                     const existingIndex = playlists.findIndex(p => p.id === newId);
@@ -6891,31 +6903,30 @@ document.addEventListener('DOMContentLoaded', async () => {
                         videos: orderedVideos
                     };
 
-                    if (existingIndex >= 0) {
-                        playlists[existingIndex] = newPlaylistObj;
-                    } else {
-                        playlists.push(newPlaylistObj);
-                    }
+                    if (existingIndex >= 0) playlists[existingIndex] = newPlaylistObj;
+                    else playlists.push(newPlaylistObj);
+                    
                     savePlaylists(playlists);
 
+                    // REFRESH UI (Since we are already on the Library page, this will show the new playlist in the background)
                     if (typeof renderPlaylistsPage === 'function' && !playlistsPage.classList.contains('hidden')) {
                         renderPlaylistsPage();
                     }
 
-                    // 6. SHOW RESULT
+                    // 9. SHOW RESULT MODAL
                     const modalHeader = modal.querySelector('.modal-header');
                     modalHeader.innerHTML = `
-                        <h2 class="modal-title" style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:85%;">
-                            📂 ${escapeHtml(playlistName)}
+                        <h2 class="modal-title" style="display:flex; align-items:center; gap:10px; overflow:hidden; white-space:nowrap; max-width:85%;">
+                            <i data-lucide="library" style="flex-shrink:0; color:#fff;"></i> 
+                            <span style="overflow:hidden; text-overflow:ellipsis;">${escapeHtml(playlistName)}</span>
                         </h2>
                         <button class="modal-close" onclick="document.getElementById('importPlaylistModal').remove()">
                             <i data-lucide="x"></i>
                         </button>
                     `;
 
-                    // Generate HTML (Clickable items)
                     const listHtml = orderedVideos.map(video => `
-                        <div class="playlist-import-item" onclick="if(typeof showVideoFromAPI === 'function') { showVideoFromAPI('${video.id}'); }" style="display:flex; gap:10px; align-items:center; padding:10px 15px; border-bottom:1px solid rgba(255,255,255,0.05); cursor:pointer;">
+                        <div class="playlist-import-item" onclick="document.getElementById('importPlaylistModal').remove(); if(typeof showVideoFromAPI === 'function') { showVideoFromAPI('${video.id}'); }" style="display:flex; gap:10px; align-items:center; padding:10px 15px; border-bottom:1px solid rgba(255,255,255,0.05); cursor:pointer;">
                             <img src="${video.thumbnail}" style="width:60px; height:34px; object-fit:cover; border-radius:4px; flex-shrink:0; background:#333;">
                             <div style="min-width:0; flex-grow:1;">
                                 <div style="font-size:0.85rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color: var(--text-primary);">${escapeHtml(video.title)}</div>
@@ -6938,7 +6949,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (typeof lucide !== 'undefined') lucide.createIcons();
 
                 } else {
-                    throw new Error('La llista no existeix al servidor.');
+                    throw new Error('Llista no trobada');
                 }
             } catch (err) {
                 console.error(err);
@@ -6956,8 +6967,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // 3. Renderitzar la vista compartida
-function renderSharedPlaylist(name, stringIds) {
-    const ids = stringIds.split(',');
+function renderSharedPlaylist(name, stringIds = '') {
+    const ids = Array.isArray(stringIds)
+        ? stringIds
+        : (typeof stringIds === 'string' ? stringIds.split(',') : []);
 
     // CORRECCIÓ: Busquem els vídeos a les teves caches existents (API + Estàtics)
     // Combinem totes les fonts possibles per trobar la info del vídeo
@@ -7008,8 +7021,10 @@ function renderSharedPlaylist(name, stringIds) {
 }
 
 // 4. Funció per GUARDAR (Correctament integrada a la teva App)
-function saveImportedPlaylist(name, stringIds) {
-    const ids = stringIds.split(',');
+function saveImportedPlaylist(name, stringIds = '') {
+    const ids = Array.isArray(stringIds)
+        ? stringIds
+        : (typeof stringIds === 'string' ? stringIds.split(',') : []);
     const allKnownVideos = [...(window.cachedAPIVideos || []), ...(window.VIDEOS || [])];
 
     // Reconstruïm els objectes de vídeo
