@@ -6758,8 +6758,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);
     if (params.has('list')) {
         const listId = params.get('list');
+
+        // 1. IMMEDIATE NAVIGATION TO LIBRARY
+        // This gives context to the user that they are adding to their library
+        if (typeof showPlaylists === 'function') {
+            showPlaylists();
+            // Update Navigation UI manually to ensure 'active' state is correct
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            const libNav = document.querySelector('.nav-item[data-page="playlists"]');
+            if (libNav) libNav.classList.add('active');
+        }
         
-        // 1. Initial Loading Modal
+        // 2. Initial Loading Modal
         const modal = document.createElement('div');
         modal.className = 'modal-overlay active';
         modal.id = 'importPlaylistModal';
@@ -6784,7 +6794,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         (async () => {
             try {
-                // 2. Fetch Playlist Data from Sheet
+                // 3. Fetch Playlist Data from Sheet
                 const res = await fetch(`${SEGUEIX_API_URL}?id=${listId}`);
                 const data = await res.json();
 
@@ -6806,7 +6816,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const playlistName = data.nom || 'Llista Compartida';
                     modal.querySelector('.modal-description').textContent = `Obtenint dades de ${ids.length} vídeos...`;
 
-                    // 3. PREPARE LOCAL DATA SOURCES (Prioritize Feed & Cache)
+                    // 4. PREPARE LOCAL DATA SOURCES (Prioritize Feed & Cache)
                     const feedVideos = (typeof YouTubeAPI !== 'undefined' && Array.isArray(YouTubeAPI.feedVideos)) ? YouTubeAPI.feedVideos : [];
                     const allKnownVideos = [
                         ...feedVideos, 
@@ -6814,13 +6824,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                         ...(window.VIDEOS || [])
                     ];
 
-                    // 4. RESOLVE VIDEOS
+                    // 5. RESOLVE VIDEOS
                     const resolvedVideos = [];
                     const missingIds = [];
                     
-                    // Check local cache first
                     ids.forEach(id => {
-                        // Find video in ANY local source
                         const found = allKnownVideos.find(v => String(v.id) === String(id));
                         if (found) {
                             resolvedVideos.push(getPlaylistVideoData(found));
@@ -6829,16 +6837,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
                     });
 
-                    // 5. FETCH MISSING FROM API
+                    // 6. FETCH MISSING FROM API
                     if (missingIds.length > 0) {
-                        // Check API Key
                         let apiKey = null;
                         if (typeof YouTubeAPI !== 'undefined' && YouTubeAPI.getApiKey) apiKey = YouTubeAPI.getApiKey();
                         if (!apiKey) apiKey = localStorage.getItem('catube_api_key') || localStorage.getItem('youtube_api_key');
 
                         if (apiKey) {
                             try {
-                                // Chunk requests (Max 50 per call)
                                 for (let i = 0; i < missingIds.length; i += 50) {
                                     const chunk = missingIds.slice(i, i + 50).join(',');
                                     const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${chunk}&key=${apiKey}`;
@@ -6855,7 +6861,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                                                 source: 'api'
                                             }));
 
-                                            // Add to global cache for future use
                                             if (!window.cachedAPIVideos) window.cachedAPIVideos = [];
                                             window.cachedAPIVideos.push(...newItems);
                                             
@@ -6866,33 +6871,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                             } catch (e) {
                                 console.error("Error fetching YouTube details:", e);
                             }
-                        } else {
-                            console.warn("No API Key available to fetch missing videos.");
                         }
                     }
 
-                    // 6. CONSTRUCT FINAL LIST (With Fallback)
+                    // 7. CONSTRUCT FINAL LIST
                     const orderedVideos = [];
                     ids.forEach(id => {
                         let v = resolvedVideos.find(rv => String(rv.id) === String(id));
-                        
-                        // FALLBACK: If not found anywhere, use ID but make it CLICKABLE
                         if (!v) {
                             v = {
                                 id: id,
                                 title: `Video ${id}`, 
                                 thumbnail: 'img/icon-192.png', 
                                 channelTitle: 'Informació no disponible',
-                                source: 'api' // Required for playback
+                                source: 'api'
                             };
                         } else {
-                            // Ensure source is set
                             if (!v.source) v.source = 'api';
                         }
                         orderedVideos.push(v);
                     });
 
-                    // 7. SAVE TO PLAYLISTS
+                    // 8. SAVE TO PLAYLISTS
                     const playlists = getPlaylists();
                     const newId = `shared_${listId}`;
                     const existingIndex = playlists.findIndex(p => p.id === newId);
@@ -6908,15 +6908,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                     
                     savePlaylists(playlists);
 
+                    // REFRESH UI (Since we are already on the Library page, this will show the new playlist in the background)
                     if (typeof renderPlaylistsPage === 'function' && !playlistsPage.classList.contains('hidden')) {
                         renderPlaylistsPage();
                     }
 
-                    // 8. SHOW RESULT
+                    // 9. SHOW RESULT MODAL
                     const modalHeader = modal.querySelector('.modal-header');
                     modalHeader.innerHTML = `
-                        <h2 class="modal-title" style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:85%;">
-                            📂 ${escapeHtml(playlistName)}
+                        <h2 class="modal-title" style="display:flex; align-items:center; gap:10px; overflow:hidden; white-space:nowrap; max-width:85%;">
+                            <i data-lucide="library" style="flex-shrink:0;"></i> 
+                            <span style="overflow:hidden; text-overflow:ellipsis;">${escapeHtml(playlistName)}</span>
                         </h2>
                         <button class="modal-close" onclick="document.getElementById('importPlaylistModal').remove()">
                             <i data-lucide="x"></i>
@@ -6924,7 +6926,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     `;
 
                     const listHtml = orderedVideos.map(video => `
-                        <div class="playlist-import-item" onclick="if(typeof showVideoFromAPI === 'function') { document.getElementById('importPlaylistModal').remove(); showVideoFromAPI('${video.id}'); }" style="display:flex; gap:10px; align-items:center; padding:10px 15px; border-bottom:1px solid rgba(255,255,255,0.05); cursor:pointer;">
+                        <div class="playlist-import-item" onclick="document.getElementById('importPlaylistModal').remove(); if(typeof showVideoFromAPI === 'function') { showVideoFromAPI('${video.id}'); }" style="display:flex; gap:10px; align-items:center; padding:10px 15px; border-bottom:1px solid rgba(255,255,255,0.05); cursor:pointer;">
                             <img src="${video.thumbnail}" style="width:60px; height:34px; object-fit:cover; border-radius:4px; flex-shrink:0; background:#333;">
                             <div style="min-width:0; flex-grow:1;">
                                 <div style="font-size:0.85rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color: var(--text-primary);">${escapeHtml(video.title)}</div>
@@ -6937,7 +6939,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     modal.querySelector('.modal-body').innerHTML = `
                         <div style="padding: 15px; background: rgba(46, 204, 113, 0.1); border-bottom:1px solid rgba(255,255,255,0.05); color: #2ecc71; font-size:0.9rem;">
                             <i data-lucide="check-circle" style="width:16px; vertical-align:text-bottom;"></i>
-                            Llista guardada! (${orderedVideos.length} vídeos)
+                            Llista guardada correctament!
                         </div>
                         <div style="max-height: 50vh; overflow-y: auto; text-align:left;">
                             ${listHtml}
