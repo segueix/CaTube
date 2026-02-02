@@ -6789,9 +6789,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const data = await res.json();
 
                 if (data.status === 'success') {
-                    const idsRaw = data.ids.split(',');
-                    const ids = idsRaw.map(id => id.trim()).filter(id => id.length > 0);
-                    const playlistName = data.nom;
+                    const idsRaw = Array.isArray(data.ids)
+                        ? data.ids
+                        : (typeof data.ids === 'string' ? data.ids.split(',') : []);
+                    const ids = idsRaw.map(id => String(id).trim()).filter(id => id.length > 0);
+                    if (ids.length === 0) {
+                        throw new Error('La llista no té vídeos per importar.');
+                    }
+                    const playlistName = data.nom || 'Llista compartida';
 
                     modal.querySelector('.modal-description').textContent = `Processant ${ids.length} vídeos...`;
 
@@ -6956,8 +6961,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // 3. Renderitzar la vista compartida
-function renderSharedPlaylist(name, stringIds) {
-    const ids = stringIds.split(',');
+function renderSharedPlaylist(name, stringIds = '') {
+    const ids = Array.isArray(stringIds)
+        ? stringIds
+        : (typeof stringIds === 'string' ? stringIds.split(',') : []);
 
     // CORRECCIÓ: Busquem els vídeos a les teves caches existents (API + Estàtics)
     // Combinem totes les fonts possibles per trobar la info del vídeo
@@ -7008,8 +7015,10 @@ function renderSharedPlaylist(name, stringIds) {
 }
 
 // 4. Funció per GUARDAR (Correctament integrada a la teva App)
-function saveImportedPlaylist(name, stringIds) {
-    const ids = stringIds.split(',');
+function saveImportedPlaylist(name, stringIds = '') {
+    const ids = Array.isArray(stringIds)
+        ? stringIds
+        : (typeof stringIds === 'string' ? stringIds.split(',') : []);
     const allKnownVideos = [...(window.cachedAPIVideos || []), ...(window.VIDEOS || [])];
 
     // Reconstruïm els objectes de vídeo
