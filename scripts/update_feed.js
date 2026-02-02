@@ -74,9 +74,13 @@ function parseCSV(csvText) {
     }
 
     const headers = firstLine.split(separator).map(h => h.trim().toLowerCase());
+    const normalizedHeaders = headers.map(header =>
+        header.normalize('NFD').replace(/\p{Diacritic}/gu, '')
+    );
     const idIdx = headers.indexOf('id');
     const nameIdx = headers.indexOf('name');
     const catIdx = headers.indexOf('category');
+    const accumulateIdx = normalizedHeaders.indexOf('acumular historic?');
 
     if (idIdx === -1) {
         console.error("❌ No s'ha trobat la columna 'ID'. Capçaleres detectades:", headers);
@@ -90,10 +94,12 @@ function parseCSV(csvText) {
 
     return lines.slice(1).map(line => {
         const values = line.split(separator);
+        const shouldAccumulateValue = values[accumulateIdx]?.trim().toLowerCase();
         return {
             id: values[idIdx]?.trim(),
             name: values[nameIdx]?.trim(),
-            categories: parseCategories(values[catIdx])
+            categories: parseCategories(values[catIdx]),
+            shouldAccumulate: shouldAccumulateValue === 'si'
         };
     }).filter(c => c.id && c.id !== ''); 
 }
@@ -128,6 +134,19 @@ function truncateText(text, maxLength = 300) {
 async function main() {
     try {
         console.log("--- Iniciant actualització des de Google Sheets ---");
+
+        const masterVideosById = new Map();
+        if (fs.existsSync(OUTPUT_FEED_JSON)) {
+            const existingFeedRaw = fs.readFileSync(OUTPUT_FEED_JSON, 'utf8');
+            const existingFeed = JSON.parse(existingFeedRaw);
+            if (Array.isArray(existingFeed.videos)) {
+                existingFeed.videos.forEach(video => {
+                    if (video?.id) {
+                        masterVideosById.set(video.id, video);
+                    }
+                });
+            }
+        }
         
         const csvContent = await fetchData(SHEET_CSV_URL);
         const channels = parseCSV(csvContent);
@@ -283,18 +302,48 @@ async function main() {
             videosByChannel.get(key).push(video);
         });
 
-        const feedVideos = [];
-channels.forEach((channel) => {
-    const channelVideos = videosByChannel.get(channel.id) || [];
-    console.log(`📺 Canal ${channel.name || channel.id}: ${channelVideos.length} vídeos abans de filtrar.`);
-    const selected = channelVideos.slice(0, VIDEOS_PER_CHANNEL);
-    console.log(`✅ Canal ${channel.name || channel.id}: ${selected.length} vídeos seleccionats (de ${channelVideos.length} disponibles).`);
-    feedVideos.push(...selected);
-});
+        const SAFETY_LIMIT_PER_CHANNEL = 500;
 
-feedVideos.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
-const feedPayload = feedVideos; // No limit - include ALL videos
-const videosWithViews = feedPayload.filter(video => (video.viewCount || 0) > 0);
+        channels.forEach((channel) => {
+            const channelVideos = videosByChannel.get(channel.id) || [];
+            const newestVideos = channelVideos
+                .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
+                .slice(0, FETCH_PER_CHANNEL);
+            console.log(`📺 Canal ${channel.name || channel.id}: ${channelVideos.length} vídeos nous.`);
+
+            if (!channel.shouldAccumulate) {
+                const idsToRemove = [];
+                masterVideosById.forEach((video, id) => {
+                    const sourceId = video.sourceChannelId || video.channelId;
+                    if (sourceId === channel.id) {
+                        idsToRemove.push(id);
+                    }
+                });
+                idsToRemove.forEach(id => masterVideosById.delete(id));
+            }
+
+            newestVideos.forEach(video => {
+                masterVideosById.set(video.id, video);
+            });
+
+            const channelEntries = [];
+            masterVideosById.forEach(video => {
+                const sourceId = video.sourceChannelId || video.channelId;
+                if (sourceId === channel.id) {
+                    channelEntries.push(video);
+                }
+            });
+            channelEntries.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+            channelEntries.slice(SAFETY_LIMIT_PER_CHANNEL).forEach(video => {
+                masterVideosById.delete(video.id);
+            });
+
+            console.log(`✅ Canal ${channel.name || channel.id}: ${Math.min(channelEntries.length, SAFETY_LIMIT_PER_CHANNEL)} vídeos totals.`);
+        });
+
+        const feedPayload = Array.from(masterVideosById.values())
+            .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+        const videosWithViews = feedPayload.filter(video => (video.viewCount || 0) > 0);
         console.log(`📊 Vídeos amb viewCount > 0: ${videosWithViews.length}/${feedPayload.length}`);
         videosWithViews.slice(0, 3).forEach(video => {
             console.log(`📈 ${video.id}: ${video.viewCount}`);
@@ -333,7 +382,7 @@ const videosWithViews = feedPayload.filter(video => (video.viewCount || 0) > 0);
             channels.map(channel => [channel.id, channel.categories || []])
         );
         const categoriesByChannelId = new Map();
-        finalVideos.forEach(video => {
+        feedPayload.forEach(video => {
             if (!video.channelId) return;
             const sourceCategories = categoriesBySourceId.get(video.sourceChannelId) || [];
             if (!categoriesByChannelId.has(video.channelId)) {
@@ -352,7 +401,7 @@ const videosWithViews = feedPayload.filter(video => (video.viewCount || 0) > 0);
 
         Object.keys(channelMetadata).forEach(channelId => {
             const tagCounts = new Map();
-            finalVideos.forEach(video => {
+            feedPayload.forEach(video => {
                 if (video.channelId !== channelId) {
                     return;
                 }
@@ -392,7 +441,7 @@ const videosWithViews = feedPayload.filter(video => (video.viewCount || 0) > 0);
         console.log("Feed escrit a:", OUTPUT_FEED_JSON);
         console.log("Existeix:", fs.existsSync(OUTPUT_FEED_JSON));
         console.log("Mida:", fs.statSync(OUTPUT_FEED_JSON).size);
-        console.log(`🚀 Feed actualitzat correctament amb ${finalVideos.length} vídeos.`);
+        console.log(`🚀 Feed actualitzat correctament amb ${feedPayload.length} vídeos.`);
 
     } catch (error) {
         console.error("❌ Error en el procés:", error.message);
