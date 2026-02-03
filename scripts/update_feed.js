@@ -83,6 +83,7 @@ function parseCSV(csvText) {
     const accumulateIdx = normalizedHeaders.indexOf('acumular historic?');
     const accumulateFallbackIdx = normalizedHeaders.indexOf('accumulate history?');
     const languageFilterIdx = normalizedHeaders.indexOf('filtre idioma');
+    const liveIdx = headers.findIndex(header => header.toLowerCase() === 'directes');
 
     if (idIdx === -1) {
         console.error("❌ No s'ha trobat la columna 'ID'. Capçaleres detectades:", headers);
@@ -98,12 +99,14 @@ function parseCSV(csvText) {
         const values = line.split(separator);
         const shouldAccumulateValue = values[accumulateIdx >= 0 ? accumulateIdx : accumulateFallbackIdx]?.trim().toLowerCase();
         const languageFilterValue = values[languageFilterIdx]?.trim().toLowerCase();
+        const liveValue = values[liveIdx]?.trim().toLowerCase();
         return {
             id: values[idIdx]?.trim(),
             name: values[nameIdx]?.trim(),
             categories: parseCategories(values[catIdx]),
             shouldAccumulate: shouldAccumulateValue === 'si',
-            languageFilter: languageFilterValue === 'auto' ? 'auto' : ''
+            languageFilter: languageFilterValue === 'auto' ? 'auto' : '',
+            checkLive: liveValue === 'auto'
         };
     }).filter(c => c.id && c.id !== ''); 
 }
@@ -215,16 +218,21 @@ async function main() {
             const batchPromises = chunk.map(async (channel) => {
                 try {
                     let uploadPlaylistId = '';
+                    let resolvedChannelId = '';
                     
                     // Optimization: Convert UC ID to UU ID directly to save quota
                     if (channel.id.startsWith('UC')) {
                         uploadPlaylistId = channel.id.replace('UC', 'UU');
+                        resolvedChannelId = channel.id;
                     } 
                     // Only fetch for Handles (@)
                     else if (channel.id.startsWith('@')) {
                         const hUrl = `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&forHandle=${encodeURIComponent(channel.id)}&key=${API_KEY}`;
                         const hData = await fetchYouTubeData(hUrl);
-                        if (hData.items?.length > 0) uploadPlaylistId = hData.items[0].contentDetails.relatedPlaylists.uploads;
+                        if (hData.items?.length > 0) {
+                            uploadPlaylistId = hData.items[0].contentDetails.relatedPlaylists.uploads;
+                            resolvedChannelId = hData.items[0].id;
+                        }
                     }
 
                     if (!uploadPlaylistId) {
@@ -235,8 +243,35 @@ async function main() {
                     const maxResults = Math.min(FETCH_PER_CHANNEL, 50);
                     const vUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadPlaylistId}&maxResults=${maxResults}&key=${API_KEY}`;
                     const vData = await fetchYouTubeData(vUrl);
+                    const items = vData.items || [];
+
+                    if (channel.checkLive && resolvedChannelId) {
+                        try {
+                            const lUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${resolvedChannelId}&eventType=live&type=video&key=${API_KEY}`;
+                            const lData = await fetchYouTubeData(lUrl);
+                            const liveItem = lData.items?.[0];
+                            if (liveItem?.id?.videoId) {
+                                items.unshift({
+                                    kind: 'youtube#playlistItem',
+                                    snippet: {
+                                        title: liveItem.snippet?.title || '',
+                                        description: liveItem.snippet?.description || '',
+                                        thumbnails: liveItem.snippet?.thumbnails || {},
+                                        channelId: liveItem.snippet?.channelId || '',
+                                        channelTitle: liveItem.snippet?.channelTitle || '',
+                                        publishedAt: liveItem.snippet?.publishedAt || '',
+                                        resourceId: {
+                                            videoId: liveItem.id.videoId
+                                        }
+                                    }
+                                });
+                            }
+                        } catch (err) {
+                            console.error(`⚠️ Error buscant directe per ${channel.name || channel.id}:`, err.message);
+                        }
+                    }
                     
-                    return { items: vData.items || [], channelInfo: channel };
+                    return { items, channelInfo: channel };
 
                 } catch (err) {
                     console.error(`❌ Error processing channel ${channel.name || channel.id}:`, err.message);
