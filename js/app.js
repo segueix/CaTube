@@ -4918,6 +4918,7 @@ function updatePlayerIframe({ source, videoId, videoUrl }) {
         setupYouTubeIframeMessaging(newIframe);
     }
     setupDragHandle();
+    setupMiniPlayerUIControls();
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
     }
