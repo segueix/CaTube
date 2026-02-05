@@ -90,7 +90,7 @@ let userWatchGridPreference = '3';
 const featuredVideoBySection = new Map();
 const customCategorySearchCache = new Map();
 const customCategorySearchInFlight = new Map();
-const HYBRID_CATEGORY_SORT = new Set(['Cultura', 'Diversió', 'Actualitat', 'Vida', 'El Món', 'Gaming', 'Mitjans']);
+const HYBRID_CATEGORY_SORT = new Set(['Cultura', 'Diversió', 'Actualitat', 'Vida', 'El Món', 'Gaming', 'Mitjans', 'Digitals']);
 
 const BACKGROUND_STORAGE_KEY = 'catube_background_color';
 const FONT_SIZE_STORAGE_KEY = 'catube_font_size';
@@ -416,7 +416,7 @@ function isChannelFollowed(channelId) {
     return getFollowedChannelIds().some(id => String(id) === normalizedId);
 }
 
-function isMitjansChannel(channelId) {
+function isMitjansOrDigitalsChannel(channelId) {
     if (!channelId) {
         return false;
     }
@@ -433,7 +433,10 @@ function isMitjansChannel(channelId) {
 
     const customCats = getChannelCustomCategories(normalizedId);
     const allCats = [...feedCats, ...customCats];
-    return allCats.some(cat => String(cat).toLowerCase() === 'mitjans');
+    return allCats.some(cat => {
+        const normalizedCat = String(cat).toLowerCase();
+        return normalizedCat === 'mitjans' || normalizedCat === 'digitals';
+    });
 }
 
 function toggleFollowChannel(channelId) {
@@ -2411,9 +2414,12 @@ function renderFeed() {
             } else if (cachedChannels[video.channelId]?.categories) {
                 feedCats = cachedChannels[video.channelId].categories;
             }
-            const isMitjans = [...channelCats, ...feedCats]
-                .some(cat => String(cat).toLowerCase() === 'mitjans');
-            return !isMitjans;
+            const isMitjansOrDigitals = [...channelCats, ...feedCats]
+                .some(cat => {
+                    const normalizedCat = String(cat).toLowerCase();
+                    return normalizedCat === 'mitjans' || normalizedCat === 'digitals';
+                });
+            return !isMitjansOrDigitals;
         });
     }
 
@@ -2559,7 +2565,8 @@ function setupChipsBarOrdering() {
 
     const activeValue = selectedCategory;
     chipsBar.innerHTML = '';
-    const sortableChips = orderedChips.filter(chip => chip.value !== 'Mitjans');
+    const fixedChips = ['Digitals', 'Mitjans'];
+    const sortableChips = orderedChips.filter(chip => !fixedChips.includes(chip.value));
     sortableChips.forEach((chip) => {
         const button = document.createElement('button');
         button.type = 'button';
@@ -2567,27 +2574,32 @@ function setupChipsBarOrdering() {
         button.dataset.cat = chip.value;
         button.textContent = chip.label;
         button.draggable = true;
+        button.dataset.fixed = 'false';
         const isActive = chip.value === activeValue;
         button.classList.toggle('is-active', isActive);
         button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
         chipsBar.appendChild(button);
     });
-    const mitjansChip = document.createElement('button');
-    mitjansChip.type = 'button';
-    mitjansChip.className = 'chip';
-    mitjansChip.dataset.cat = 'Mitjans';
-    mitjansChip.textContent = 'Mitjans';
-    mitjansChip.draggable = false;
-    const isMitjansActive = 'Mitjans' === activeValue;
-    mitjansChip.classList.toggle('is-active', isMitjansActive);
-    mitjansChip.setAttribute('aria-pressed', isMitjansActive ? 'true' : 'false');
-    chipsBar.appendChild(mitjansChip);
+    fixedChips.forEach((chipName) => {
+        const fixedChip = document.createElement('button');
+        fixedChip.type = 'button';
+        fixedChip.className = 'chip';
+        fixedChip.dataset.cat = chipName;
+        fixedChip.textContent = chipName;
+        fixedChip.draggable = false;
+        fixedChip.dataset.fixed = 'true';
+        const isActive = chipName === activeValue;
+        fixedChip.classList.toggle('is-active', isActive);
+        fixedChip.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        chipsBar.appendChild(fixedChip);
+    });
     const addButton = document.createElement('button');
     addButton.type = 'button';
     addButton.className = 'chip chip-add';
     addButton.setAttribute('aria-label', 'Afegir una categoria personalitzada');
     addButton.textContent = '+';
     addButton.draggable = false;
+    addButton.dataset.fixed = 'true';
     chipsBar.appendChild(addButton);
 
     saveChipOrder(getChipOrderFromDom());
@@ -2631,6 +2643,15 @@ function getChipOrderFromDom() {
         .map(chip => chip.dataset.cat || chip.textContent.trim());
 }
 
+
+function isFixedChip(chip) {
+    if (!chip) {
+        return false;
+    }
+    const value = chip.dataset.cat || chip.textContent.trim();
+    return value === 'Mitjans' || value === 'Digitals' || chip.classList.contains('chip-add');
+}
+
 function activateCategory(category) {
     selectedCategory = category;
     localStorage.setItem(LAST_CATEGORY_STORAGE_KEY, selectedCategory);
@@ -2659,7 +2680,7 @@ let draggedChip = null;
 
 function handleChipDragStart(event) {
     const chip = event.target.closest('.chip');
-    if (!chip) {
+    if (!chip || chip.dataset.fixed === 'true' || chip.classList.contains('chip-add')) {
         return;
     }
     draggedChip = chip;
@@ -2676,8 +2697,13 @@ function handleChipDragOver(event) {
         return;
     }
     const afterElement = getChipDragAfterElement(chipsBar, event.clientX);
+    const fixedAnchor = chipsBar.querySelector('.chip[data-fixed="true"]') || chipsBar.querySelector('.chip-add');
     if (!afterElement) {
-        chipsBar.appendChild(draggedChip);
+        if (fixedAnchor) {
+            chipsBar.insertBefore(draggedChip, fixedAnchor);
+        } else {
+            chipsBar.appendChild(draggedChip);
+        }
     } else if (afterElement !== draggedChip) {
         chipsBar.insertBefore(draggedChip, afterElement);
     }
@@ -2700,7 +2726,7 @@ function handleChipDragEnd() {
 }
 
 function getChipDragAfterElement(container, x) {
-    const draggableElements = [...container.querySelectorAll('.chip:not(.is-dragging)')];
+    const draggableElements = [...container.querySelectorAll('.chip:not(.is-dragging)')].filter(chip => !isFixedChip(chip));
     return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
         const offset = x - box.left - box.width / 2;
@@ -3227,7 +3253,7 @@ function navigateToSearchResults(query) {
             <div class="follow-grid search-channel-grid">
                 ${results.channels.map(channel => {
                     const avatar = channel.avatar || getFollowChannelAvatar(channel.id) || 'img/icon-192.png';
-                    const isMitjans = isMitjansChannel(channel.id);
+                    const isMitjans = isMitjansOrDigitalsChannel(channel.id);
                     const followButtonHtml = isMitjans
                         ? ''
                         : `
@@ -4177,7 +4203,7 @@ async function renderFollowPage() {
     followGrid.innerHTML = sortedChannels.map(channel => {
         const name = channel.name || 'Canal';
         const avatar = channel.avatar || channel.thumbnail || getFollowChannelAvatar(channel.id) || 'img/icon-192.png';
-        const isMitjans = isMitjansChannel(channel.id);
+        const isMitjans = isMitjansOrDigitalsChannel(channel.id);
         const followButtonHtml = isMitjans
             ? ''
             : `
@@ -5409,7 +5435,7 @@ function renderDesktopSidebar(channel, channelVideos, currentVideoId) {
     const description = channel.description || 'Sense descripció disponible.';
 
     const channelName = channel.title || channel.name || 'Canal';
-    const isMitjans = isMitjansChannel(channel.id);
+    const isMitjans = isMitjansOrDigitalsChannel(channel.id);
     const followButtonHtml = isMitjans
         ? ''
         : `
@@ -5545,9 +5571,12 @@ function renderCategoryVideosBelow(currentChannelId, currentVideoId) {
             } else if (cachedChannels[v.channelId]?.categories) {
                 feedCats = cachedChannels[v.channelId].categories;
             }
-            const isMitjans = [...channelCats, ...feedCats]
-                .some(cat => String(cat).toLowerCase() === 'mitjans');
-            if (isMitjans) {
+            const isMitjansOrDigitals = [...channelCats, ...feedCats]
+                .some(cat => {
+                    const normalizedCat = String(cat).toLowerCase();
+                    return normalizedCat === 'mitjans' || normalizedCat === 'digitals';
+                });
+            if (isMitjansOrDigitals) {
                 return false;
             }
         }
@@ -5699,7 +5728,7 @@ async function showVideoFromAPI(videoId) {
             const subsText = channel.subscriberCount
                 ? formatViews(channel.subscriberCount) + ' subscriptors'
                 : 'Subscriptors ocults';
-            const isMitjans = isMitjansChannel(channel.id);
+            const isMitjans = isMitjansOrDigitalsChannel(channel.id);
             const followButtonHtml = isMitjans
                 ? ''
                 : `
@@ -5808,7 +5837,7 @@ async function showVideoFromAPI(videoId) {
                 const subsText = channel.subscriberCount
                     ? formatViews(channel.subscriberCount) + ' subscriptors'
                     : 'Subscriptors ocults';
-                const isMitjans = isMitjansChannel(channel.id);
+                const isMitjans = isMitjansOrDigitalsChannel(channel.id);
                 const followButtonHtml = isMitjans
                     ? ''
                     : `
@@ -6201,7 +6230,7 @@ function showVideo(videoId) {
     const subsText = channel.subscriberCount
         ? formatViews(channel.subscriberCount) + ' subscriptors'
         : 'Subscriptors ocults';
-    const isMitjans = isMitjansChannel(channel.id);
+    const isMitjans = isMitjansOrDigitalsChannel(channel.id);
     const followButtonHtml = isMitjans
         ? ''
         : `
@@ -6683,7 +6712,7 @@ function openChannelProfile(channelId) {
     if (channelProfileFollowBtn) {
         channelProfileFollowBtn.dataset.followChannel = normalizedId;
         channelProfileFollowBtn.dataset.followBound = 'false';
-        if (isMitjansChannel(normalizedId)) {
+        if (isMitjansOrDigitalsChannel(normalizedId)) {
             channelProfileFollowBtn.classList.add('hidden');
         } else {
             channelProfileFollowBtn.classList.remove('hidden');

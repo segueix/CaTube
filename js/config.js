@@ -33,7 +33,8 @@ const CONFIG = {
         { id: "diversio", name: "Diversió", icon: "laugh" },
         { id: "gaming", name: "Gaming", icon: "gamepad-2" },
         { id: "vida", name: "Vida", icon: "heart" },
-        { id: "mitjans", name: "Mitjans", icon: "tv" }
+        { id: "mitjans", name: "Mitjans", icon: "tv" },
+        { id: "digitals", name: "Digitals", icon: "monitor" }
     ],
     
     navigation: {
