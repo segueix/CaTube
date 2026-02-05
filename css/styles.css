@@ -1850,10 +1850,6 @@ body.sidebar-collapsed .main-content {
     overflow: hidden;
     background: #000;
     touch-action: none;
-    top: auto !important;
-    left: auto !important;
-    right: 24px;
-    bottom: calc(24px + var(--safe-bottom));
     width: 320px;
     aspect-ratio: 16 / 9;
 }
@@ -1932,10 +1928,6 @@ button:disabled,
 @media (max-width: 768px) {
     .mini-player-active {
         width: 180px;
-        right: 16px;
-        bottom: calc(80px + var(--safe-bottom));
-        top: auto !important;
-        left: auto !important;
     }
 }
 

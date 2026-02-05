@@ -5199,6 +5199,13 @@ function setMiniPlayerState(isActive) {
         videoPlayer.style.removeProperty('bottom');
         videoPlayer.style.removeProperty('right');
         updateMiniPlayerSize();
+
+        // CÀLCUL DEL CENTRE (Fix per evitar salts en arrossegar)
+        const width = parseFloat(videoPlayer.style.width);
+        const height = parseFloat(videoPlayer.style.height);
+        videoPlayer.style.left = `${(window.innerWidth - width) / 2}px`;
+        videoPlayer.style.top = `${(window.innerHeight - height) / 2}px`;
+
         setupMiniPlayerUIControls();
     } else {
         if (mainContent) {
