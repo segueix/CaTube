@@ -3571,7 +3571,8 @@ function loadShort(index) {
     const short = currentShortsQueue[index];
     const iframe = document.getElementById('short-iframe');
     const origin = encodeURIComponent(window.location.origin || '');
-    const src = `https://www.youtube.com/embed/${encodeURIComponent(short.id)}?playsinline=1&rel=0&modestbranding=1&autoplay=1&enablejsapi=1&origin=${origin}&hl=ca&cc_lang_pref=ca&gl=AD`;
+    const language = encodeURIComponent(YouTubeAPI?.language || 'ca');
+    const src = `https://www.youtube.com/embed/${encodeURIComponent(short.id)}?playsinline=1&rel=0&modestbranding=1&autoplay=1&enablejsapi=1&origin=${origin}&hl=${language}&cc_lang_pref=${language}&gl=AD`;
 
     iframe.src = src;
     iframe.dataset.shortPaused = 'false';
@@ -4774,6 +4775,24 @@ function addAutoplayParam(url) {
         return url;
     }
     let newUrl = url;
+    const language = YouTubeAPI?.language || 'ca';
+    const regionCode = YouTubeAPI?.regionCode || 'AD';
+    if (isYouTubeEmbed(newUrl)) {
+        const embedParams = [];
+        if (!newUrl.includes('hl=')) {
+            embedParams.push(`hl=${encodeURIComponent(language)}`);
+        }
+        if (!newUrl.includes('gl=')) {
+            embedParams.push(`gl=${encodeURIComponent(regionCode)}`);
+        }
+        if (!newUrl.includes('cc_lang_pref=')) {
+            embedParams.push(`cc_lang_pref=${encodeURIComponent(language)}`);
+        }
+        if (embedParams.length > 0) {
+            const separator = newUrl.includes('?') ? '&' : '?';
+            newUrl = `${newUrl}${separator}${embedParams.join('&')}`;
+        }
+    }
     if (isYouTubeEmbed(newUrl) && !newUrl.includes('enablejsapi=1')) {
         const origin = encodeURIComponent(window.location.origin || '');
         const separator = newUrl.includes('?') ? '&' : '?';
@@ -4858,8 +4877,9 @@ function updatePlayerIframe({ source, videoId, videoUrl }) {
         videoPlayer.dataset.playingVideoId = videoId;
     }
     const origin = encodeURIComponent(window.location.origin || '');
+    const language = encodeURIComponent(YouTubeAPI?.language || 'ca');
     const iframeSrc = source === 'api'
-        ? `https://www.youtube.com/embed/${videoId}?playsinline=1&rel=0&modestbranding=1&autoplay=1&enablejsapi=1&origin=${origin}&hl=ca&cc_lang_pref=ca&gl=AD`
+        ? `https://www.youtube.com/embed/${videoId}?playsinline=1&rel=0&modestbranding=1&autoplay=1&enablejsapi=1&origin=${origin}&hl=${language}&cc_lang_pref=${language}&gl=AD`
         : addAutoplayParam(videoUrl);
     const existingIframe = videoPlayer.querySelector('iframe');
     if (!isMobile && existingIframe) {
@@ -5148,11 +5168,14 @@ function setMiniPlayerState(isActive) {
             videoPlaceholder.classList.remove('hidden');
             videoPlaceholder.classList.remove('is-placeholder-hidden');
         }
-        videoPlayer.style.removeProperty('top');
-        videoPlayer.style.removeProperty('left');
         videoPlayer.style.removeProperty('bottom');
         videoPlayer.style.removeProperty('right');
         updateMiniPlayerSize();
+        const playerRect = videoPlayer.getBoundingClientRect();
+        const centeredLeft = (window.innerWidth - playerRect.width) / 2;
+        const centeredTop = (window.innerHeight - playerRect.height) / 2;
+        videoPlayer.style.left = `${Math.max(0, centeredLeft)}px`;
+        videoPlayer.style.top = `${Math.max(0, centeredTop)}px`;
     } else {
         if (mainContent) {
             mainContent.classList.remove('hidden');
@@ -5171,6 +5194,8 @@ function setMiniPlayerState(isActive) {
         if (videoPlaceholder) {
             videoPlaceholder.classList.add('is-placeholder-hidden');
         }
+        videoPlayer.style.removeProperty('top');
+        videoPlayer.style.removeProperty('left');
         videoPlayer.style.width = '';
         videoPlayer.style.height = '';
         updatePlayerPosition();
