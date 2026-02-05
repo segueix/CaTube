@@ -146,39 +146,53 @@ function countMarkerMatches(text, markers) {
         .reduce((count, word) => count + (markerSet.has(word) ? 1 : 0), 0);
 }
 
-function isCatalan(video) {
-    const defaultAudioLanguage = video?.defaultAudioLanguage?.toLowerCase();
-    const defaultLanguage = video?.defaultLanguage?.toLowerCase();
-    const neutralLanguages = new Set(['', 'zxx', 'mul', undefined, null]);
+const isCatalan = (video) => {
+    const snippet = video?.snippet || video || {};
 
-    const hasCatalan = [defaultAudioLanguage, defaultLanguage].some(code => code?.startsWith('ca'));
-    if (hasCatalan) {
-        return true;
-    }
+    // Obtenim els idiomes i els normalitzem a minúscules
+    const audio = (snippet.defaultAudioLanguage || '').toLowerCase();
+    const metaLang = (snippet.defaultLanguage || '').toLowerCase();
 
-    const hasForeignLanguage = [defaultAudioLanguage, defaultLanguage].some(code => {
-        if (!code || neutralLanguages.has(code)) {
-            return false;
-        }
-        return !code.startsWith('ca');
-    });
-    if (hasForeignLanguage) {
+    // 1. REGLA D'OR (VETO): Si l'àudio és explícitament NO català, descartem.
+    // Això soluciona el cas on l'àudio és 'es' però el canal té 'ca' per defecte.
+    if (audio.startsWith('es') || audio.startsWith('en') || audio.startsWith('fr')) {
         return false;
     }
 
-    const text = `${video?.title || ''} ${video?.description || ''}`.toLowerCase();
-    if (!text.trim()) {
+    // 2. Si l'àudio és explícitament Català, acceptem.
+    if (audio.startsWith('ca')) {
         return true;
     }
 
-    const catalanMarkers = ['amb', 'els', 'les', 'i', 'dels', 'pel', 'per', 'això', 'avui', 'demà', 'nosaltres'];
-    const spanishMarkers = ['con', 'los', 'las', 'y', 'del', 'por', 'para', 'esto', 'hoy', 'mañana', 'nosotros'];
+    // 3. Si l'àudio no ens diu res (és buit), llavors confiem en la llengua per defecte.
+    if (metaLang.startsWith('ca')) {
+        return true;
+    }
 
-    const catalanScore = countMarkerMatches(text, catalanMarkers);
-    const spanishScore = countMarkerMatches(text, spanishMarkers);
+    // 4. Heurística de text (Només si no tenim informació fiable a les etiquetes)
+    const text = `${snippet.title || ''} ${snippet.description || ''}`.toLowerCase();
+    const markersCa = [' amb ', ' els ', ' les ', ' i ', ' per ', ' una ', ' això ', ' mateix '];
+    const markersEs = [' con ', ' los ', ' las ', ' y ', ' por ', ' una ', ' eso ', ' mismo '];
 
-    return spanishScore <= catalanScore;
-}
+    let scoreCa = 0;
+    let scoreEs = 0;
+
+    markersCa.forEach((marker) => {
+        if (text.includes(marker)) scoreCa++;
+    });
+
+    markersEs.forEach((marker) => {
+        if (text.includes(marker)) scoreEs++;
+    });
+
+    // Si detectem més marcadors castellans que catalans, fora
+    if (scoreEs > scoreCa && scoreEs > 1) {
+        return false;
+    }
+
+    // Si guanya el català o hi ha empat tècnic, acceptem
+    return true;
+};
 
 async function main() {
     try {
