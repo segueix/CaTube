@@ -4997,6 +4997,10 @@ function makeDraggable(element, handle) {
         const centerY = rect.height / 2;
         const distFromCenter = Math.hypot(offsetX - centerX, offsetY - centerY);
         if (distFromCenter < 40) {
+            toggleMainPlayerPlayback();
+            if (event.cancelable) {
+                event.preventDefault();
+            }
             return;
         }
 
