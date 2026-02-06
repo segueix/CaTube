@@ -3888,14 +3888,14 @@ button:disabled,
     }
 
     .btn-heart {
-        width: 40px;
-        height: 40px;
+        width: 48px;
+        height: 48px;
     }
 
     .btn-heart i,
     .btn-heart svg {
-        width: 22px;
-        height: 22px;
+        width: 26px;
+        height: 26px;
     }
 
     .video-info-modern .video-metadata-bar {
@@ -3919,13 +3919,13 @@ button:disabled,
     }
 
     .btn-round-icon {
-        width: 40px;
-        height: 40px;
+        width: 48px;
+        height: 48px;
     }
 
     .btn-round-icon svg {
-        width: 20px;
-        height: 20px;
+        width: 24px;
+        height: 24px;
     }
 }
 
