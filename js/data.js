@@ -243,3 +243,86 @@ function formatDate(dateString) {
     const shortYear = videoYear.toString().slice(-2); // "2023" -> "23"
     return `${day} ${month} ${shortYear}`;
 }
+
+/* --- NOVES FUNCIONS PER GESTIONAR L'ESBORRAT D'ETIQUETES --- */
+
+// 1. Esborrar categoria personalitzada globalment (del llistat principal)
+function deleteCustomCategoryGlobal(categoryName) {
+    const normalized = typeof normalizeCustomTag === 'function'
+        ? normalizeCustomTag(categoryName)
+        : String(categoryName || '').trim().replace(/^"|"$/g, '');
+    if (!normalized) {
+        return;
+    }
+
+    if (typeof removeCustomTag === 'function') {
+        removeCustomTag(normalized);
+    } else {
+        const stored = localStorage.getItem('catube_custom_tags');
+        const parsed = stored ? JSON.parse(stored) : [];
+        const nextTags = Array.isArray(parsed)
+            ? parsed.filter(tag => String(tag).toLowerCase() !== normalized.toLowerCase())
+            : [];
+        localStorage.setItem('catube_custom_tags', JSON.stringify(nextTags));
+    }
+
+    const storedAssignments = localStorage.getItem('catube_channel_custom_categories');
+    if (storedAssignments) {
+        try {
+            const parsed = JSON.parse(storedAssignments);
+            if (parsed && typeof parsed === 'object') {
+                Object.keys(parsed).forEach((channelId) => {
+                    const categories = Array.isArray(parsed[channelId]) ? parsed[channelId] : [];
+                    parsed[channelId] = categories.filter(cat => String(cat).toLowerCase() !== normalized.toLowerCase());
+                    if (parsed[channelId].length === 0) {
+                        delete parsed[channelId];
+                    }
+                });
+                localStorage.setItem('catube_channel_custom_categories', JSON.stringify(parsed));
+            }
+        } catch (error) {
+            console.warn('No es pot actualitzar catube_channel_custom_categories', error);
+        }
+    }
+}
+
+// 2. Treure etiqueta d'un canal específic (del perfil)
+function removeCategoryFromChannel(channelId, categoryName) {
+    if (!channelId) {
+        return;
+    }
+    const normalized = typeof normalizeCustomTag === 'function'
+        ? normalizeCustomTag(categoryName)
+        : String(categoryName || '').trim().replace(/^"|"$/g, '');
+    if (!normalized) {
+        return;
+    }
+
+    if (typeof getChannelCustomCategories === 'function' && typeof saveChannelCustomCategories === 'function') {
+        const current = getChannelCustomCategories(channelId);
+        const next = current.filter(cat => String(cat).toLowerCase() !== normalized.toLowerCase());
+        saveChannelCustomCategories(channelId, next);
+        return;
+    }
+
+    const storedAssignments = localStorage.getItem('catube_channel_custom_categories');
+    if (!storedAssignments) {
+        return;
+    }
+    try {
+        const parsed = JSON.parse(storedAssignments);
+        if (!parsed || typeof parsed !== 'object') {
+            return;
+        }
+        const current = Array.isArray(parsed[String(channelId)]) ? parsed[String(channelId)] : [];
+        const next = current.filter(cat => String(cat).toLowerCase() !== normalized.toLowerCase());
+        if (next.length === 0) {
+            delete parsed[String(channelId)];
+        } else {
+            parsed[String(channelId)] = next;
+        }
+        localStorage.setItem('catube_channel_custom_categories', JSON.stringify(parsed));
+    } catch (error) {
+        console.warn('No es pot actualitzar catube_channel_custom_categories', error);
+    }
+}

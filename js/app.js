@@ -752,6 +752,7 @@ function renderChannelProfileCategories(channel, channelId) {
     const addButton = channelProfileTags.querySelector('[data-action="add-channel-category"]');
     const picker = channelProfileTags.querySelector('[data-channel-category-picker]');
     const optionButtons = channelProfileTags.querySelectorAll('[data-channel-category-option]');
+    const customButtons = channelProfileTags.querySelectorAll('.channel-category-btn--custom');
 
     if (channelCategoryPickerCleanup) {
         channelCategoryPickerCleanup();
@@ -781,6 +782,25 @@ function renderChannelProfileCategories(channel, channelId) {
             }
             addChannelCustomCategory(channelId, selected);
             renderChannelProfileCategories(channel, channelId);
+        });
+    });
+
+    customButtons.forEach(button => {
+        const catName = button.textContent.trim();
+        if (!catName) {
+            return;
+        }
+        button.style.cursor = 'pointer';
+        button.addEventListener('dblclick', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (confirm(`Vols treure l'etiqueta "${catName}" d'aquest canal?`)) {
+                removeCategoryFromChannel(channelId, catName);
+                button.remove();
+                renderChannelProfileCategories(channel, channelId);
+                setupChipsBarOrdering();
+                renderFeed();
+            }
         });
     });
 
@@ -2621,6 +2641,22 @@ function setupChipsBarOrdering() {
         const isActive = chip.value === activeValue;
         button.classList.toggle('is-active', isActive);
         button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        if (chip.isCustom) {
+            button.addEventListener('dblclick', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (confirm(`Vols eliminar definitivament l'etiqueta "${chip.value}" de tots els canals?`)) {
+                    deleteCustomCategoryGlobal(chip.value);
+                    if (selectedCategory.toLowerCase() === String(chip.value).toLowerCase()) {
+                        selectedCategory = 'Novetats';
+                        localStorage.setItem(LAST_CATEGORY_STORAGE_KEY, selectedCategory);
+                        renderCategoryActions(getCategoryPageTitle(selectedCategory));
+                    }
+                    setupChipsBarOrdering();
+                    renderFeed();
+                }
+            });
+        }
         chipsBar.appendChild(button);
     });
     fixedChips.forEach((chipName) => {
