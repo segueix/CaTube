@@ -3918,6 +3918,10 @@ button:disabled,
         min-width: 0;
     }
 
+    .action-group:not(.action-group-left) {
+        align-self: flex-start;
+    }
+
     .btn-round-icon {
         width: 48px;
         height: 48px;
