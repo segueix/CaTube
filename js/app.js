@@ -4960,9 +4960,9 @@ function updatePlayerIframe({ source, videoId, videoUrl }) {
 }
 
 function makeDraggable(element, handle) {
-    if (!element || !handle) {
-        return;
-    }
+    if (!element || !handle) return;
+
+    const isMobile = window.innerWidth <= 768;
 
     let startX;
     let startY;
@@ -4972,7 +4972,7 @@ function makeDraggable(element, handle) {
     let startTime = 0; // Per calcular si és un click ràpid
 
     const onMove = (event) => {
-        if (!isDragging) {
+        if (!isDragging || isMobile) {
             return;
         }
         const touch = event.type === 'touchmove' ? event.touches[0] : event;
@@ -5022,6 +5022,9 @@ function makeDraggable(element, handle) {
         const centerX = rect.width / 2;
         const centerY = rect.height / 2;
         const distFromCenter = Math.hypot(offsetX - centerX, offsetY - centerY);
+        startX = touch.clientX;
+        startY = touch.clientY;
+        startTime = Date.now();
         if (distFromCenter < 40) {
             toggleMainPlayerPlayback();
             if (event.cancelable) {
@@ -5030,14 +5033,12 @@ function makeDraggable(element, handle) {
             return;
         }
 
-        isDragging = true;
-        startX = touch.clientX;
-        startY = touch.clientY;
-        startTime = Date.now(); // Guardem l'hora d'inici
-        initialLeft = rect.left;
-        initialTop = rect.top;
-
-        element.style.transition = 'none';
+        if (!isMobile) {
+            isDragging = true;
+            initialLeft = rect.left;
+            initialTop = rect.top;
+            element.style.transition = 'none';
+        }
         document.addEventListener('mousemove', onMove);
         document.addEventListener('touchmove', onMove, { passive: false });
         document.addEventListener('mouseup', onEnd);
@@ -5265,11 +5266,18 @@ function setMiniPlayerState(isActive) {
         videoPlayer.style.removeProperty('right');
         updateMiniPlayerSize();
 
-        // CÀLCUL DEL CENTRE (Fix per evitar salts en arrossegar)
-        const width = parseFloat(videoPlayer.style.width);
-        const height = parseFloat(videoPlayer.style.height);
-        videoPlayer.style.left = `${(window.innerWidth - width) / 2}px`;
-        videoPlayer.style.top = `${(window.innerHeight - height) / 2}px`;
+        if (window.innerWidth > 768) {
+            // CÀLCUL DEL CENTRE (Fix per evitar salts en arrossegar)
+            const width = parseFloat(videoPlayer.style.width);
+            const height = parseFloat(videoPlayer.style.height);
+            videoPlayer.style.left = `${(window.innerWidth - width) / 2}px`;
+            videoPlayer.style.top = `${(window.innerHeight - height) / 2}px`;
+        } else {
+            videoPlayer.style.left = '';
+            videoPlayer.style.top = '';
+            videoPlayer.style.bottom = '';
+            videoPlayer.style.right = '';
+        }
 
         setupMiniPlayerUIControls();
     } else {
