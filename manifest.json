@@ -1,8 +1,8 @@
 {
-    "name": "iuTube - Plataforma de Vídeos",
-    "short_name": "iuTube",
+    "name": "Segueix! - Plataforma de Vídeos",
+    "short_name": "Segueix!",
     "description": "Plataforma de vídeos personalitzable en català",
-    "start_url": "/",
+    "start_url": "https://segueix.github.io/Segueix/",
     "display": "standalone",
     "background_color": "#0F0F0F",
     "theme_color": "#FF0000",
