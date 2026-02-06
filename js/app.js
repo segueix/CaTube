@@ -5945,9 +5945,7 @@ async function showVideoFromAPI(videoId) {
                         <div class="channel-identity-modern channel-link" data-channel-id="${channel.id}">
                             <img src="${cachedChannelAvatar}" alt="${escapeHtml(channel.title)}" class="channel-avatar-small">
                             <div class="channel-text-modern">
-                                <div class="channel-name-row">
-                                    <h1 class="channel-name-modern">${escapeHtml(channel.title)}</h1>
-                                </div>
+                                <h1 class="channel-name-modern">${escapeHtml(channel.title)}</h1>
                                 <span class="channel-subs-modern">${subsText}</span>
                             </div>
                         </div>
@@ -5958,14 +5956,17 @@ async function showVideoFromAPI(videoId) {
                             </button>
                         </div>
                     </div>
-
                     <div class="video-metadata-bar">
-                        <a href="${channelUrl}" target="_blank" rel="noopener noreferrer" class="btn-pill-red">
-                            Canal Youtube
-                        </a>
-                        
+                        <div class="action-group action-group-left">
+                            <a href="${channelUrl}" target="_blank" rel="noopener noreferrer" class="btn-pill-red">
+                                Canal Youtube
+                            </a>
+                            <a href="${watchUrl}" target="_blank" class="btn-comment-youtube">
+                                Comenta a Youtube
+                            </a>
+                        </div>
                         <div class="action-group">
-                            <button class="btn-round-icon" id="playlistBtn" title="Llista de reproducció">
+                            <button class="btn-round-icon" id="playlistBtn" title="Afegir a llista">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
                                     <line x1="12" y1="5" x2="12" y2="19"></line>
                                     <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -5979,11 +5980,7 @@ async function showVideoFromAPI(videoId) {
                             </button>
                         </div>
                     </div>
-                    <div class="video-description"></div>
                 </div>
-                <a href="${watchUrl}" target="_blank" class="btn-comment-youtube">
-                    Comenta a Youtube
-                </a>
             `;
             bindLikeButton(channelInfo, cachedVideo);
             setupMiniPlayerToggle();
@@ -6057,27 +6054,28 @@ async function showVideoFromAPI(videoId) {
                             <div class="channel-identity-modern channel-link" data-channel-id="${channel.id}">
                                 <img src="${channelAvatar}" alt="${escapeHtml(channel.title)}" class="channel-avatar-small">
                                 <div class="channel-text-modern">
-                                    <div class="channel-name-row">
-                                        <h1 class="channel-name-modern">${escapeHtml(channel.title)}</h1>
-                                    </div>
+                                    <h1 class="channel-name-modern">${escapeHtml(channel.title)}</h1>
                                     <span class="channel-subs-modern">${subsText}</span>
                                 </div>
+                            </div>
+                            <div class="channel-actions-inline">
+                                ${followButtonHtml}
+                                <button class="btn-heart" id="likeToggle" type="button" aria-label="M'agrada" aria-pressed="false">
+                                    <i data-lucide="heart"></i>
+                                </button>
+                            </div>
                         </div>
-                        <div class="channel-actions-inline">
-                            ${followButtonHtml}
-                            <button class="btn-heart" id="likeToggle" type="button" aria-label="M'agrada" aria-pressed="false">
-                                <i data-lucide="heart"></i>
-                            </button>
-                        </div>
-                    </div>
-
                         <div class="video-metadata-bar">
-                            <a href="${channelUrl}" target="_blank" rel="noopener noreferrer" class="btn-pill-red">
-                                Canal Youtube
-                            </a>
-                            
+                            <div class="action-group action-group-left">
+                                <a href="${channelUrl}" target="_blank" rel="noopener noreferrer" class="btn-pill-red">
+                                    Canal Youtube
+                                </a>
+                                <a href="${watchUrl}" target="_blank" class="btn-comment-youtube">
+                                    Comenta a Youtube
+                                </a>
+                            </div>
                             <div class="action-group">
-                                <button class="btn-round-icon" id="playlistBtn" title="Llista de reproducció">
+                                <button class="btn-round-icon" id="playlistBtn" title="Afegir a llista">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
                                         <line x1="12" y1="5" x2="12" y2="19"></line>
                                         <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -6091,13 +6089,7 @@ async function showVideoFromAPI(videoId) {
                                 </button>
                             </div>
                         </div>
-                        <div class="video-description">
-                            ${escapeHtml(video.description || '').substring(0, 500)}${video.description?.length > 500 ? '...' : ''}
-                        </div>
                     </div>
-                    <a href="${watchUrl}" target="_blank" class="btn-comment-youtube">
-                        Comenta a Youtube
-                    </a>
                 `;
                 bindLikeButton(channelInfo, video);
                 setupMiniPlayerToggle();
@@ -6453,9 +6445,7 @@ function showVideo(videoId) {
                 <div class="channel-identity-modern channel-link" data-channel-id="${channel.id}">
                     <img src="${channel.avatar || 'img/icon-192.png'}" alt="${escapeHtml(channel.name)}" class="channel-avatar-small">
                     <div class="channel-text-modern">
-                        <div class="channel-name-row">
-                            <h1 class="channel-name-modern">${escapeHtml(channel.name)}</h1>
-                        </div>
+                        <h1 class="channel-name-modern">${escapeHtml(channel.name)}</h1>
                         <span class="channel-subs-modern">${subsText}</span>
                     </div>
                 </div>
@@ -6466,14 +6456,17 @@ function showVideo(videoId) {
                     </button>
                 </div>
             </div>
-
             <div class="video-metadata-bar">
-                <a href="${channelUrl}" target="_blank" rel="noopener noreferrer" class="btn-pill-red">
-                    Canal Youtube
-                </a>
-                
+                <div class="action-group action-group-left">
+                    <a href="${channelUrl}" target="_blank" rel="noopener noreferrer" class="btn-pill-red">
+                        Canal Youtube
+                    </a>
+                    <a href="${watchUrl}" target="_blank" class="btn-comment-youtube">
+                        Comenta a Youtube
+                    </a>
+                </div>
                 <div class="action-group">
-                    <button class="btn-round-icon" id="playlistBtn" title="Llista de reproducció">
+                    <button class="btn-round-icon" id="playlistBtn" title="Afegir a llista">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
                             <line x1="12" y1="5" x2="12" y2="19"></line>
                             <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -6487,13 +6480,7 @@ function showVideo(videoId) {
                     </button>
                 </div>
             </div>
-            <div class="video-description">
-                ${escapeHtml(video.description || '').substring(0, 500)}${video.description?.length > 500 ? '...' : ''}
-            </div>
         </div>
-        <a href="${watchUrl}" target="_blank" class="btn-comment-youtube">
-            Comenta a Youtube
-        </a>
     `;
     const likeVideoData = {
         ...video,

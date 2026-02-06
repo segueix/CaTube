@@ -3601,10 +3601,10 @@ button:disabled,
 
 .video-info-modern {
     background-color: var(--color-secondary);
-    padding: 0.25rem 1rem;
+    padding: 0.75rem 1rem;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.75rem;
     border-radius: 12px;
 }
 
@@ -3631,12 +3631,17 @@ button:disabled,
     flex-shrink: 0;
 }
 
+.action-group-left {
+    flex-wrap: wrap;
+}
+
 /* Row 1: Channel Header */
 .channel-header-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
+    flex-wrap: wrap;
 }
 
 .channel-identity-modern {
@@ -3645,6 +3650,7 @@ button:disabled,
     gap: 0.75rem;
     cursor: pointer;
     min-width: 0;
+    flex: 1;
 }
 
 .channel-text-modern {
@@ -3656,12 +3662,12 @@ button:disabled,
 .channel-name-row {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
     flex-wrap: wrap;
 }
 
 .channel-name-row .follow-btn-pill {
-    margin-left: 0.25rem;
+    margin-left: 0;
 }
 
 .channel-name-modern {
@@ -3687,21 +3693,28 @@ button:disabled,
 .channel-actions-inline {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
     flex-shrink: 0;
 }
 
 .btn-heart {
     font-size: 2.34rem;
     color: white;
-    background: transparent;
+    background: rgba(255, 255, 255, 0.1);
     border: none;
-    padding: 4px;
-    margin-left: 0.25rem;
+    padding: 0;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.btn-heart:hover {
+    background: rgba(255, 255, 255, 0.2);
 }
 
 .btn-heart svg {
@@ -3712,73 +3725,81 @@ button:disabled,
 
 .btn-heart i,
 .btn-heart svg {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
 }
 
 .btn-heart.is-liked svg,
 .btn-heart.liked svg {
-    fill: white;
-    stroke: white;
+    fill: #CC0000;
+    stroke: #CC0000;
 }
 
 /* Row 2: Action Buttons */
 .video-info-modern .video-metadata-bar {
-    flex-wrap: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
 }
 
 .btn-pill-red {
     background-color: #CC0000;
     color: white;
-    padding: 0.4rem 1rem;
+    padding: 0.5rem 1rem;
     border-radius: 9999px;
-    font-size: 0.85rem;
-    font-weight: 700;
+    font-size: 0.8rem;
+    font-weight: 600;
     white-space: nowrap;
     text-decoration: none;
-    display: flex;
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
     border: none;
     height: 36px;
-    flex-shrink: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.btn-pill-red:hover {
+    background-color: #aa0000;
 }
 
 .btn-pill-red:active { transform: scale(0.98); }
 
 /* Comment on YouTube button */
 .btn-comment-youtube {
-    display: block;
-    width: fit-content;
-    background-color: #ffffff;
-    color: #000000;
-    padding: 8px 16px;
-    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     text-decoration: none;
     border: none;
-    margin-top: 10px;
-    margin-bottom: 8px;
-    margin-left: 0;
-    transition: transform 0.2s ease, opacity 0.2s;
+    height: 36px;
+    white-space: nowrap;
+    transition: background-color 0.2s, transform 0.2s;
 }
 
 .btn-comment-youtube:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
+    background-color: rgba(255, 255, 255, 0.25);
     text-decoration: none;
 }
 
+.btn-comment-youtube:active {
+    transform: scale(0.98);
+}
+
 .btn-round-icon {
-    width: 48px;
-    height: 48px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    background-color: var(--surface-light);
-    color: var(--text-color);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3787,70 +3808,141 @@ button:disabled,
     transition: background-color 0.2s, transform 0.2s;
 }
 
+.btn-round-icon:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
 .btn-round-icon svg {
-    width: 24px;
-    height: 24px;
+    width: 18px;
+    height: 18px;
     stroke-width: 2px;
 }
 
-/* Dark mode override for specific backgrounds */
-@media (prefers-color-scheme: dark) {
-    .btn-round-icon {
-        background-color: #272727;
-        color: white;
-    }
-}
-html[style*="--color-background: #333333"] .btn-round-icon,
-html[style*="--color-background: #3d3d3d"] .btn-round-icon,
-html[style*="--color-background: #224262"] .btn-round-icon {
-    background-color: #272727;
-    color: white;
-}
-
-.btn-round-icon:hover { opacity: 0.8; }
 .btn-round-icon.is-liked,
 .btn-round-icon.liked { color: #CC0000; }
 .btn-round-icon.is-liked svg,
 .btn-round-icon.liked svg { fill: #CC0000; }
 
 .channel-actions-inline .follow-btn-pill {
-    background-color: #ffffff;
-    color: var(--color-primary);
-    padding: 4px 12px;
-    border-radius: 9999px;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    border: 1px solid var(--color-primary);
-    cursor: pointer;
-}
-.follow-btn-pill.is-followed {
-    background-color: var(--color-primary);
+    background-color: #CC0000;
     color: #ffffff;
-    border-color: var(--color-primary);
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.channel-actions-inline .follow-btn-pill:hover {
+    background-color: #aa0000;
+}
+
+.follow-btn-pill.is-followed {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    border: none;
+}
+
+.follow-btn-pill.is-followed:hover {
+    background-color: rgba(255, 255, 255, 0.25);
 }
 
 /* RESPONSIVE: Mobile adjustments */
 @media screen and (max-width: 768px) {
     .video-info-modern {
-        padding: 0.35rem 0.75rem 0.2rem 0.75rem;
+        padding: 0.75rem;
+        gap: 0.75rem;
+    }
+
+    .channel-header-row {
+        gap: 0.5rem;
+    }
+
+    .channel-identity-modern {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .channel-name-modern {
+        font-size: 0.875rem;
+    }
+
+    .channel-subs-modern {
+        font-size: 0.7rem;
+    }
+
+    .channel-actions-inline {
         gap: 0.4rem;
     }
 
+    .channel-actions-inline .follow-btn-pill {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.75rem;
+        height: 32px;
+    }
+
+    .btn-heart {
+        width: 32px;
+        height: 32px;
+    }
+
+    .btn-heart i,
+    .btn-heart svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .video-info-modern .video-metadata-bar {
+        gap: 0.5rem;
+    }
+
+    .btn-pill-red,
+    .btn-comment-youtube {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.75rem;
+        height: 32px;
+    }
+
+    .action-group {
+        gap: 0.4rem;
+    }
+
+    .action-group-left {
+        flex: 1;
+        min-width: 0;
+    }
+
     .btn-round-icon {
-        width: 3.5em;
-        height: 3.5em;
-        min-width: 44px;
-        min-height: 44px;
+        width: 32px;
+        height: 32px;
     }
 
     .btn-round-icon svg {
-        width: 50%;
-        height: 50%;
+        width: 16px;
+        height: 16px;
+    }
+}
+
+/* Extra small screens */
+@media screen and (max-width: 400px) {
+    .video-info-modern .video-metadata-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
     }
 
-    .btn-pill-red {
-        height: auto;
-        padding: 0.5rem 1rem;
+    .action-group-left {
+        justify-content: center;
+    }
+
+    .action-group:not(.action-group-left) {
+        justify-content: center;
     }
 }
 
