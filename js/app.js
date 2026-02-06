@@ -4766,12 +4766,14 @@ function updateMiniPlayerSize() {
     if (!videoPlayer) {
         return;
     }
-    if (window.innerWidth <= 768) {
-        videoPlayer.style.width = '100%';
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    if (isMobile) {
+        videoPlayer.style.width = '';
         videoPlayer.style.height = '';
-        videoPlayer.style.left = '0';
-        videoPlayer.style.right = '0';
-        videoPlayer.style.bottom = '0';
+        videoPlayer.style.top = '';
+        videoPlayer.style.left = '';
+        videoPlayer.style.bottom = '';
+        videoPlayer.style.right = '';
         return;
     }
     const width = Math.min(360, window.innerWidth - 32);
@@ -5331,13 +5333,14 @@ function setMiniPlayerState(isActive) {
             videoPlaceholder.classList.remove('hidden');
             videoPlaceholder.classList.remove('is-placeholder-hidden');
         }
-        if (window.innerWidth <= 768) {
-            videoPlayer.style.width = '100%';
+        const isMobile = window.matchMedia('(max-width: 768px)').matches;
+        if (isMobile) {
+            videoPlayer.style.width = '';
             videoPlayer.style.height = '';
-            videoPlayer.style.left = '0';
-            videoPlayer.style.top = 'auto';
-            videoPlayer.style.bottom = '0';
-            videoPlayer.style.right = '0';
+            videoPlayer.style.left = '';
+            videoPlayer.style.top = '';
+            videoPlayer.style.bottom = '';
+            videoPlayer.style.right = '';
 
             if (videoPlayer._miniPlayerMobileListener) {
                 videoPlayer.removeEventListener('touchstart', videoPlayer._miniPlayerMobileListener);

@@ -1926,6 +1926,7 @@ button:disabled,
 @media (max-width: 768px) {
     .mini-player-active {
         width: 100% !important;
+        height: auto !important;
         aspect-ratio: 16 / 9 !important;
         position: fixed !important;
         bottom: 0 !important;
@@ -1937,6 +1938,7 @@ button:disabled,
         border: none !important;
         border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
         border-radius: 0 !important;
+        margin: 0 !important;
         touch-action: none;
     }
 
