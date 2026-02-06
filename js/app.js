@@ -5006,6 +5006,24 @@ function makeDraggable(element, handle) {
         return;
     }
 
+    if (handle._dragHandlers) {
+        handle.removeEventListener('mousedown', handle._dragHandlers.onStart);
+        handle.removeEventListener('touchstart', handle._dragHandlers.onStart);
+        handle.removeEventListener('click', handle._dragHandlers.onClick);
+    }
+
+    const isMobile = window.innerWidth <= 768;
+
+    if (isMobile) {
+        handle.style.cursor = 'default';
+        const onClick = () => {
+            toggleMainPlayerPlayback();
+        };
+        handle._dragHandlers = { onClick };
+        handle.addEventListener('click', onClick);
+        return;
+    }
+
     let startX;
     let startY;
     let initialLeft;
@@ -5090,11 +5108,6 @@ function makeDraggable(element, handle) {
             event.preventDefault();
         }
     };
-
-    if (handle._dragHandlers) {
-        handle.removeEventListener('mousedown', handle._dragHandlers.onStart);
-        handle.removeEventListener('touchstart', handle._dragHandlers.onStart);
-    }
 
     handle._dragHandlers = { onStart };
     handle.addEventListener('mousedown', onStart);
@@ -5301,17 +5314,26 @@ function setMiniPlayerState(isActive) {
             videoPlaceholder.classList.remove('hidden');
             videoPlaceholder.classList.remove('is-placeholder-hidden');
         }
-        videoPlayer.style.removeProperty('top');
-        videoPlayer.style.removeProperty('left');
-        videoPlayer.style.removeProperty('bottom');
-        videoPlayer.style.removeProperty('right');
-        updateMiniPlayerSize();
+        if (window.innerWidth <= 768) {
+            videoPlayer.style.width = '100%';
+            videoPlayer.style.height = '';
+            videoPlayer.style.left = '0';
+            videoPlayer.style.top = 'auto';
+            videoPlayer.style.bottom = '0';
+            videoPlayer.style.right = '0';
+        } else {
+            videoPlayer.style.removeProperty('top');
+            videoPlayer.style.removeProperty('left');
+            videoPlayer.style.removeProperty('bottom');
+            videoPlayer.style.removeProperty('right');
+            updateMiniPlayerSize();
 
-        // CÀLCUL DEL CENTRE (Fix per evitar salts en arrossegar)
-        const width = parseFloat(videoPlayer.style.width);
-        const height = parseFloat(videoPlayer.style.height);
-        videoPlayer.style.left = `${(window.innerWidth - width) / 2}px`;
-        videoPlayer.style.top = `${(window.innerHeight - height) / 2}px`;
+            // CÀLCUL DEL CENTRE (Fix per evitar salts en arrossegar)
+            const width = parseFloat(videoPlayer.style.width);
+            const height = parseFloat(videoPlayer.style.height);
+            videoPlayer.style.left = `${(window.innerWidth - width) / 2}px`;
+            videoPlayer.style.top = `${(window.innerHeight - height) / 2}px`;
+        }
 
         setupMiniPlayerUIControls();
     } else {
