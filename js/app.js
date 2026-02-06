@@ -5006,6 +5006,7 @@ function makeDraggable(element, handle) {
         return;
     }
 
+    const isMobile = window.innerWidth <= 768;
     let startX;
     let startY;
     let initialLeft;
@@ -5058,6 +5059,17 @@ function makeDraggable(element, handle) {
 
     const onStart = (event) => {
         const touch = event.type === 'touchstart' ? event.touches[0] : event;
+        startX = touch.clientX;
+        startY = touch.clientY;
+        startTime = Date.now();
+
+        if (isMobile) {
+            document.addEventListener('mouseup', onEnd);
+            document.addEventListener('touchend', onEnd);
+            document.addEventListener('touchcancel', onEnd);
+            return;
+        }
+
         const rect = element.getBoundingClientRect();
         const offsetX = touch.clientX - rect.left;
         const offsetY = touch.clientY - rect.top;
@@ -5073,9 +5085,6 @@ function makeDraggable(element, handle) {
         }
 
         isDragging = true;
-        startX = touch.clientX;
-        startY = touch.clientY;
-        startTime = Date.now(); // Guardem l'hora d'inici
         initialLeft = rect.left;
         initialTop = rect.top;
 
@@ -5301,17 +5310,19 @@ function setMiniPlayerState(isActive) {
             videoPlaceholder.classList.remove('hidden');
             videoPlaceholder.classList.remove('is-placeholder-hidden');
         }
-        videoPlayer.style.removeProperty('top');
-        videoPlayer.style.removeProperty('left');
-        videoPlayer.style.removeProperty('bottom');
-        videoPlayer.style.removeProperty('right');
-        updateMiniPlayerSize();
-
-        // CÀLCUL DEL CENTRE (Fix per evitar salts en arrossegar)
-        const width = parseFloat(videoPlayer.style.width);
-        const height = parseFloat(videoPlayer.style.height);
-        videoPlayer.style.left = `${(window.innerWidth - width) / 2}px`;
-        videoPlayer.style.top = `${(window.innerHeight - height) / 2}px`;
+        if (window.innerWidth > 768) {
+            updateMiniPlayerSize();
+            const width = parseFloat(videoPlayer.style.width);
+            const height = parseFloat(videoPlayer.style.height);
+            videoPlayer.style.left = `${(window.innerWidth - width) / 2}px`;
+            videoPlayer.style.top = `${(window.innerHeight - height) / 2}px`;
+        } else {
+            videoPlayer.style.width = '';
+            videoPlayer.style.height = '';
+            videoPlayer.style.left = '0';
+            videoPlayer.style.top = '';
+            videoPlayer.style.bottom = '0';
+        }
 
         setupMiniPlayerUIControls();
     } else {
