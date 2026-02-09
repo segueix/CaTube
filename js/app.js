@@ -98,7 +98,7 @@ let miniPlayerTimer = null;
 const featuredVideoBySection = new Map();
 const customCategorySearchCache = new Map();
 const customCategorySearchInFlight = new Map();
-const HYBRID_CATEGORY_SORT = new Set(['Cultura', 'Diversió', 'Actualitat', 'Vida', 'El Món', 'Gaming', 'Mitjans', 'Digitals']);
+const HYBRID_CATEGORY_SORT = new Set(['Cultura', 'Diversió', 'Actualitat', 'Vida', 'El Món', 'Gaming', 'Mitjans', 'Entitats', 'Digitals']);
 
 const BACKGROUND_STORAGE_KEY = 'catube_background_color';
 const FONT_SIZE_STORAGE_KEY = 'catube_font_size';
@@ -443,7 +443,7 @@ function isMitjansOrDigitalsChannel(channelId) {
     const allCats = [...feedCats, ...customCats];
     return allCats.some(cat => {
         const normalizedCat = String(cat).toLowerCase();
-        return normalizedCat === 'mitjans' || normalizedCat === 'digitals';
+        return normalizedCat === 'mitjans' || normalizedCat === 'digitals' || normalizedCat === 'entitats';
     });
 }
 
@@ -2477,7 +2477,7 @@ function renderFeed() {
             const isMitjansOrDigitals = [...channelCats, ...feedCats]
                 .some(cat => {
                     const normalizedCat = String(cat).toLowerCase();
-                    return normalizedCat === 'mitjans' || normalizedCat === 'digitals';
+                    return normalizedCat === 'mitjans' || normalizedCat === 'digitals' || normalizedCat === 'entitats';
                 });
             return !isMitjansOrDigitals;
         });
@@ -2633,7 +2633,7 @@ function setupChipsBarOrdering() {
 
     const activeValue = selectedCategory;
     chipsBar.innerHTML = '';
-    const fixedChips = ['Digitals', 'Mitjans'];
+    const fixedChips = ['Entitats', 'Digitals', 'Mitjans'];
     const sortableChips = orderedChips.filter(chip => !fixedChips.includes(chip.value));
     sortableChips.forEach((chip) => {
         const button = document.createElement('button');
@@ -2736,7 +2736,7 @@ function isFixedChip(chip) {
         return false;
     }
     const value = chip.dataset.cat || chip.textContent.trim();
-    return value === 'Mitjans' || value === 'Digitals' || chip.classList.contains('chip-add');
+    return value === 'Mitjans' || value === 'Digitals' || value === 'Entitats' || chip.classList.contains('chip-add');
 }
 
 function activateCategory(category) {
@@ -5777,7 +5777,7 @@ function renderCategoryVideosBelow(currentChannelId, currentVideoId) {
             const isMitjansOrDigitals = [...channelCats, ...feedCats]
                 .some(cat => {
                     const normalizedCat = String(cat).toLowerCase();
-                    return normalizedCat === 'mitjans' || normalizedCat === 'digitals';
+                    return normalizedCat === 'mitjans' || normalizedCat === 'digitals' || normalizedCat === 'entitats';
                 });
             if (isMitjansOrDigitals) {
                 return false;
