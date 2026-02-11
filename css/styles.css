@@ -4200,3 +4200,80 @@ button:disabled,
     color: #e57373;
 }
 
+/* --- Add Youtuber Page --- */
+.add-youtuber-form {
+    margin-top: 8px;
+}
+
+.add-youtuber-fields {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.add-youtuber-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 180px;
+}
+
+.add-youtuber-field label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+.add-youtuber-select {
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-text);
+    font-size: 1rem;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23aaaaaa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+    cursor: pointer;
+}
+
+.add-youtuber-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.add-youtuber-select option {
+    background: #1e1e1e;
+    color: var(--color-text);
+}
+
+.add-youtuber-message {
+    margin-top: 16px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.add-youtuber-message--success {
+    background: rgba(76, 175, 80, 0.15);
+    color: #81c784;
+}
+
+.add-youtuber-message--error {
+    background: rgba(244, 67, 54, 0.15);
+    color: #e57373;
+}
+
+@media (max-width: 480px) {
+    .add-youtuber-fields {
+        flex-direction: column;
+    }
+}
+
