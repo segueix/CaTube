@@ -368,6 +368,22 @@
                         </button>
                     </div>
                 </div>
+                <div class="settings-section">
+                    <p class="setting-label">Enviar configuració entre dispositius</p>
+                    <p class="config-sync-warning">Unidireccional: s'haurà de tornar a generar si es vol compartir amb un altre dispositiu de tornada.</p>
+                    <div class="config-sync-row">
+                        <button class="config-sync-btn" id="generateConfigBtn" type="button">Generar</button>
+                    </div>
+                    <div class="config-sync-result hidden" id="configSyncResult">
+                        <p class="config-sync-code-label">El teu codi:</p>
+                        <div class="config-sync-code" id="configSyncCode"></div>
+                    </div>
+                    <div class="config-sync-row">
+                        <span class="config-sync-input-label">Introduir codi</span>
+                        <input class="config-sync-input" id="configCodeInput" type="text" placeholder="Codi" autocomplete="off">
+                        <button class="config-sync-btn" id="importConfigBtn" type="button">Enviar</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

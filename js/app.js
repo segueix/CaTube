@@ -7588,3 +7588,136 @@ function saveImportedPlaylist(name, stringIds = '') {
 
     alert(`Llista "${newPlaylist.name}" guardada correctament a la Biblioteca!`);
 }
+
+// =============================================
+// CONFIG SYNC BETWEEN DEVICES
+// =============================================
+
+function randomLetter() {
+    return String.fromCharCode(97 + Math.floor(Math.random() * 26));
+}
+
+function encodeConfigId(rowNumber) {
+    const digits = String(rowNumber);
+    return randomLetter() + randomLetter() + digits[0] + randomLetter() + randomLetter() + randomLetter() + digits.slice(1);
+}
+
+function decodeConfigId(code) {
+    if (!code || code.length < 4) return null;
+    const firstDigit = code[2];
+    const rest = code.slice(6);
+    const num = parseInt(firstDigit + rest, 10);
+    return isNaN(num) ? null : num;
+}
+
+async function generateConfig() {
+    const btn = document.getElementById('generateConfigBtn');
+    const resultDiv = document.getElementById('configSyncResult');
+    const codeDiv = document.getElementById('configSyncCode');
+
+    btn.disabled = true;
+    btn.textContent = 'Generant...';
+
+    try {
+        // Collect all localStorage data
+        const configData = {};
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            configData[key] = localStorage.getItem(key);
+        }
+
+        const siteKey = '6LfJHl4sAAAAAHIgz-uIlDp1AQvQknLIVz-YTJnh';
+
+        if (typeof grecaptcha === 'undefined') {
+            throw new Error("No s'ha pogut carregar el sistema de seguretat de Google. Revisa la teva connexió o bloquejadors d'anuncis.");
+        }
+
+        grecaptcha.ready(async function() {
+            try {
+                const token = await grecaptcha.execute(siteKey, { action: 'sync_config' });
+
+                const res = await fetch(SEGUEIX_API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        type: 'config',
+                        data: JSON.stringify(configData),
+                        recaptchaToken: token
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.status === 'success' && data.id) {
+                    const code = encodeConfigId(data.id);
+                    codeDiv.textContent = code;
+                    resultDiv.classList.remove('hidden');
+                } else {
+                    throw new Error(data.message || 'Error desconegut al servidor');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error al generar el codi: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Generar';
+            }
+        });
+
+    } catch (err) {
+        console.error(err);
+        alert('Error: ' + err.message);
+        btn.disabled = false;
+        btn.textContent = 'Generar';
+    }
+}
+
+async function importConfig() {
+    const input = document.getElementById('configCodeInput');
+    const btn = document.getElementById('importConfigBtn');
+    const code = input.value.trim();
+
+    if (!code) {
+        alert('Introdueix un codi.');
+        return;
+    }
+
+    const rowNumber = decodeConfigId(code);
+    if (!rowNumber) {
+        alert('Codi no vàlid.');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Carregant...';
+
+    try {
+        const res = await fetch(`${SEGUEIX_API_URL}?type=config&id=${rowNumber}`);
+        const data = await res.json();
+
+        if (data.status === 'success' && data.data) {
+            const configData = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
+
+            for (const key in configData) {
+                localStorage.setItem(key, configData[key]);
+            }
+
+            alert('Configuració importada correctament! La pàgina es recarregarà.');
+            location.reload();
+        } else {
+            throw new Error(data.message || 'No s\'han trobat dades per aquest codi.');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Error al importar la configuració: ' + err.message);
+        btn.disabled = false;
+        btn.textContent = 'Enviar';
+    }
+}
+
+// Register config sync event listeners
+document.addEventListener('DOMContentLoaded', () => {
+    const generateBtn = document.getElementById('generateConfigBtn');
+    const importBtn = document.getElementById('importConfigBtn');
+    if (generateBtn) generateBtn.addEventListener('click', generateConfig);
+    if (importBtn) importBtn.addEventListener('click', importConfig);
+});
