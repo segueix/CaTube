@@ -2959,6 +2959,10 @@ button:disabled,
     color: var(--color-primary);
 }
 
+#backgroundModalTitle svg {
+    color: #fff;
+}
+
 .modal-close {
     background: none;
     border: none;
