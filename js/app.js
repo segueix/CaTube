@@ -682,6 +682,33 @@ function addChannelCustomCategory(channelId, category) {
     return next;
 }
 
+function getChannelsForCategory(categoryName) {
+    const normalized = normalizeCustomTag(categoryName);
+    if (!normalized) {
+        return [];
+    }
+    const stored = localStorage.getItem(CHANNEL_CUSTOM_CATEGORIES_KEY);
+    if (!stored) {
+        return [];
+    }
+    try {
+        const parsed = JSON.parse(stored);
+        if (!parsed || typeof parsed !== 'object') {
+            return [];
+        }
+        const channelIds = [];
+        for (const [channelId, categories] of Object.entries(parsed)) {
+            if (Array.isArray(categories) && categories.some(cat => normalizeCustomTag(cat)?.toLowerCase() === normalized.toLowerCase())) {
+                channelIds.push(channelId);
+            }
+        }
+        return channelIds;
+    } catch (error) {
+        console.warn('No es pot llegir catube_channel_custom_categories', error);
+        return [];
+    }
+}
+
 function getCategoryLabel(category) {
     const normalized = normalizeCustomTag(category);
     if (!normalized) {
@@ -1108,6 +1135,77 @@ document.addEventListener('DOMContentLoaded', async () => {
         const nextQuery = urlParams.toString();
         const newUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash || ''}`;
         history.replaceState({}, '', newUrl);
+    }
+    const catParam = urlParams.get('cat');
+    if (catParam) {
+        const catRowId = decodeCategoryId(catParam);
+        urlParams.delete('cat');
+        const nextCatQuery = urlParams.toString();
+        const newCatUrl = `${window.location.pathname}${nextCatQuery ? `?${nextCatQuery}` : ''}${window.location.hash || ''}`;
+        history.replaceState({}, '', newCatUrl);
+
+        if (catRowId) {
+            const catModal = document.createElement('div');
+            catModal.className = 'modal-overlay active';
+            catModal.id = 'importCategoryModal';
+            catModal.style.zIndex = '10000';
+            catModal.innerHTML = `
+                <div class="modal modal-small">
+                    <div class="modal-header">
+                        <h2 class="modal-title">
+                            <div class="spinner" style="width:20px;height:20px;border-width:2px;margin-right:10px;"></div>
+                            Carregant Categoria...
+                        </h2>
+                    </div>
+                    <div class="modal-body" style="text-align:center; padding: 40px 20px;">
+                        <p class="modal-description">Connectant amb el servidor...</p>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(catModal);
+
+            (async () => {
+                try {
+                    const res = await fetch(`${SEGUEIX_API_URL}?type=category&id=${catRowId}`);
+                    const data = await res.json();
+
+                    if (data.status === 'success') {
+                        const categoria = data.categoria;
+                        const youtubers = data.youtubers ? data.youtubers.split(',').map(id => id.trim()).filter(Boolean) : [];
+
+                        catModal.querySelector('.modal-description').textContent = 'Important categoria i assignacions...';
+
+                        const addedTag = addCustomTag(categoria);
+                        if (addedTag) {
+                            selectedCategory = addedTag;
+                            localStorage.setItem(LAST_CATEGORY_STORAGE_KEY, selectedCategory);
+                        }
+
+                        for (const channelId of youtubers) {
+                            addChannelCustomCategory(channelId, categoria);
+                        }
+
+                        setupChipsBarOrdering();
+
+                        catModal.querySelector('.modal-title').innerHTML = 'Categoria importada!';
+                        catModal.querySelector('.modal-description').innerHTML = `
+                            <p style="margin-bottom: 10px;">S'ha afegit la categoria <strong>"${categoria}"</strong></p>
+                            <p style="margin-bottom: 20px;">${youtubers.length > 0 ? `amb ${youtubers.length} YouTuber${youtubers.length !== 1 ? 's' : ''} assignats` : 'sense YouTubers assignats'}</p>
+                            <button class="hero-button" onclick="this.closest('.modal-overlay').remove()">D'acord</button>
+                        `;
+                    } else {
+                        throw new Error(data.message || 'No s\'ha pogut carregar la categoria');
+                    }
+                } catch (err) {
+                    console.error('Error importing category:', err);
+                    catModal.querySelector('.modal-title').innerHTML = 'Error';
+                    catModal.querySelector('.modal-description').innerHTML = `
+                        <p style="margin-bottom: 20px;">No s'ha pogut importar la categoria: ${err.message}</p>
+                        <button class="hero-button" onclick="this.closest('.modal-overlay').remove()">Tancar</button>
+                    `;
+                }
+            })();
+        }
     }
     initButtonColorPicker();
     loadCategories();
@@ -3241,6 +3339,30 @@ function handleSearchResultSelection(item) {
     hideSearchDropdown();
 }
 
+async function handleCategoryShare(categoryName) {
+    const channelIds = getChannelsForCategory(categoryName);
+    if (channelIds.length > 0) {
+        await shareCategoryWithYoutubers(categoryName, channelIds);
+    } else {
+        const shareUrl = `${window.location.origin}?add_tag=${encodeURIComponent(categoryName)}`;
+        const { data: shareData, text: shareText } = await buildShareData(categoryName, shareUrl, 'CaTube - Categoria');
+        if (navigator.share) {
+            try {
+                await navigator.share(shareData);
+                return;
+            } catch (error) {
+                console.warn('Share dismissed', error);
+            }
+        }
+        try {
+            await navigator.clipboard.writeText(shareText);
+            alert('Text copiat!');
+        } catch (error) {
+            window.prompt('Copia el text per compartir la categoria:', shareText);
+        }
+    }
+}
+
 function renderSearchCategoryActions(query) {
     if (!pageTitle) {
         return;
@@ -3285,22 +3407,7 @@ function renderSearchCategoryActions(query) {
     });
 
     shareButton?.addEventListener('click', async () => {
-        const shareUrl = `${window.location.origin}?add_tag=${encodeURIComponent(normalizedQuery)}`;
-        const { data: shareData, text: shareText } = await buildShareData(normalizedQuery, shareUrl, 'CaTube - Categoria');
-        if (navigator.share) {
-            try {
-                await navigator.share(shareData);
-                return;
-            } catch (error) {
-                console.warn('Share dismissed', error);
-            }
-        }
-        try {
-            await navigator.clipboard.writeText(shareText);
-            alert('Text copiat!');
-        } catch (error) {
-            window.prompt('Copia el text per compartir la categoria:', shareText);
-        }
+        await handleCategoryShare(normalizedQuery);
     });
 
     if (typeof lucide !== 'undefined') {
@@ -3356,22 +3463,7 @@ function renderCategoryActions(category) {
     });
 
     shareButton?.addEventListener('click', async () => {
-        const shareUrl = `${window.location.origin}?add_tag=${encodeURIComponent(normalizedCategory)}`;
-        const { data: shareData, text: shareText } = await buildShareData(normalizedCategory, shareUrl, 'CaTube - Categoria');
-        if (navigator.share) {
-            try {
-                await navigator.share(shareData);
-                return;
-            } catch (error) {
-                console.warn('Share dismissed', error);
-            }
-        }
-        try {
-            await navigator.clipboard.writeText(shareText);
-            alert('Text copiat!');
-        } catch (error) {
-            window.prompt('Copia el text per compartir la categoria:', shareText);
-        }
+        await handleCategoryShare(normalizedCategory);
     });
 
     if (typeof lucide !== 'undefined') {
@@ -7259,6 +7351,99 @@ function decodePlaylistId(code) {
     return isNaN(num) ? null : num;
 }
 
+function encodeCategoryId(rowNumber) {
+    const digits = String(rowNumber);
+    const randomDigit = Math.floor(Math.random() * 10);
+    return randomLetter() + randomLetter() + digits[0] + randomLetter() + randomLetter() + digits.slice(1) + randomLetter() + randomLetter() + randomDigit;
+}
+
+function decodeCategoryId(code) {
+    if (!code || code.length < 6) return null;
+    const firstDigit = code[2];
+    const rest = code.slice(5, code.length - 3);
+    const num = parseInt(firstDigit + rest, 10);
+    return isNaN(num) ? null : num;
+}
+
+async function shareCategoryWithYoutubers(categoryName, channelIds) {
+    const loadingModal = document.createElement('div');
+    loadingModal.className = 'modal-overlay active share-modal-overlay';
+    loadingModal.innerHTML = `
+        <div class="modal modal-small">
+            <div class="modal-body" style="text-align:center; padding: 30px;">
+                <div class="spinner" style="width:20px;height:20px;border-width:2px;margin:0 auto 15px auto;"></div>
+                <p style="margin-bottom: 10px;">Verificant seguretat i generant enllaç...</p>
+                <p style="font-size: 10px; color: #888; margin-top: 15px; line-height: 1.3;">
+                    Protegit per reCAPTCHA. S'apliquen la
+                    <a href="https://policies.google.com/privacy" target="_blank" style="color:#888;text-decoration:underline;">Política de Privacitat</a> i els
+                    <a href="https://policies.google.com/terms" target="_blank" style="color:#888;text-decoration:underline;">Termes del Servei</a> de Google.
+                </p>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(loadingModal);
+
+    try {
+        const siteKey = '6LfJHl4sAAAAAHIgz-uIlDp1AQvQknLIVz-YTJnh';
+
+        if (typeof grecaptcha === 'undefined') {
+            throw new Error("No s'ha pogut carregar el sistema de seguretat de Google. Revisa la teva connexió o bloquejadors d'anuncis.");
+        }
+
+        grecaptcha.ready(async function() {
+            try {
+                const token = await grecaptcha.execute(siteKey, { action: 'share_category' });
+
+                const today = new Date();
+                const dateStr = today.toLocaleDateString('ca-ES');
+
+                const res = await fetch(SEGUEIX_API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        type: 'share-category',
+                        data: dateStr,
+                        categoria: categoryName,
+                        youtubers: channelIds.join(','),
+                        recaptchaToken: token
+                    })
+                });
+
+                const data = await res.json();
+                loadingModal.remove();
+
+                if (data.status === 'success') {
+                    const encodedId = encodeCategoryId(data.id);
+                    const shareUrl = `${window.location.origin}${window.location.pathname}?cat=${encodedId}`;
+
+                    if (navigator.share) {
+                        try {
+                            await navigator.share({
+                                title: `Categoria: ${categoryName}`,
+                                text: `Mira la categoria "${categoryName}" amb ${channelIds.length} YouTubers a CaTube!`,
+                                url: shareUrl
+                            });
+                        } catch (err) {
+                            console.log('User cancelled share');
+                        }
+                    } else {
+                        showManualShareModal(categoryName, shareUrl, 'Comparteix la categoria');
+                    }
+                } else {
+                    throw new Error(data.message || 'Error desconegut al servidor');
+                }
+            } catch (err) {
+                loadingModal.remove();
+                console.error(err);
+                alert('Error de seguretat o connexió: ' + err.message);
+            }
+        });
+
+    } catch (err) {
+        loadingModal.remove();
+        alert('Error: ' + err.message);
+    }
+}
+
 // 1. Funció per ENVIAR (Adaptada a la teva estructura de playlists)
 async function shareSegueixPlaylist(playlistName) {
     const stored = localStorage.getItem('catube_playlists');
@@ -7350,13 +7535,13 @@ async function shareSegueixPlaylist(playlistName) {
     }
 }
 
-function showManualShareModal(name, url) {
+function showManualShareModal(name, url, title = 'Comparteix la llista') {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay active';
     modal.innerHTML = `
         <div class="modal modal-small">
             <div class="modal-header">
-                <h2 class="modal-title">Comparteix la llista</h2>
+                <h2 class="modal-title">${title}</h2>
                 <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
                     <i data-lucide="x"></i>
                 </button>
