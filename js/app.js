@@ -2547,6 +2547,96 @@ function hybridCategorySort(videos) {
     return [...hotRoundRobin.slice(0, maxHot), ...restRoundRobin];
 }
 
+function getEffectiveCategory(channelId) {
+    if (!channelId) return null;
+    const excludedCategories = ['mitjans', 'digitals', 'entitats'];
+
+    // 1. Mirar categories del feed
+    const feedData = currentFeedData || getFeedDataForFilter();
+    if (feedData?.channels) {
+        const channel = feedData.channels.find(c => String(c.id) === String(channelId));
+        if (channel && Array.isArray(channel.categories)) {
+            const valid = channel.categories.find(
+                cat => !excludedCategories.includes(String(cat).toLowerCase())
+            );
+            if (valid) return String(valid);
+        }
+    }
+
+    // 2. Mirar categories del cache
+    if (cachedChannels[channelId]?.categories) {
+        const valid = cachedChannels[channelId].categories.find(
+            cat => !excludedCategories.includes(String(cat).toLowerCase())
+        );
+        if (valid) return String(valid);
+    }
+
+    // 3. Mirar custom categories
+    const customCats = getChannelCustomCategories(channelId);
+    if (customCats.length > 0) {
+        const valid = customCats.find(
+            cat => !excludedCategories.includes(String(cat).toLowerCase())
+        );
+        if (valid) return String(valid);
+    }
+
+    return null;
+}
+
+function scoreRelatedVideos(videos, currentVideo) {
+    if (!Array.isArray(videos) || videos.length === 0) return [];
+
+    // Dades de personalització
+    const followedIds = new Set(getFollowedChannelIds().map(id => String(id)));
+    const likedVideos = getLikedVideos();
+    const likedChannelCounts = {};
+    likedVideos.forEach(v => {
+        const chId = String(v.channelId || '');
+        if (chId) likedChannelCounts[chId] = (likedChannelCounts[chId] || 0) + 1;
+    });
+
+    // Scoring per cada vídeo
+    const scored = videos.map(video => {
+        let score = 0;
+        const chId = String(video.channelId || '');
+
+        // +2 si el canal és seguit
+        if (followedIds.has(chId)) score += 2;
+
+        // +1 per cada like a vídeos d'aquest canal (màx +3)
+        const likesForChannel = likedChannelCounts[chId] || 0;
+        score += Math.min(likesForChannel, 3);
+
+        return { video, score };
+    });
+
+    // Separar en dos grups: personalitzats (score > 0) i descoberta (score === 0)
+    const personalized = scored.filter(s => s.score > 0).sort((a, b) => b.score - a.score);
+    const discovery = scored.filter(s => s.score === 0);
+
+    // Agafar vídeos personalitzats (màx 40% del total)
+    const maxPersonalized = Math.floor(videos.length * 0.4);
+    const topPersonalized = personalized.slice(0, maxPersonalized).map(s => s.video);
+    const restPersonalized = personalized.slice(maxPersonalized).map(s => s.video);
+
+    // La resta va en round-robin per diversitat
+    const discoveryVideos = [...restPersonalized, ...discovery.map(s => s.video)];
+    const roundRobinDiscovery = sortVideosByRoundRobin(discoveryVideos);
+
+    // Intercalar: 2 personalitzats, 3 descoberta, repetir
+    const result = [];
+    let pIdx = 0, dIdx = 0;
+    while (pIdx < topPersonalized.length || dIdx < roundRobinDiscovery.length) {
+        for (let i = 0; i < 2 && pIdx < topPersonalized.length; i++) {
+            result.push(topPersonalized[pIdx++]);
+        }
+        for (let i = 0; i < 3 && dIdx < roundRobinDiscovery.length; i++) {
+            result.push(roundRobinDiscovery[dIdx++]);
+        }
+    }
+    return result;
+}
+
 function getFeedDataForFilter() {
     if (Array.isArray(YouTubeAPI?.feedChannels) && YouTubeAPI.feedChannels.length > 0) {
         return { channels: YouTubeAPI.feedChannels };
@@ -5922,44 +6012,62 @@ function renderCategoryVideosBelow(currentChannelId, currentVideoId) {
     }
     setExtraRelatedTitle(DEFAULT_EXTRA_RELATED_TITLE);
 
-    let videos = currentFeedVideos || [];
+    let allVideos = currentFeedVideos || [];
 
+    // Determinar la categoria efectiva
+    let effectiveCategory = null;
     if (selectedCategory && selectedCategory !== 'Novetats' && selectedCategory !== 'Tot') {
-        videos = filterVideosByCategory(videos, currentFeedData);
+        effectiveCategory = selectedCategory;
+    } else {
+        // Deduir del canal del vídeo actual
+        effectiveCategory = getEffectiveCategory(currentChannelId);
     }
 
-    videos = videos.filter(v => {
-        if (String(v.channelId) === String(currentChannelId)) {
-            return false;
-        }
-        if (String(v.id) === String(currentVideoId)) {
-            return false;
-        }
-        if (v.isShort) {
-            return false;
-        }
-        if (selectedCategory === 'Novetats' || selectedCategory === 'Tot') {
+    // Filtrar per categoria efectiva
+    let videos;
+    if (effectiveCategory) {
+        // Guardar selectedCategory original i usar l'efectiva per filtrar
+        const originalCategory = selectedCategory;
+        selectedCategory = effectiveCategory;
+        videos = filterVideosByCategory(allVideos, currentFeedData);
+        selectedCategory = originalCategory;
+    } else {
+        videos = [...allVideos];
+    }
+
+    // Excloure vídeo actual, canal actual, shorts
+    videos = videos.filter(v =>
+        String(v.channelId) !== String(currentChannelId)
+        && String(v.id) !== String(currentVideoId)
+        && !v.isShort
+    );
+
+    // Fallback: si queden < 5 vídeos, ampliar amb vídeos generals
+    if (videos.length < 5) {
+        const excludedCats = ['mitjans', 'digitals', 'entitats'];
+        const videoIds = new Set(videos.map(v => String(v.id)));
+        const fallbackVideos = allVideos.filter(v => {
+            if (videoIds.has(String(v.id))) return false;
+            if (String(v.channelId) === String(currentChannelId)) return false;
+            if (String(v.id) === String(currentVideoId)) return false;
+            if (v.isShort) return false;
             const channelCats = getChannelCustomCategories(v.channelId);
             let feedCats = [];
             if (currentFeedData?.channels) {
-                const channel = currentFeedData.channels.find(c => String(c.id) === String(v.channelId));
-                if (channel && Array.isArray(channel.categories)) {
-                    feedCats = channel.categories;
-                }
+                const ch = currentFeedData.channels.find(c => String(c.id) === String(v.channelId));
+                if (ch && Array.isArray(ch.categories)) feedCats = ch.categories;
             } else if (cachedChannels[v.channelId]?.categories) {
                 feedCats = cachedChannels[v.channelId].categories;
             }
-            const isMitjansOrDigitals = [...channelCats, ...feedCats]
-                .some(cat => {
-                    const normalizedCat = String(cat).toLowerCase();
-                    return normalizedCat === 'mitjans' || normalizedCat === 'digitals' || normalizedCat === 'entitats';
-                });
-            if (isMitjansOrDigitals) {
-                return false;
-            }
-        }
-        return true;
-    });
+            return ![...channelCats, ...feedCats].some(cat =>
+                excludedCats.includes(String(cat).toLowerCase())
+            );
+        });
+        videos = [...videos, ...fallbackVideos];
+    }
+
+    // Aplicar scoring personalitzat
+    videos = scoreRelatedVideos(videos, { id: currentVideoId, channelId: currentChannelId });
 
     videos = videos.slice(0, WATCH_CATEGORY_VIDEOS_LIMIT);
 
@@ -6307,88 +6415,6 @@ async function showVideoFromAPI(videoId) {
 
     window.scrollTo(0, 0);
     hideLoading();
-
-    if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-    }
-    setupVideoCardActionButtons();
-}
-
-// Carregar vídeos relacionats des de l'API
-async function loadRelatedVideosFromAPI(videoId) {
-    const relatedContainer = document.getElementById('relatedVideos');
-    const extraContainer = extraVideosGrid || document.getElementById('extraVideosGrid');
-    const sidebarLimit = 8;
-    setExtraRelatedTitle(DEFAULT_EXTRA_RELATED_TITLE);
-
-    // La API de vídeos relacionats pot no funcionar, fem fallback a vídeos populars
-    let result = await YouTubeAPI.getRelatedVideos(videoId, 20);
-
-    if (result.error || result.items.length === 0) {
-        result = await YouTubeAPI.getPopularVideos(20);
-    }
-
-    if (result.items.length === 0) {
-        relatedContainer.innerHTML = '<p>No hi ha vídeos relacionats</p>';
-        if (extraContainer) {
-            extraContainer.innerHTML = '';
-        }
-        return;
-    }
-
-    // Obtenir detalls dels vídeos
-    const videoIds = result.items.map(v => v.id).join(',');
-    const details = await fetchVideoDetails(videoIds);
-    let videos = details.length > 0 ? details : result.items;
-    videos = videos.filter(v => !v.isShort);
-
-    const sidebarVideos = videos.slice(0, sidebarLimit);
-    const extraVideos = videos.slice(sidebarLimit);
-
-    relatedContainer.innerHTML = sidebarVideos.map(video => {
-        const duration = getVideoDisplayDuration(video);
-        return `
-        <div class="related-video" data-video-id="${video.id}">
-            <div class="related-thumbnail">
-                <img src="${video.thumbnail}" alt="${escapeHtml(video.title)}" loading="lazy">
-                ${duration ? `<span class="video-duration">${duration}</span>` : ''}
-            </div>
-            <div class="related-info">
-                <div class="related-title-text">${escapeHtml(video.title)}</div>
-                <div class="related-channel">${escapeHtml(video.channelTitle)}</div>
-                <div class="related-stats">
-                    ${video.viewCount ? formatViews(video.viewCount) + ' vis. • ' : ''}${formatDate(video.publishedAt)}
-                </div>
-            </div>
-        </div>
-    `;
-    }).join('');
-
-    if (extraContainer) {
-        extraContainer.innerHTML = extraVideos.map(video => createVideoCardAPI(video)).join('');
-        if (extraVideos.length > 0) {
-            ensureWatchGridLayoutControls();
-            applyWatchGridLayoutPreference();
-        }
-    }
-
-    // Event listeners
-    const relatedVideoElements = relatedContainer.querySelectorAll('.related-video');
-    relatedVideoElements.forEach(element => {
-        element.addEventListener('click', () => {
-            const id = element.dataset.videoId;
-            showVideoFromAPI(id);
-        });
-    });
-
-    if (extraContainer) {
-        extraContainer.querySelectorAll('.video-card').forEach(card => {
-            card.addEventListener('click', () => {
-                showVideoFromAPI(card.dataset.videoId);
-            });
-        });
-        bindChannelLinks(extraContainer);
-    }
 
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
@@ -7241,15 +7267,46 @@ function mapStaticVideoToCardData(video) {
 // Carregar vídeos relacionats (estàtic)
 function loadRelatedVideos(currentVideoId) {
     setExtraRelatedTitle(DEFAULT_EXTRA_RELATED_TITLE);
-    const relatedVideos = VIDEOS
-        .filter(v => v.id !== parseInt(currentVideoId) && !v.isShort)
-        .slice(0, 20);
+    const currentVideo = getVideoById(currentVideoId);
+    const currentChannelId = currentVideo?.channelId;
+
+    // Filtrar per categoria
+    let relatedVideos = VIDEOS.filter(v => v.id !== parseInt(currentVideoId) && !v.isShort);
+
+    // Intentar filtrar per categoria del vídeo actual
+    if (currentVideo?.categoryId) {
+        const categoryFiltered = relatedVideos.filter(v => v.categoryId === currentVideo.categoryId);
+        if (categoryFiltered.length >= 5) {
+            relatedVideos = categoryFiltered;
+        } else if (categoryFiltered.length > 0) {
+            // Prioritzar els de la mateixa categoria + omplir amb generals
+            const categoryIds = new Set(categoryFiltered.map(v => v.id));
+            const others = relatedVideos.filter(v => !categoryIds.has(v.id));
+            relatedVideos = [...categoryFiltered, ...others];
+        }
+    }
+
+    // Excloure canal actual
+    relatedVideos = relatedVideos.filter(v =>
+        String(v.channelId) !== String(currentChannelId)
+    );
+
+    // Aplicar scoring personalitzat
+    const mappedVideos = relatedVideos.map(v => mapStaticVideoToCardData(v));
+    const scoredVideos = scoreRelatedVideos(mappedVideos, { id: currentVideoId, channelId: currentChannelId });
+
+    // Mapeig invers per obtenir vídeos estàtics originals per al sidebar
+    const scoredIds = scoredVideos.map(v => v.id);
+    const staticById = {};
+    VIDEOS.forEach(v => { staticById[v.id] = v; });
+    const orderedStatic = scoredIds.map(id => staticById[id]).filter(Boolean);
+
+    const sidebarLimit = 8;
+    const sidebarVideos = orderedStatic.slice(0, sidebarLimit);
+    const extraVideosData = scoredVideos.slice(sidebarLimit, 20);
+
     const relatedContainer = document.getElementById('relatedVideos');
     const extraContainer = extraVideosGrid || document.getElementById('extraVideosGrid');
-    const sidebarLimit = 8;
-
-    const sidebarVideos = relatedVideos.slice(0, sidebarLimit);
-    const extraVideos = relatedVideos.slice(sidebarLimit);
 
     relatedContainer.innerHTML = sidebarVideos.map(video => {
         const channel = getChannelById(video.channelId);
@@ -7261,7 +7318,7 @@ function loadRelatedVideos(currentVideoId) {
                 </div>
                 <div class="related-info">
                     <div class="related-title-text">${video.title}</div>
-                    <div class="related-channel">${channel.name}</div>
+                    <div class="related-channel">${channel?.name || ''}</div>
                     <div class="related-stats">
                         ${formatViews(video.views)} vis. • ${formatDate(video.uploadDate)}
                     </div>
@@ -7271,10 +7328,10 @@ function loadRelatedVideos(currentVideoId) {
     }).join('');
 
     if (extraContainer) {
-        extraContainer.innerHTML = extraVideos
-            .map(video => createVideoCardAPI(mapStaticVideoToCardData(video)))
+        extraContainer.innerHTML = extraVideosData
+            .map(video => createVideoCardAPI(video))
             .join('');
-        if (extraVideos.length > 0) {
+        if (extraVideosData.length > 0) {
             ensureWatchGridLayoutControls();
             applyWatchGridLayoutPreference();
         }
