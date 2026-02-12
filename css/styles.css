@@ -4202,19 +4202,23 @@ button:disabled,
 
 /* --- Add Youtuber Modal --- */
 #addYoutuberBtn {
-    background: var(--color-background);
+    background: var(--color-button-accent);
+    display: flex;
+    justify-content: flex-end;
+    padding-right: 9px;
 }
 
-.add-youtuber-icon {
+#addYoutuberBtn .add-youtuber-icon {
     color: #ffffff;
-    background: var(--color-background);
-    border-radius: 8px;
-    padding: 4px;
 }
 
 #addYoutuberModalTitle .add-youtuber-icon {
     width: 28px;
     height: 28px;
+    color: #ffffff;
+    background: var(--color-background);
+    border-radius: 8px;
+    padding: 4px;
 }
 
 .add-youtuber-fields {
