@@ -50,7 +50,7 @@ let customCategoryModal, customCategoryInput, customCategoryAddBtn, customCatego
 let playlistsPage, playlistsList, playlistNameInput, createPlaylistBtn;
 let followPage, followGrid, followTabs;
 let addYoutuberModal;
-let heroSection, heroTitle, heroDescription, heroImage, heroDuration, heroButton, heroEyebrow, heroChannel;
+let heroSection, heroTitle, heroDescription, heroImage, heroDuration, heroButton, heroEyebrow, heroEyebrowSubtitle, heroChannel;
 let pageTitle;
 let backgroundModal, backgroundBtn, backgroundOptions, buttonColorOptions;
 let currentColorDisplay, expandedColorPicker, closeExpandedColorPicker;
@@ -98,6 +98,7 @@ let userGridPreference = '4';
 let userWatchGridPreference = '3';
 let miniPlayerTimer = null;
 const featuredVideoBySection = new Map();
+const featuredMetaBySection = new Map();
 const customCategorySearchCache = new Map();
 const customCategorySearchInFlight = new Map();
 const HYBRID_CATEGORY_SORT = new Set(['Cultura', 'Diversió', 'Actualitat', 'Vida', 'El Món', 'Gaming', 'Mitjans', 'Entitats', 'Digitals']);
@@ -129,6 +130,9 @@ const PLAYLIST_STORAGE_KEY = 'catube_playlists';
 const FOLLOW_STORAGE_KEY = 'catube_follows';
 const CHIPS_ORDER_STORAGE_KEY = 'catube_chip_order';
 const CUSTOM_TAGS_STORAGE_KEY = 'catube_custom_tags';
+const HIDDEN_VIDEO_IDS_STORAGE_KEY = 'catube_hidden_video_ids';
+const HIDDEN_CHANNEL_IDS_STORAGE_KEY = 'catube_hidden_channel_ids';
+const RECO_PREFS_STORAGE_KEY = 'catube_reco_prefs';
 const GRID_LAYOUT_STORAGE_KEY = 'catube_grid_layout';
 const WATCH_GRID_LAYOUT_STORAGE_KEY = 'catube_watch_grid_layout';
 const DESKTOP_BREAKPOINT = 1024;
@@ -142,6 +146,70 @@ let cachedChannels = {};
 let cachedAPIVideos = [];
 let activeFollowTab = 'all';
 let channelCategoryPickerCleanup = null;
+let activeRecoMenuVideoId = null;
+let activeRecoMenuChannelId = null;
+
+const DEFAULT_RECO_PREFS = {
+    personalizeFollows: true,
+    personalizeLikes: true,
+    diversifyChannels: true
+};
+
+function getHiddenVideoIdSet() {
+    try {
+        const parsed = JSON.parse(localStorage.getItem(HIDDEN_VIDEO_IDS_STORAGE_KEY) || '[]');
+        return new Set(Array.isArray(parsed) ? parsed.map(id => String(id)) : []);
+    } catch (error) {
+        console.warn('No es pot llegir catube_hidden_video_ids', error);
+        return new Set();
+    }
+}
+
+function getHiddenChannelIdSet() {
+    try {
+        const parsed = JSON.parse(localStorage.getItem(HIDDEN_CHANNEL_IDS_STORAGE_KEY) || '[]');
+        return new Set(Array.isArray(parsed) ? parsed.map(id => String(id)) : []);
+    } catch (error) {
+        console.warn('No es pot llegir catube_hidden_channel_ids', error);
+        return new Set();
+    }
+}
+
+function setHiddenVideoIds(ids) {
+    localStorage.setItem(HIDDEN_VIDEO_IDS_STORAGE_KEY, JSON.stringify([...new Set(ids.map(id => String(id)))]));
+}
+
+function setHiddenChannelIds(ids) {
+    localStorage.setItem(HIDDEN_CHANNEL_IDS_STORAGE_KEY, JSON.stringify([...new Set(ids.map(id => String(id)))]));
+}
+
+function getRecommendationPrefs() {
+    try {
+        const parsed = JSON.parse(localStorage.getItem(RECO_PREFS_STORAGE_KEY) || '{}');
+        return { ...DEFAULT_RECO_PREFS, ...(parsed || {}) };
+    } catch (error) {
+        console.warn('No es pot llegir catube_reco_prefs', error);
+        return { ...DEFAULT_RECO_PREFS };
+    }
+}
+
+function setRecommendationPrefs(nextPrefs) {
+    const merged = { ...DEFAULT_RECO_PREFS, ...(nextPrefs || {}) };
+    localStorage.setItem(RECO_PREFS_STORAGE_KEY, JSON.stringify(merged));
+}
+
+function filterHiddenRecommendations(videos) {
+    const hiddenVideos = getHiddenVideoIdSet();
+    const hiddenChannels = getHiddenChannelIdSet();
+    return (Array.isArray(videos) ? videos : []).filter(video => {
+        if (!video) return false;
+        const videoId = String(video.id);
+        const channelId = String(video.channelId || video.snippet?.channelId || '');
+        if (hiddenVideos.has(videoId)) return false;
+        if (channelId && hiddenChannels.has(channelId)) return false;
+        return true;
+    });
+}
 
 function mergeChannelCategories(channel, categories) {
     if (!channel || !Array.isArray(categories) || categories.length === 0) {
@@ -1089,6 +1157,49 @@ function setupShareButtons() {
     });
 }
 
+function initRecommendationControls() {
+    const prefs = getRecommendationPrefs();
+    const followToggle = document.getElementById('recoFollowToggle');
+    const likesToggle = document.getElementById('recoLikesToggle');
+    const diversityToggle = document.getElementById('recoDiversityToggle');
+    const resetBtn = document.getElementById('resetRecommendationsBtn');
+
+    if (followToggle) {
+        followToggle.checked = !!prefs.personalizeFollows;
+        followToggle.addEventListener('change', () => {
+            setRecommendationPrefs({ ...getRecommendationPrefs(), personalizeFollows: followToggle.checked });
+            renderFeed();
+        });
+    }
+    if (likesToggle) {
+        likesToggle.checked = !!prefs.personalizeLikes;
+        likesToggle.addEventListener('change', () => {
+            setRecommendationPrefs({ ...getRecommendationPrefs(), personalizeLikes: likesToggle.checked });
+            renderFeed();
+        });
+    }
+    if (diversityToggle) {
+        diversityToggle.checked = !!prefs.diversifyChannels;
+        diversityToggle.addEventListener('change', () => {
+            setRecommendationPrefs({ ...getRecommendationPrefs(), diversifyChannels: diversityToggle.checked });
+            renderFeed();
+        });
+    }
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            localStorage.removeItem(HIDDEN_VIDEO_IDS_STORAGE_KEY);
+            localStorage.removeItem(HIDDEN_CHANNEL_IDS_STORAGE_KEY);
+            localStorage.removeItem(RECO_PREFS_STORAGE_KEY);
+            setRecommendationPrefs(DEFAULT_RECO_PREFS);
+            if (followToggle) followToggle.checked = true;
+            if (likesToggle) likesToggle.checked = true;
+            if (diversityToggle) diversityToggle.checked = true;
+            renderFeed();
+            renderFollowPage();
+        });
+    }
+}
+
 function initIntroSplash() {
     const splash = document.getElementById('intro-splash');
     if (!splash) {
@@ -1118,6 +1229,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initBackgroundModal();
     initBackgroundPicker();
     initFontSizeControls();
+    initRecommendationControls();
     const urlParams = new URLSearchParams(window.location.search);
     const addTagParam = urlParams.get('add_tag');
     if (addTagParam) {
@@ -1298,6 +1410,7 @@ function initElements() {
     heroDuration = document.getElementById('heroDuration');
     heroButton = document.getElementById('heroButton');
     heroEyebrow = document.getElementById('heroEyebrow');
+    heroEyebrowSubtitle = document.getElementById('heroEyebrowSubtitle');
     heroChannel = document.getElementById('heroChannel');
     pageTitle = document.getElementById('pageTitle');
     playlistModal = document.getElementById('playlistModal');
@@ -2037,47 +2150,111 @@ function getHeroSectionKey() {
     return (pageTitle?.dataset?.title || pageTitle?.textContent || 'feed').trim();
 }
 
+function getUserSignalsForFeatured() {
+    const prefs = getRecommendationPrefs();
+    const follows = prefs.personalizeFollows
+        ? new Set(getFollowedChannelIds().map(id => String(id)))
+        : new Set();
+    const likedByChannel = {};
+    if (!prefs.personalizeLikes) {
+        return { follows, likedByChannel };
+    }
+    getLikedVideos().forEach(video => {
+        const channelId = String(video?.channelId || video?.snippet?.channelId || '');
+        if (!channelId) return;
+        likedByChannel[channelId] = (likedByChannel[channelId] || 0) + 1;
+    });
+    return { follows, likedByChannel };
+}
+
+function getFeaturedContext(sectionKey) {
+    const normalizedSection = sectionKey || 'feed';
+    const excludeVideoIds = [];
+    featuredVideoBySection.forEach((videoId, key) => {
+        if (key !== normalizedSection) {
+            excludeVideoIds.push(String(videoId));
+        }
+    });
+
+    const channelAppearanceCount = {};
+    featuredMetaBySection.forEach((meta, key) => {
+        if (key === normalizedSection) return;
+        const channelId = String(meta?.channelId || '');
+        if (!channelId) return;
+        channelAppearanceCount[channelId] = (channelAppearanceCount[channelId] || 0) + 1;
+    });
+
+    return {
+        sectionKey: normalizedSection,
+        excludeVideoIds,
+        channelAppearanceCount,
+        maxChannelAppearancesBeforePenalty: 1,
+        diversityPenaltyPerExtraAppearance: 0.08,
+        minDurationSeconds: MIN_RECOMMENDED_SECONDS,
+        recentWindowHours: 24 * 7
+    };
+}
+
 function getFeaturedVideoForSection(videos, sectionKey) {
     if (!Array.isArray(videos) || videos.length === 0) {
         if (sectionKey) {
             featuredVideoBySection.delete(sectionKey);
+            featuredMetaBySection.delete(sectionKey);
         }
         return null;
     }
 
     const normalizedSection = sectionKey || 'feed';
-    const usedIds = new Set();
-    featuredVideoBySection.forEach((videoId, key) => {
-        if (key !== normalizedSection) {
-            usedIds.add(String(videoId));
-        }
-    });
-
+    const visibleVideos = filterHiddenRecommendations(videos);
+    if (visibleVideos.length === 0) {
+        featuredVideoBySection.delete(normalizedSection);
+        featuredMetaBySection.delete(normalizedSection);
+        return null;
+    }
     const watchedIds = getHistoryVideoIdSet();
-    const available = videos.filter(video => {
-        const videoId = String(video.id);
-        if (usedIds.has(videoId)) {
-            return false;
-        }
-        if (watchedIds.has(videoId)) {
-            return false;
-        }
-        if (video.isShort === true) {
-            return false;
-        }
+    const signals = getUserSignalsForFeatured();
+    const context = getFeaturedContext(normalizedSection);
+
+    const combinedExcluded = [...context.excludeVideoIds, ...Array.from(watchedIds)];
+    const picker = Recommendation?.pickFeaturedVideo;
+    const prefs = getRecommendationPrefs();
+    const picked = typeof picker === 'function'
+        ? picker(visibleVideos, {
+            ...context,
+            userSignals: signals,
+            maxConsecutiveSameChannel: prefs.diversifyChannels ? 2 : 99,
+            excludeVideoIds: combinedExcluded
+        })
+        : null;
+
+    if (picked?.video) {
+        featuredVideoBySection.set(normalizedSection, String(picked.video.id));
+        featuredMetaBySection.set(normalizedSection, {
+            reason: picked.score?.reason || 'recency',
+            channelId: String(picked.video.channelId || picked.video.snippet?.channelId || '')
+        });
+        return picked.video;
+    }
+
+    const excludedSet = new Set(combinedExcluded.map(id => String(id)));
+    const available = visibleVideos.filter(video => {
+        if (!video || excludedSet.has(String(video.id))) return false;
+        if (video.isShort === true) return false;
         const seconds = getVideoDurationSeconds(video);
-        if (seconds === null || seconds < MIN_RECOMMENDED_SECONDS) {
-            return false;
-        }
-        return true;
+        return seconds !== null && seconds >= MIN_RECOMMENDED_SECONDS;
     });
     const newest = getNewestVideoFromList(available);
     if (newest?.video) {
         featuredVideoBySection.set(normalizedSection, String(newest.video.id));
+        featuredMetaBySection.set(normalizedSection, {
+            reason: 'recency',
+            channelId: String(newest.video.channelId || newest.video.snippet?.channelId || '')
+        });
         return newest.video;
     }
 
     featuredVideoBySection.delete(normalizedSection);
+    featuredMetaBySection.delete(normalizedSection);
     return null;
 }
 
@@ -2111,6 +2288,12 @@ function updateHero(video, source = 'static') {
 
     if (heroEyebrow) {
         heroEyebrow.textContent = source === 'api' ? 'Destacat del moment' : 'Destacat de la setmana';
+    }
+
+    if (heroEyebrowSubtitle) {
+        const section = getHeroSectionKey();
+        const reason = featuredMetaBySection.get(section)?.reason || 'recency';
+        heroEyebrowSubtitle.textContent = reason === 'engagement' ? 'Més popular recentment' : 'Nou';
     }
 
     if (heroChannel) {
@@ -2584,59 +2767,166 @@ function getEffectiveCategory(channelId) {
     return null;
 }
 
-function scoreRelatedVideos(videos, currentVideo) {
-    if (!Array.isArray(videos) || videos.length === 0) return [];
+function getVideoPrimaryCategory(video) {
+    if (!video) return '';
+    if (Array.isArray(video.categories) && video.categories.length > 0) {
+        return String(video.categories[0]).toLowerCase();
+    }
+    if (video.categoryId !== undefined && video.categoryId !== null) {
+        return String(video.categoryId).toLowerCase();
+    }
+    if (video.category) {
+        return String(video.category).toLowerCase();
+    }
+    return '';
+}
 
-    // Dades de personalització
-    const followedIds = new Set(getFollowedChannelIds().map(id => String(id)));
-    const likedVideos = getLikedVideos();
-    const likedChannelCounts = {};
-    likedVideos.forEach(v => {
-        const chId = String(v.channelId || '');
-        if (chId) likedChannelCounts[chId] = (likedChannelCounts[chId] || 0) + 1;
-    });
+function normalizeTitleTokensFallback(title, max = 12) {
+    const stopwords = new Set(['el', 'la', 'els', 'les', 'de', 'del', 'dels', 'i', 'a', 'en', 'per', 'amb', 'que', 'un', 'una', 'uns', 'unes', 'the', 'and', 'for', 'with', 'this', 'that', 'from', 'is', 'are', 'to', 'y', 'con', 'por', 'para', 'los', 'las', 'uno']);
+    return String(title || '')
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}\s]+/gu, ' ')
+        .split(/\s+/)
+        .map(token => token.trim())
+        .filter(token => token.length > 1 && !stopwords.has(token))
+        .slice(0, max);
+}
 
-    // Scoring per cada vídeo
-    const scored = videos.map(video => {
-        let score = 0;
-        const chId = String(video.channelId || '');
+function getChannelTopTags(channelId) {
+    const normalizedId = String(channelId || '');
+    if (!normalizedId) return [];
 
-        // +2 si el canal és seguit
-        if (followedIds.has(chId)) score += 2;
-
-        // +1 per cada like a vídeos d'aquest canal (màx +3)
-        const likesForChannel = likedChannelCounts[chId] || 0;
-        score += Math.min(likesForChannel, 3);
-
-        return { video, score };
-    });
-
-    // Separar en dos grups: personalitzats (score > 0) i descoberta (score === 0)
-    const personalized = scored.filter(s => s.score > 0).sort((a, b) => b.score - a.score);
-    const discovery = scored.filter(s => s.score === 0);
-
-    // Agafar vídeos personalitzats (màx 40% del total)
-    const maxPersonalized = Math.floor(videos.length * 0.4);
-    const topPersonalized = personalized.slice(0, maxPersonalized).map(s => s.video);
-    const restPersonalized = personalized.slice(maxPersonalized).map(s => s.video);
-
-    // La resta va en round-robin per diversitat
-    const discoveryVideos = [...restPersonalized, ...discovery.map(s => s.video)];
-    const roundRobinDiscovery = sortVideosByRoundRobin(discoveryVideos);
-
-    // Intercalar: 2 personalitzats, 3 descoberta, repetir
-    const result = [];
-    let pIdx = 0, dIdx = 0;
-    while (pIdx < topPersonalized.length || dIdx < roundRobinDiscovery.length) {
-        for (let i = 0; i < 2 && pIdx < topPersonalized.length; i++) {
-            result.push(topPersonalized[pIdx++]);
-        }
-        for (let i = 0; i < 3 && dIdx < roundRobinDiscovery.length; i++) {
-            result.push(roundRobinDiscovery[dIdx++]);
+    if (currentFeedData?.channels) {
+        const channel = currentFeedData.channels.find(c => String(c.id) === normalizedId);
+        if (Array.isArray(channel?.topTags) && channel.topTags.length > 0) {
+            return channel.topTags;
         }
     }
-    return result;
+
+    const apiChannel = Array.isArray(YouTubeAPI?.feedChannels)
+        ? YouTubeAPI.feedChannels.find(c => String(c.id) === normalizedId)
+        : null;
+    if (Array.isArray(apiChannel?.topTags) && apiChannel.topTags.length > 0) {
+        return apiChannel.topTags;
+    }
+
+    const cached = cachedChannels?.[normalizedId];
+    if (Array.isArray(cached?.topTags) && cached.topTags.length > 0) {
+        return cached.topTags;
+    }
+
+    return [];
 }
+
+function buildRelatedCandidates(allVideos, currentVideo, currentChannelId) {
+    if (!Array.isArray(allVideos) || !currentVideo) return [];
+
+    const currentVideoId = String(currentVideo.id);
+    const followedIds = new Set(getFollowedChannelIds().map(id => String(id)));
+    const currentCategory = getVideoPrimaryCategory(currentVideo);
+    const currentTags = new Set((Array.isArray(currentVideo.tags) ? currentVideo.tags : []).map(tag => String(tag).toLowerCase()));
+    const reusableTags = new Set(getChannelTopTags(currentChannelId).map(tag => String(tag).toLowerCase()));
+
+    const unique = new Map();
+    allVideos.forEach(video => {
+        if (!video || String(video.id) === currentVideoId || video.isShort) return;
+        const videoId = String(video.id);
+        if (unique.has(videoId)) return;
+
+        const sameCategory = currentCategory && getVideoPrimaryCategory(video) === currentCategory;
+        const followedChannel = followedIds.has(String(video.channelId));
+        const tags = Array.isArray(video.tags) ? video.tags.map(tag => String(tag).toLowerCase()) : [];
+        const tagMatch = tags.some(tag => currentTags.has(tag) || reusableTags.has(tag));
+
+        if (sameCategory || followedChannel || tagMatch) {
+            unique.set(videoId, {
+                ...video,
+                normalizedTitleTokens: Array.isArray(video.normalizedTitleTokens) && video.normalizedTitleTokens.length > 0
+                    ? video.normalizedTitleTokens
+                    : normalizeTitleTokensFallback(video.title)
+            });
+        }
+    });
+
+    if (unique.size === 0) {
+        allVideos.forEach(video => {
+            if (!video || String(video.id) === currentVideoId || video.isShort) return;
+            unique.set(String(video.id), {
+                ...video,
+                normalizedTitleTokens: Array.isArray(video.normalizedTitleTokens) && video.normalizedTitleTokens.length > 0
+                    ? video.normalizedTitleTokens
+                    : normalizeTitleTokensFallback(video.title)
+            });
+        });
+    }
+
+    return filterHiddenRecommendations(Array.from(unique.values()));
+}
+
+function scoreRelatedVideos(videos, currentVideo, options = {}) {
+    if (!Array.isArray(videos) || videos.length === 0 || !currentVideo) return [];
+
+    const userSignals = getUserSignalsForFeatured();
+    const ranking = Recommendation?.rankAndDiversifyRelated;
+    if (typeof ranking !== 'function') {
+        return videos.map(video => ({ video, score: { total: 0, reason: 'categoria' } }));
+    }
+
+    const prefs = getRecommendationPrefs();
+    return ranking(videos, {
+        currentVideo: {
+            ...currentVideo,
+            normalizedTitleTokens: Array.isArray(currentVideo.normalizedTitleTokens) && currentVideo.normalizedTitleTokens.length > 0
+                ? currentVideo.normalizedTitleTokens
+                : normalizeTitleTokensFallback(currentVideo.title),
+            categories: currentVideo.categories || (currentVideo.categoryId !== undefined ? [currentVideo.categoryId] : [])
+        },
+        userSignals,
+        useFollowSignals: prefs.personalizeFollows,
+        useLikeSignals: prefs.personalizeLikes,
+        sidebarChannelShown: Boolean(options.sidebarChannelShown),
+        maxConsecutiveSameChannel: prefs.diversifyChannels ? 2 : 99
+    });
+}
+
+function getRelatedHeadingFromReason(rankedItems, currentVideo) {
+    if (!Array.isArray(rankedItems) || rankedItems.length === 0) {
+        return DEFAULT_EXTRA_RELATED_TITLE;
+    }
+
+    const reasonCount = { tema: 0, titol: 0, personalitzacio: 0, categoria: 0 };
+    rankedItems.slice(0, 8).forEach(item => {
+        const reason = item?.score?.reason || 'categoria';
+        reasonCount[reason] = (reasonCount[reason] || 0) + 1;
+    });
+
+    const dominant = Object.entries(reasonCount).sort((a, b) => b[1] - a[1])[0]?.[0] || 'categoria';
+    if (dominant === 'tema' || dominant === 'titol') {
+        return 'Relacionats per tema';
+    }
+    if (dominant === 'personalitzacio') {
+        const follows = new Set(getFollowedChannelIds().map(id => String(id)));
+        const topFollowed = rankedItems
+            .map(item => item.video)
+            .find(video => follows.has(String(video.channelId)));
+        const channelName = topFollowed?.channelTitle || (typeof getChannelById === 'function' ? getChannelById(topFollowed?.channelId)?.name : '');
+        return channelName ? `Perquè segueixes ${channelName}` : 'Recomanats per a tu';
+    }
+
+    return currentVideo?.categoryId !== undefined || (Array.isArray(currentVideo?.categories) && currentVideo.categories.length > 0)
+        ? 'Relacionats per categoria'
+        : DEFAULT_EXTRA_RELATED_TITLE;
+}
+
+function getRecommendationReasonLabel(reason) {
+    if (reason === 'personalitzacio') return 'Perquè segueixes aquest canal';
+    if (reason === 'tema' || reason === 'titol') return 'Similar en tags o títol';
+    if (reason === 'categoria') return 'Mateixa categoria';
+    if (reason === 'engagement') return 'Més popular recentment';
+    if (reason === 'recency') return 'Vídeo nou';
+    return 'Recomanat per al teu perfil';
+}
+
 
 function getFeedDataForFilter() {
     if (Array.isArray(YouTubeAPI?.feedChannels) && YouTubeAPI.feedChannels.length > 0) {
@@ -2804,7 +3094,7 @@ function renderFeed() {
         return;
     }
 
-    currentFeedRenderer(filtered);
+    currentFeedRenderer(filterHiddenRecommendations(filtered));
 }
 
 // Carregar categories
@@ -3798,13 +4088,14 @@ function renderVideos(videos) {
         }
     });
 
-    const featured = getFeaturedVideoForSection(videos, getHeroSectionKey());
+    const visibleVideos = filterHiddenRecommendations(videos);
+    const featured = getFeaturedVideoForSection(visibleVideos, getHeroSectionKey());
     updateHero(featured, 'api');
 
     const isCategoryView = selectedCategory !== 'Tot' && selectedCategory !== 'Novetats';
     const listVideos = isCategoryView && featured
-        ? videos.filter(video => String(video.id) !== String(featured.id))
-        : videos;
+        ? visibleVideos.filter(video => String(video.id) !== String(featured.id))
+        : visibleVideos;
 
     const isMobile = window.matchMedia("(max-width: 768px)").matches;
     const shorts = listVideos.filter(video => video.isShort);
@@ -4536,9 +4827,11 @@ async function renderFollowPage() {
     }
 
     const followedIds = new Set(getFollowedChannelIds().map(id => String(id)));
-    const channels = activeFollowTab === 'following'
+    const hiddenChannels = getHiddenChannelIdSet();
+    const channels = (activeFollowTab === 'following'
         ? allChannels.filter(channel => followedIds.has(String(channel.id)))
-        : allChannels;
+        : allChannels)
+        .filter(channel => !hiddenChannels.has(String(channel.id)));
 
     if (channels.length === 0) {
         renderFollowEmptyState();
@@ -4853,6 +5146,71 @@ function setupVideoCardActionButtons() {
             button.setAttribute('aria-pressed', nowLiked ? 'true' : 'false');
         });
     });
+
+    document.querySelectorAll('.video-card .video-more-btn').forEach(button => {
+        if (button.dataset.recoBound === 'true') return;
+        button.dataset.recoBound = 'true';
+        button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const card = button.closest('.video-card');
+            if (!card) return;
+            openRecoMenu(button, card.dataset.videoId, card.dataset.channelId || '');
+        });
+    });
+
+    const menu = document.getElementById('recoCardMenu');
+    if (menu && menu.dataset.bound !== 'true') {
+        menu.dataset.bound = 'true';
+        menu.addEventListener('click', (event) => {
+            const actionBtn = event.target.closest('[data-reco-action]');
+            if (!actionBtn) return;
+            event.preventDefault();
+            const action = actionBtn.dataset.recoAction;
+            if (action === 'hide-video' && activeRecoMenuVideoId) {
+                const next = getHiddenVideoIdSet();
+                next.add(String(activeRecoMenuVideoId));
+                setHiddenVideoIds(Array.from(next));
+                renderFeed();
+                renderHistory();
+            } else if (action === 'hide-channel' && activeRecoMenuChannelId) {
+                const next = getHiddenChannelIdSet();
+                next.add(String(activeRecoMenuChannelId));
+                setHiddenChannelIds(Array.from(next));
+                renderFeed();
+                renderHistory();
+                renderFollowPage();
+            } else if (action === 'why' && activeRecoMenuVideoId) {
+                const reasonEl = document.querySelector(`.video-card[data-video-id="${CSS.escape(String(activeRecoMenuVideoId))}"] .video-reco-reason`);
+                if (reasonEl) {
+                    reasonEl.classList.toggle('hidden');
+                }
+            }
+            closeRecoMenu();
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!event.target.closest('#recoCardMenu') && !event.target.closest('.video-more-btn')) {
+                closeRecoMenu();
+            }
+        });
+    }
+}
+
+function openRecoMenu(anchorButton, videoId, channelId) {
+    const menu = document.getElementById('recoCardMenu');
+    if (!menu || !anchorButton) return;
+    activeRecoMenuVideoId = String(videoId || '');
+    activeRecoMenuChannelId = String(channelId || '');
+    const rect = anchorButton.getBoundingClientRect();
+    menu.style.top = `${Math.round(rect.bottom + 6)}px`;
+    menu.style.left = `${Math.round(rect.left - 150)}px`;
+    menu.classList.remove('hidden');
+}
+
+function closeRecoMenu() {
+    const menu = document.getElementById('recoCardMenu');
+    if (!menu) return;
+    menu.classList.add('hidden');
 }
 
 function isMiniPlayerActive() {
@@ -5799,15 +6157,16 @@ function setupMiniPlayerToggle() {
 
 // Renderitzar resultats de cerca (sense estadístiques)
 function renderSearchResults(videos) {
-    const featured = getFeaturedVideoForSection(videos, getHeroSectionKey());
+    const visibleVideos = filterHiddenRecommendations(videos);
+    const featured = getFeaturedVideoForSection(visibleVideos, getHeroSectionKey());
     updateHero(featured, 'api');
 
     const likedIds = getLikedVideoIds();
-    videosGrid.innerHTML = videos.map(video => {
+    videosGrid.innerHTML = visibleVideos.map(video => {
         const isLiked = likedIds.includes(String(video.id));
         const payload = encodeURIComponent(JSON.stringify(getPlaylistVideoData(video)));
         return `
-        <div class="video-card" data-video-id="${video.id}">
+        <div class="video-card" data-video-id="${video.id}" data-channel-id="${video.channelId}">
             <div class="video-thumbnail${video.isShort ? ' is-short' : ''}">
                 <img src="${video.thumbnail}" alt="${escapeHtml(video.title)}" loading="lazy">
                 ${video.isShort ? '<span class="video-short-badge">SHORT</span>' : ''}
@@ -5823,15 +6182,15 @@ function renderSearchResults(videos) {
                             <button class="video-action-btn playlist-action" type="button" data-playlist-video="${payload}" aria-label="Afegir a una llista">
                                 ${PLAYLIST_ICON_SVG}
                             </button>
+                            <button class="video-more-btn" type="button" aria-label="Més opcions">⋯</button>
                         </div>
                     </div>
                     <div class="video-metadata">
                         <div class="channel-name channel-link" data-channel-id="${video.channelId}">${escapeHtml(video.channelTitle)}</div>
                         <div class="video-stats">
-                            <!-- Si hi ha comptador de vistes, fes servir "vis." -->
-                            <!-- Exemple si s'afegeix: <span>${formatViews(video.viewCount)} vis.</span> -->
                             <span>${formatDate(video.publishedAt)}</span>
                         </div>
+                        <div class="video-reco-reason hidden">${escapeHtml(getRecommendationReasonLabel(video.recommendationReason || 'categoria'))}</div>
                     </div>
                 </div>
             </div>
@@ -5858,8 +6217,9 @@ function renderSearchResults(videos) {
 function createVideoCardAPI(video) {
     const payload = encodeURIComponent(JSON.stringify(getPlaylistVideoData(video)));
     const duration = getVideoDisplayDuration(video);
+    const recoReason = video.recommendationReason || 'categoria';
     return `
-        <div class="video-card" data-video-id="${video.id}">
+        <div class="video-card" data-video-id="${video.id}" data-channel-id="${video.channelId}">
             <div class="video-thumbnail${video.isShort ? ' is-short' : ''}">
                 <img src="${video.thumbnail}" alt="${escapeHtml(video.title)}" loading="lazy">
                 ${video.isShort ? '<span class="video-short-badge">SHORT</span>' : ''}
@@ -5873,6 +6233,7 @@ function createVideoCardAPI(video) {
                             <button class="video-action-btn playlist-action" type="button" data-playlist-video="${payload}" aria-label="Afegir a una llista">
                                 ${PLAYLIST_ICON_SVG}
                             </button>
+                            <button class="video-more-btn" type="button" aria-label="Més opcions">⋯</button>
                         </div>
                     </div>
                     <div class="video-metadata">
@@ -5883,6 +6244,7 @@ function createVideoCardAPI(video) {
                             <span>•</span>
                             <span>${formatDate(video.publishedAt)}</span>
                         </div>
+                        <div class="video-reco-reason hidden">${escapeHtml(getRecommendationReasonLabel(recoReason))}</div>
                     </div>
                 </div>
             </div>
@@ -6016,72 +6378,34 @@ function renderCategoryVideosBelow(currentChannelId, currentVideoId) {
     if (!extraContainer) {
         return;
     }
-    setExtraRelatedTitle(DEFAULT_EXTRA_RELATED_TITLE);
 
-    let allVideos = currentFeedVideos || [];
+    const currentVideo = (currentFeedVideos || []).find(v => String(v.id) === String(currentVideoId))
+        || (Array.isArray(YouTubeAPI?.feedVideos) ? YouTubeAPI.feedVideos.find(v => String(v.id) === String(currentVideoId)) : null)
+        || null;
 
-    // Determinar la categoria efectiva
-    let effectiveCategory = null;
-    if (selectedCategory && selectedCategory !== 'Novetats' && selectedCategory !== 'Tot') {
-        effectiveCategory = selectedCategory;
-    } else {
-        // Deduir del canal del vídeo actual
-        effectiveCategory = getEffectiveCategory(currentChannelId);
-    }
+    const allVideos = Array.isArray(currentFeedVideos) && currentFeedVideos.length > 0
+        ? currentFeedVideos
+        : (Array.isArray(YouTubeAPI?.feedVideos) ? YouTubeAPI.feedVideos : []);
 
-    // Filtrar per categoria efectiva
-    let videos;
-    if (effectiveCategory) {
-        // Guardar selectedCategory original i usar l'efectiva per filtrar
-        const originalCategory = selectedCategory;
-        selectedCategory = effectiveCategory;
-        videos = filterVideosByCategory(allVideos, currentFeedData);
-        selectedCategory = originalCategory;
-    } else {
-        videos = [...allVideos];
-    }
+    const candidates = buildRelatedCandidates(allVideos, currentVideo, currentChannelId)
+        .filter(video => String(video.channelId) !== String(currentChannelId));
 
-    // Excloure vídeo actual, canal actual, shorts
-    videos = videos.filter(v =>
-        String(v.channelId) !== String(currentChannelId)
-        && String(v.id) !== String(currentVideoId)
-        && !v.isShort
-    );
+    const rankedItems = scoreRelatedVideos(candidates, currentVideo, {
+        sidebarChannelShown: isDesktopView()
+    });
+    const rankedVideos = rankedItems.map(item => ({
+        ...item.video,
+        recommendationReason: item.score?.reason || 'categoria'
+    }));
 
-    // Fallback: si queden < 5 vídeos, ampliar amb vídeos generals
-    if (videos.length < 5) {
-        const excludedCats = ['mitjans', 'digitals', 'entitats'];
-        const videoIds = new Set(videos.map(v => String(v.id)));
-        const fallbackVideos = allVideos.filter(v => {
-            if (videoIds.has(String(v.id))) return false;
-            if (String(v.channelId) === String(currentChannelId)) return false;
-            if (String(v.id) === String(currentVideoId)) return false;
-            if (v.isShort) return false;
-            const channelCats = getChannelCustomCategories(v.channelId);
-            let feedCats = [];
-            if (currentFeedData?.channels) {
-                const ch = currentFeedData.channels.find(c => String(c.id) === String(v.channelId));
-                if (ch && Array.isArray(ch.categories)) feedCats = ch.categories;
-            } else if (cachedChannels[v.channelId]?.categories) {
-                feedCats = cachedChannels[v.channelId].categories;
-            }
-            return ![...channelCats, ...feedCats].some(cat =>
-                excludedCats.includes(String(cat).toLowerCase())
-            );
-        });
-        videos = [...videos, ...fallbackVideos];
-    }
+    setExtraRelatedTitle(getRelatedHeadingFromReason(rankedItems, currentVideo));
 
-    // Aplicar scoring personalitzat
-    videos = scoreRelatedVideos(videos, { id: currentVideoId, channelId: currentChannelId });
-
-
-    if (videos.length === 0) {
-        extraContainer.innerHTML = '<div class="empty-state">No hi ha més vídeos d\'aquesta categoria.</div>';
+    if (rankedVideos.length === 0) {
+        extraContainer.innerHTML = '<div class="empty-state">No hi ha més vídeos relacionats.</div>';
         return;
     }
 
-    extraContainer.innerHTML = videos.map(video => createVideoCardAPI(video)).join('');
+    extraContainer.innerHTML = rankedVideos.map(video => createVideoCardAPI(video)).join('');
     ensureWatchGridLayoutControls();
     applyWatchGridLayoutPreference();
 
@@ -6097,6 +6421,7 @@ function renderCategoryVideosBelow(currentChannelId, currentVideoId) {
     }
     setupVideoCardActionButtons();
 }
+
 
 async function renderPlaylistRelatedVideos(playlistName) {
     const extraContainer = extraVideosGrid || document.getElementById('extraVideosGrid');
@@ -6438,10 +6763,11 @@ function loadVideos() {
 function renderStaticVideos(videos) {
     ensureGridLayoutControls();
     applyGridLayoutPreference();
-    const featured = getFeaturedVideoForSection(videos, getHeroSectionKey());
+    const visibleVideos = filterHiddenRecommendations(videos);
+    const featured = getFeaturedVideoForSection(visibleVideos, getHeroSectionKey());
     updateHero(featured, 'static');
 
-    videosGrid.innerHTML = videos.map(video => createVideoCard(video)).join('');
+    videosGrid.innerHTML = visibleVideos.map(video => createVideoCard(video)).join('');
 
     const videoCards = document.querySelectorAll('.video-card');
     videoCards.forEach(card => {
@@ -6462,7 +6788,7 @@ function renderStaticVideos(videos) {
 function loadVideosByCategoryStatic(categoryId) {
     ensureGridLayoutControls();
     applyGridLayoutPreference();
-    const videos = filterOutWatchedVideos(getVideosByCategory(categoryId));
+    const videos = filterHiddenRecommendations(filterOutWatchedVideos(getVideosByCategory(categoryId)));
     const category = CONFIG.categories.find(c => c.id === categoryId);
     renderCategoryActions(category ? category.name : 'Categoria');
     const featured = getFeaturedVideoForSection(videos, getHeroSectionKey());
@@ -6492,7 +6818,7 @@ function createVideoCard(video) {
     const payload = encodeURIComponent(JSON.stringify(getPlaylistVideoData(video)));
 
     return `
-        <div class="video-card" data-video-id="${video.id}">
+        <div class="video-card" data-video-id="${video.id}" data-channel-id="${video.channelId}">
             <div class="video-thumbnail">
                 <img src="${video.thumbnail}" alt="${video.title}" loading="lazy">
                 <span class="video-duration">${video.duration}</span>
@@ -6506,6 +6832,7 @@ function createVideoCard(video) {
                             <button class="video-action-btn playlist-action" type="button" data-playlist-video="${payload}" aria-label="Afegir a una llista">
                                 ${PLAYLIST_ICON_SVG}
                             </button>
+                            <button class="video-more-btn" type="button" aria-label="Més opcions">⋯</button>
                         </div>
                     </div>
                     <div class="video-metadata">
@@ -6516,6 +6843,7 @@ function createVideoCard(video) {
                             <span>•</span>
                             <span>${formatDate(video.uploadDate)}</span>
                         </div>
+                        <div class="video-reco-reason hidden">${escapeHtml(getRecommendationReasonLabel(video.recommendationReason || 'categoria'))}</div>
                     </div>
                 </div>
             </div>
@@ -6874,7 +7202,7 @@ function createHistoryCard(video) {
     }));
 
     return `
-        <div class="video-card" data-video-id="${video.id}" data-video-source="${source}">
+        <div class="video-card" data-video-id="${video.id}" data-video-source="${source}" data-channel-id="${video.channelId || channel?.id || ""}">
             <div class="video-thumbnail${isShort ? ' is-short' : ''}">
                 <img src="${thumbnail}" alt="${escapeHtml(title)}" loading="lazy">
                 <button class="delete-history-btn" type="button" aria-label="Eliminar de l'historial" data-history-id="${video.id}">
@@ -6895,6 +7223,7 @@ function createHistoryCard(video) {
                             <button class="video-action-btn playlist-action" type="button" data-playlist-video="${payload}" aria-label="Afegir a una llista">
                                 ${PLAYLIST_ICON_SVG}
                             </button>
+                            <button class="video-more-btn" type="button" aria-label="Més opcions">⋯</button>
                         </div>
                     </div>
                     <div class="video-metadata">
@@ -7271,66 +7600,69 @@ function mapStaticVideoToCardData(video) {
 }
 // Carregar vídeos relacionats (estàtic)
 function loadRelatedVideos(currentVideoId) {
-    setExtraRelatedTitle(DEFAULT_EXTRA_RELATED_TITLE);
     const currentVideo = getVideoById(currentVideoId);
     const currentChannelId = currentVideo?.channelId;
-
-    // Filtrar per categoria
-    let relatedVideos = VIDEOS.filter(v => v.id !== parseInt(currentVideoId) && !v.isShort);
-
-    // Intentar filtrar per categoria del vídeo actual
-    if (currentVideo?.categoryId) {
-        const categoryFiltered = relatedVideos.filter(v => v.categoryId === currentVideo.categoryId);
-        if (categoryFiltered.length >= 5) {
-            relatedVideos = categoryFiltered;
-        } else if (categoryFiltered.length > 0) {
-            // Prioritzar els de la mateixa categoria + omplir amb generals
-            const categoryIds = new Set(categoryFiltered.map(v => v.id));
-            const others = relatedVideos.filter(v => !categoryIds.has(v.id));
-            relatedVideos = [...categoryFiltered, ...others];
-        }
-    }
-
-    // Excloure canal actual
-    relatedVideos = relatedVideos.filter(v =>
-        String(v.channelId) !== String(currentChannelId)
-    );
-
-    // Aplicar scoring personalitzat
-    const mappedVideos = relatedVideos.map(v => mapStaticVideoToCardData(v));
-    const scoredVideos = scoreRelatedVideos(mappedVideos, { id: currentVideoId, channelId: currentChannelId });
-
-    // Mapeig invers per obtenir vídeos estàtics originals per al sidebar
-    const scoredIds = scoredVideos.map(v => v.id);
-    const staticById = {};
-    VIDEOS.forEach(v => { staticById[v.id] = v; });
-    const orderedStatic = scoredIds.map(id => staticById[id]).filter(Boolean);
-
-    const sidebarLimit = 8;
-    const sidebarVideos = orderedStatic.slice(0, sidebarLimit);
-    const extraVideosData = scoredVideos.slice(sidebarLimit);
 
     const relatedContainer = document.getElementById('relatedVideos');
     const extraContainer = extraVideosGrid || document.getElementById('extraVideosGrid');
 
-    relatedContainer.innerHTML = sidebarVideos.map(video => {
-        const channel = getChannelById(video.channelId);
-        return `
-            <div class="related-video" data-video-id="${video.id}">
-                <div class="related-thumbnail">
-                    <img src="${video.thumbnail}" alt="${video.title}" loading="lazy">
-                    <span class="video-duration">${video.duration}</span>
-                </div>
-                <div class="related-info">
-                    <div class="related-title-text">${video.title}</div>
-                    <div class="related-channel">${channel?.name || ''}</div>
-                    <div class="related-stats">
-                        ${formatViews(video.views)} vis. • ${formatDate(video.uploadDate)}
+    const mappedAllVideos = (Array.isArray(VIDEOS) ? VIDEOS : [])
+        .filter(v => !v.isShort)
+        .map(v => ({
+            ...mapStaticVideoToCardData(v),
+            categories: v.categoryId !== undefined ? [v.categoryId] : [],
+            categoryId: v.categoryId,
+            tags: Array.isArray(v.tags) ? v.tags : [],
+            normalizedTitleTokens: Array.isArray(v.normalizedTitleTokens) ? v.normalizedTitleTokens : []
+        }));
+
+    const currentMapped = currentVideo
+        ? {
+            ...mapStaticVideoToCardData(currentVideo),
+            categoryId: currentVideo.categoryId,
+            categories: currentVideo.categoryId !== undefined ? [currentVideo.categoryId] : [],
+            tags: Array.isArray(currentVideo.tags) ? currentVideo.tags : [],
+            normalizedTitleTokens: Array.isArray(currentVideo.normalizedTitleTokens) ? currentVideo.normalizedTitleTokens : []
+        }
+        : null;
+
+    const candidates = buildRelatedCandidates(mappedAllVideos, currentMapped, currentChannelId)
+        .filter(video => String(video.channelId) !== String(currentChannelId));
+
+    const rankedItems = scoreRelatedVideos(candidates, currentMapped, {
+        sidebarChannelShown: isDesktopView()
+    });
+    const rankedVideos = rankedItems.map(item => ({
+        ...item.video,
+        recommendationReason: item.score?.reason || 'categoria'
+    }));
+
+    setExtraRelatedTitle(getRelatedHeadingFromReason(rankedItems, currentMapped));
+
+    const sidebarLimit = 8;
+    const sidebarVideos = rankedVideos.slice(0, sidebarLimit);
+    const extraVideosData = rankedVideos.slice(sidebarLimit);
+
+    if (relatedContainer) {
+        relatedContainer.innerHTML = sidebarVideos.map(video => {
+            const channel = getChannelById(video.channelId);
+            return `
+                <div class="related-video" data-video-id="${video.id}">
+                    <div class="related-thumbnail">
+                        <img src="${video.thumbnail}" alt="${video.title}" loading="lazy">
+                        <span class="video-duration">${video.duration || ''}</span>
+                    </div>
+                    <div class="related-info">
+                        <div class="related-title-text">${video.title}</div>
+                        <div class="related-channel">${channel?.name || video.channelTitle || ''}</div>
+                        <div class="related-stats">
+                            ${formatViews(video.viewCount || 0)} vis. • ${formatDate(video.publishedAt)}
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
-    }).join('');
+            `;
+        }).join('');
+    }
 
     if (extraContainer) {
         extraContainer.innerHTML = extraVideosData
@@ -7364,6 +7696,7 @@ function loadRelatedVideos(currentVideoId) {
     }
     setupVideoCardActionButtons();
 }
+
 
 // ==================== UTILITATS ====================
 

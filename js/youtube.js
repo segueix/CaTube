@@ -90,7 +90,8 @@ const YouTubeAPI = {
                         description: channel.description || '',
                         handle: channel.handle || '',
                         subscriberCount: channel.subscriberCount ?? null,
-                        categories: this.normalizeCategories(channel.categories || [])
+                        categories: this.normalizeCategories(channel.categories || []),
+                        topTags: Array.isArray(channel.topTags) ? channel.topTags : []
                     }));
                 } else {
                     // Fallback per feeds antics

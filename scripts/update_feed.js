@@ -138,6 +138,23 @@ function truncateText(text, maxLength = 300) {
     return `${text.slice(0, maxLength).trim()}...`;
 }
 
+
+const TITLE_STOPWORDS = new Set([
+    'el', 'la', 'els', 'les', 'de', 'del', 'dels', 'i', 'a', 'en', 'per', 'amb', 'que', 'un', 'una', 'uns', 'unes',
+    'the', 'and', 'for', 'with', 'this', 'that', 'from', 'is', 'are', 'to',
+    'y', 'con', 'por', 'para', 'los', 'las', 'uno'
+]);
+
+function buildNormalizedTitleTokens(title, maxTokens = 12) {
+    if (!title) return [];
+    return String(title)
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}\s]+/gu, ' ')
+        .split(/\s+/)
+        .map(token => token.trim())
+        .filter(token => token.length > 1 && !TITLE_STOPWORDS.has(token))
+        .slice(0, maxTokens);
+}
 function countMarkerMatches(text, markers) {
     const markerSet = new Set(markers);
     return text
@@ -331,7 +348,8 @@ async function main() {
                         isShort: false,
                         viewCount: 0,
                         likeCount: 0,
-                        commentCount: 0
+                        commentCount: 0,
+                        normalizedTitleTokens: buildNormalizedTitleTokens(item.snippet.title)
                     };
                     baseVideos.push(video);
                     videoIdsForDetails.push(video.id);
@@ -366,6 +384,7 @@ async function main() {
                         defaultAudioLanguage: v.snippet?.defaultAudioLanguage || '',
                         defaultLanguage: v.snippet?.defaultLanguage || '',
                         tags: v.snippet?.tags || [],
+                        normalizedTitleTokens: buildNormalizedTitleTokens(v.snippet?.title || ''),
                         duration,
                         durationSeconds,
                         isShort: durationSeconds > 0 && durationSeconds <= 120,
@@ -458,6 +477,12 @@ async function main() {
         });
 
         const feedPayload = Array.from(masterVideosById.values())
+            .map(video => ({
+                ...video,
+                normalizedTitleTokens: Array.isArray(video.normalizedTitleTokens) && video.normalizedTitleTokens.length > 0
+                    ? video.normalizedTitleTokens.slice(0, 12)
+                    : buildNormalizedTitleTokens(video.title || '')
+            }))
             .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
         const videosWithViews = feedPayload.filter(video => (video.viewCount || 0) > 0);
         console.log(`📊 Vídeos amb viewCount > 0: ${videosWithViews.length}/${feedPayload.length}`);
